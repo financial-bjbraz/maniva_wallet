@@ -277,6 +277,13 @@ String formatAddress(final String publicKey) {
   return address;
 }
 
+String formatAddressMinimal(final String publicKey) {
+  var address = publicKey;
+  address = "${address.substring(0, 4)}...${address.substring(
+      address.length - 4, address.length)}";
+  return address;
+}
+
 InputDecoration simmpleDecoration(final String labelText, final Icon icon) {
   return InputDecoration(
       focusColor: Colors.white,

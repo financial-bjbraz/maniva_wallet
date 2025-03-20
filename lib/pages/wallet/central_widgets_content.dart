@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/cards/create_wallet_app.dart';
+import 'package:my_rootstock_wallet/pages/wallet/create_import/create_wallet_app.dart';
 import 'package:my_rootstock_wallet/entities/simple_user.dart';
 import 'package:provider/provider.dart';
-import '../cards/import_seed_pk_app.dart';
-import '../cards/view_wallet_app.dart';
-import '../entities/wallet_entity.dart';
-import '../services/wallet_service.dart';
-import '../wallets/create_import/create_wallet_detail.dart';
-import '../wallets/create_import/import_wallet_pk_detail.dart';
-import '../wallets/create_import/import_wallet_seed_detail.dart';
+import 'create_import/import_seed_pk_app.dart';
+import 'view_wallet_detail.dart';
+import '../../entities/wallet_entity.dart';
+import '../../services/wallet_service.dart';
+import '../../wallets/create_import/create_wallet_detail.dart';
+import '../../wallets/create_import/import_wallet_pk_detail.dart';
+import '../../wallets/create_import/import_wallet_seed_detail.dart';
 
-class PageViewApp extends StatefulWidget {
+class CentralWidgetsContent extends StatefulWidget {
   final double top;
   final ValueChanged<int> onChanged;
   final GestureDragUpdateCallback onPanUpdated;
@@ -18,7 +18,7 @@ class PageViewApp extends StatefulWidget {
   final SimpleUser user;
   final List<WalletEntity> wallets;
 
-  const PageViewApp(
+  const CentralWidgetsContent(
       {super.key,
       required this.top,
       required this.onChanged,
@@ -31,7 +31,7 @@ class PageViewApp extends StatefulWidget {
   _PageViewAppState createState() => _PageViewAppState();
 }
 
-class _PageViewAppState extends State<PageViewApp> {
+class _PageViewAppState extends State<CentralWidgetsContent> {
   late WalletServiceImpl walletService =
       Provider.of<WalletServiceImpl>(context);
   late Tween<double> _tween;
@@ -55,7 +55,7 @@ class _PageViewAppState extends State<PageViewApp> {
 
   loadWallets() async {
     for (final item in widget.wallets) {
-      widgets.add(ViewWalletApp(wallet: item, user: widget.user));
+      widgets.add(ViewWalletDetailPage(wallet: item, user: widget.user));
     }
 
     widgets.add(CreateWalletApp(
@@ -92,7 +92,7 @@ class _PageViewAppState extends State<PageViewApp> {
             left: value,
             right: value * -1,
             top: widget.top,
-            height: MediaQuery.of(context).size.height * .45,
+            height: MediaQuery.of(context).size.height * .65,
             child: PageView(
               onPageChanged: widget.onChanged,
               physics: widget.showMenu

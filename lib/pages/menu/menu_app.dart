@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/item_menu.dart';
+import 'package:my_rootstock_wallet/pages/menu/item_menu.dart';
 import 'package:my_rootstock_wallet/pages/login.dart';
 
 class MenuApp extends StatelessWidget {
