@@ -277,6 +277,13 @@ String formatAddress(final String publicKey) {
   return address;
 }
 
+String formatAddressWithParameter(final String publicKey, final int param) {
+  var address = publicKey;
+  address = "${address.substring(0, param)}...${address.substring(
+      address.length - param, address.length)}";
+  return address;
+}
+
 String formatAddressMinimal(final String publicKey) {
   var address = publicKey;
   address = "${address.substring(0, 4)}...${address.substring(
