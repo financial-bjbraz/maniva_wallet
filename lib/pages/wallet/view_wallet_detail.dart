@@ -35,7 +35,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   final double iconSize = 48;
   late String balance = "0";
   late String balanceInUsd = "0";
-  late String address = formatAddress(widget.wallet.publicKey);
+  late String address = formatAddressWithParameter(widget.wallet.publicKey, 11);
   int operation = 0;
   bool loaded = false;
   bool receiveScreenOpened = false;
@@ -121,7 +121,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   width: 5,
                 ),
                 GestureDetector(
-                  child: Icon(Icons.copy, color: lightBlue()),
+                  child: Icon(Icons.copy, color: lightBlue(), size: iconSize,),
                   onTap: () async {
                     await Clipboard.setData(ClipboardData(
                         text: widget.wallet.publicKey.toString()));
@@ -159,6 +159,10 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                         )
                       : Container(
                           height: 32, width: 230, color: Colors.grey[200]),
+
+                      const SizedBox(
+                      width: 5,
+                      ),
                   GestureDetector(
                     onTap: () {
                       setState(() {
