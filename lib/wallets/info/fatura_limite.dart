@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class ViewWalletDetail extends StatelessWidget {
-  const ViewWalletDetail({super.key});
+class FaturaLimitePage extends StatelessWidget {
+  const FaturaLimitePage({super.key});
 
 
   @override

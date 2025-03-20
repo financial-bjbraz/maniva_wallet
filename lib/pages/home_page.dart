@@ -1,12 +1,12 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:my_rootstock_wallet/pages/my_dots_app.dart';
-import 'package:my_rootstock_wallet/pages/page_view_app.dart';
+import 'package:my_rootstock_wallet/pages/wallet/my_dots_app.dart';
+import 'package:my_rootstock_wallet/pages/wallet/central_widgets_content.dart';
 import 'package:my_rootstock_wallet/util/util.dart';
 import '../entities/wallet_entity.dart';
 import 'package:flutter/material.dart';
 import '../entities/simple_user.dart';
-import 'my_app_bar.dart';
-import 'menu_app.dart';
+import 'menu/my_app_bar.dart';
+import 'menu/menu_app.dart';
 
 class HomePage extends StatefulWidget {
   final SimpleUser user;
@@ -50,7 +50,7 @@ class _HomePageState extends State<HomePage> {
     double heightScreen = MediaQuery.of(context).size.height;
 
     if (_yPosition == 0) {
-      _yPosition = heightScreen * .24;
+      _yPosition = heightScreen * .22;
     }
     return Scaffold(
       backgroundColor: Colors.black,
@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 _showMenu = !_showMenu;
                 _yPosition =
-                    _showMenu ? heightScreen * .75 : heightScreen * .24;
+                    _showMenu ? heightScreen * .75 : heightScreen * .22;
               });
             },
           ),
@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
             showMenu: _showMenu,
           ),
 
-          PageViewApp(
+          CentralWidgetsContent(
             user: widget.user,
             showMenu: _showMenu,
             top: _yPosition,
@@ -126,7 +126,7 @@ class _HomePageState extends State<HomePage> {
 
           MyDotsApp(
             showMenu: _showMenu,
-            top: heightScreen * .70,
+            top: heightScreen * .90,
             currentIndex: _currentIndex,
             walletQuantity: _walletQuantity,
           ),

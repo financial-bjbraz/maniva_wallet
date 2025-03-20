@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/pages/details/account_statements_detail.dart';
-import 'package:my_rootstock_wallet/pages/item_menu_botton.dart';
+import 'package:my_rootstock_wallet/pages/menu/item_menu_botton.dart';
 
 
 class BottomMenu extends StatefulWidget {
