@@ -4,7 +4,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 import 'package:my_rootstock_wallet/wallets/info/account_receive.dart';
 import 'package:my_rootstock_wallet/wallets/info/account_send.dart';
@@ -66,7 +65,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   Widget _buildFirstLine() {
-    final String lastTransactions = AppLocalizations.of(context)!.transactions;
     return ShimmerLoading(
       isLoading: _isLoading,
       child: Padding(
@@ -85,50 +83,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   backgroundColor: pink(),
                   fontSize: 28,
                   fontWeight: FontWeight.bold),
-            ),
-            ElevatedButton(
-              style: blackWhiteButton,
-              onPressed: () {
-                final Send sendScreenChild =
-                    Send(user: widget.user, walletDto: walletDto);
-
-                Navigator.of(context).push(PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      DetailList(child: sendScreenChild),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    var begin = const Offset(0.0, 1.0);
-                    var end = Offset.zero;
-                    var curve = Curves.ease;
-                    var tween = Tween(begin: begin, end: end)
-                        .chain(CurveTween(curve: curve));
-
-                    return SlideTransition(
-                      position: animation.drive(tween),
-                      child: child,
-                    );
-                  },
-                ));
-              },
-              child: Row(
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      const Icon(
-                        Icons.account_balance,
-                        color: Colors.black,
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        lastTransactions,
-                        style: blackText,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -259,6 +213,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   Widget _lastTransactions() {
+    final String transactions = AppLocalizations.of(context)!.transactions;
+
     return Column(children: [
       Container(
         margin: const EdgeInsets.all(15),
@@ -267,7 +223,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
           isLoading: _isLoading,
           child: Text.rich(
             TextSpan(
-                text: "Transactions",
+                text: transactions,
                 style: TextStyle(
                     fontWeight: FontWeight.bold, backgroundColor: pink())),
             textAlign: TextAlign.start,
