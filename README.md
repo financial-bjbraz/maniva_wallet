@@ -14,7 +14,8 @@ This is an open source project in flutter to create a crypto wallet compatible w
 
 ## Building
 ```
-
+rm -rf ./ios/Podfile.lock   
+rm -rf .ios//Pods
 flutter clean && flutter pub get && cd ios/ && pod install && cd ../
 
 ```
