@@ -9,14 +9,14 @@ abstract class CreateTransactionService {
   void listTransactions(String walletId);
 }
 
-class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTransactionService {
-
+class CreateTransactionServiceImpl extends ChangeNotifier
+    implements CreateTransactionService {
   @override
   void createOrUpdateTransaction(SimpleTransaction transaction) async {
     final db = await openDataBase();
 
     await db.insert(
-      'transaction',
+      'transactions',
       transaction.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -26,30 +26,39 @@ class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTrans
   Future<List<SimpleTransaction>> listTransactions(String walletId) async {
     WidgetsFlutterBinding.ensureInitialized();
     final database = openDatabase(
-        join(await getDatabasesPath(), databaseName),
+      join(await getDatabasesPath(), databaseName),
     );
 
     // Get a reference to the database.
     final db = await database;
 
     // Query the table for all the dogs.
-    final List<Map<String, Object?>> walletMaps = await db.query('transaction', where: 'walletId = ? ', whereArgs: [walletId]);
-
-    // Convert the list of each dog's fields into a list of `Dog` objects.
-    var list = [
-      for (final {
-      'transactionId': transactionId as String,
-      'amountInWeis': amountInWeis as int,
-      'date': date as String,
-      'walletId': walletId as String,
-      'valueInUsdFormatted': valueInUsdFormatted as String,
-      'valueInWeiFormatted': valueInWeiFormatted as String,
-      'status': status as String,
-      'type': type as int,
-      } in walletMaps)
-      SimpleTransaction(status: status, transactionId: transactionId, amountInWeis: amountInWeis, date: date, walletId:walletId, valueInUsdFormatted:valueInUsdFormatted, valueInWeiFormatted:valueInWeiFormatted, type: type),
-    ];
-    return list;
+    final List<Map<String, Object?>> walletMaps = await db
+        .query('transactions', where: 'walletId = ? ', whereArgs: [walletId]);
+    if (walletMaps != null && walletMaps.isNotEmpty) {
+      var list = [
+        for (final {
+              'transactionId': transactionId as String,
+              'amountInWeis': amountInWeis as int,
+              'date': date as String,
+              'walletId': walletId as String,
+              'valueInUsdFormatted': valueInUsdFormatted as String,
+              'valueinWeiFormatted': valueInWeiFormatted as String,
+              'status': status as String?,
+              'type': type as int,
+            } in walletMaps)
+          SimpleTransaction(
+              status: status ?? "",
+              transactionId: transactionId,
+              amountInWeis: amountInWeis,
+              date: date,
+              walletId: walletId,
+              valueInUsdFormatted: valueInUsdFormatted,
+              valueInWeiFormatted: valueInWeiFormatted,
+              type: type),
+      ];
+      return list;
+    }
+    return [];
   }
-
 }

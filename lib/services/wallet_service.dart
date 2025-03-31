@@ -153,7 +153,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     var transactionToPersist = SimpleTransaction(transactionId: '', amountInWeis: amount.toInt(), date: DateFormat("dd/MM/yyyy").format(DateTime.now()), walletId: wallet.walletId,
         valueInUsdFormatted: '',
         valueInWeiFormatted: '',
-        type: TransactionType.REGULAR.type,
+        type: TransactionType.REGULAR_OUTGOING.type,
     );
     try {
       var node = dotenv.env['ROOTSTOCK_NODE'];

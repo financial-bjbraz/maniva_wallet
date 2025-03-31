@@ -178,7 +178,7 @@ EdgeInsets createPaddingBetweenDifferentRows() {
 
 Future<bool> isTableCreated() async {
   final prefs = await SharedPreferences.getInstance();
-  var created = prefs.getString("dataBaseCreated_2");
+  var created = prefs.getString("dataBaseCreated_4");
   return created != null;
 }
 
@@ -235,7 +235,10 @@ Future<Database> openDataBase() async {
             'CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)',
           );
           await db.execute(
-            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)',
+            'DROP TABLE transactions',
+          );
+          await db.execute(
+            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)',
           );
           if (kDebugMode) {
             print("created table users ");
@@ -250,8 +253,9 @@ Future<Database> openDataBase() async {
       await txn.execute(
           "CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)");
     });
+
     database.transaction((txn) async {
-      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)');
+      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)');
     });
   } catch(e){
     if (kDebugMode) {
