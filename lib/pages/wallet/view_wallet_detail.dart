@@ -109,15 +109,19 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   size: iconSize,
                 ),
                 _showSaldo
-                    ? Text.rich(
+                    ? 
+                    
+                    Text.rich(
                         addressText(address),
                         textAlign: TextAlign.start,
                         style: const TextStyle(
                           color: Colors.white,
-                          backgroundColor: Color.fromRGBO(7, 255, 208, 1),
+                          backgroundColor: lightBlue(),
                           fontSize: 20,
                         ),
                       )
+
+
                     : Container(
                         height: 32, width: 230, color: Colors.grey[200]),
                 const SizedBox(
