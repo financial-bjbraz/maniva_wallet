@@ -1,5 +1,6 @@
 import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/outgoing_line.dart';
+import '../../../services/create_transaction_service.dart';
 import '../../../services/wallet_service.dart';
 import '../../../entities/wallet_entity.dart';
 import '../../../entities/simple_user.dart';
@@ -22,6 +23,9 @@ class TableTransactions extends StatefulWidget {
 class _TableTransactions extends State<TableTransactions> {
   late WalletServiceImpl walletService =
       Provider.of<WalletServiceImpl>(context, listen: false);
+  late CreateTransactionServiceImpl createTransactionServiceImpl =
+  Provider.of<CreateTransactionServiceImpl>(context, listen: false);
+
   bool _isLoading = true;
   _TableTransactions();
 
@@ -33,7 +37,7 @@ class _TableTransactions extends State<TableTransactions> {
 
   loadWalletData() async {
     await Future.delayed(const Duration(seconds: 3), () {
-      walletService.createWalletToDisplay(widget.wallet).then((dto) => {
+      createTransactionServiceImpl.listTransactions(widget.wallet.walletId).then((listTransactions) => {
             setState(() {
               _isLoading = false;
             })

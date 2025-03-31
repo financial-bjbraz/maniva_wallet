@@ -198,26 +198,29 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return blockExplorer! + transactionId;
   }
 
-  Future<WalletDTO> createWalletToDisplay(WalletDTO dto) async {
-    var walletDto = WalletDTO(wallet: wallet, transactions: null);
-    final wei = await getBalanceInWei(walletDto);
-    final usdPrice = await getPrice();
-    final value = wei.getWei() * usdPrice;
-    final formatter = NumberFormat.simpleCurrency();
-    walletDto.amountInWeis = wei.getWei();
-    walletDto.amountInUsd = value;
-    walletDto.valueInWeiFormatted = (wei.toRBTCTrimmedStringPlaces(10));
-    walletDto.valueInUsdFormatted = formatter.format(value);
-
-    if (wei.src.compareTo(BigInt.from(wallet.amount)) != 0) {
-      wallet.amount = wei.src.toDouble();
-      persistNewWallet(wallet);
-    }
-
-    return walletDto;
+  Future<WalletDTO> convert(WalletEntity entity) async {
+    return WalletDTO(wallet: entity, transactions: null);
   }
 
-  Future<int> getPrice() async {
+  Future<WalletDTO> createWalletToDisplay(WalletDTO dto) async {
+    final wei = await getBalanceInWei(dto);
+    final usdPrice = await _getPrice();
+    final value = wei.getWei() * usdPrice;
+    final formatter = NumberFormat.simpleCurrency();
+    dto.amountInWeis = wei.getWei();
+    dto.amountInUsd = value;
+    dto.valueInWeiFormatted = (wei.toRBTCTrimmedStringPlaces(10));
+    dto.valueInUsdFormatted = formatter.format(value);
+
+    if (wei.src.compareTo(BigInt.from(dto.wallet.amount)) != 0) {
+      dto.wallet.amount = wei.src.toDouble();
+      persistNewWallet(dto.wallet);
+    }
+
+    return dto;
+  }
+
+  Future<int> _getPrice() async {
     final response = await http.get(Uri.parse(
         'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=100&page=1&sparkline=false'));
 

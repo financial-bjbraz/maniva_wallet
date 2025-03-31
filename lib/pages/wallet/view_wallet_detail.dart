@@ -53,14 +53,17 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   loadWalletData() async {
     await Future.delayed(const Duration(seconds: 3), () {
-      walletService.createWalletToDisplay(widget.wallet).then((dto) => {
-            setState(() {
-              walletDto = dto;
-              balance = walletDto.valueInWeiFormatted;
-              balanceInUsd = walletDto.valueInUsdFormatted;
-              _isLoading = false;
-            })
-          });
+      walletService
+          .convert(widget.wallet)
+            .then((value) => walletService.createWalletToDisplay(value)
+            .then((dto) => {
+              setState(() {
+                walletDto = dto;
+                balance = dto.valueInWeiFormatted;
+                balanceInUsd = dto.valueInUsdFormatted;
+                _isLoading = false;
+              })
+          }));
     });
   }
 
