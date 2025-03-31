@@ -2,10 +2,10 @@ import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import '../../entities/simple_user.dart';
-import '../../services/wallet_service.dart';
-import '../../util/decimal_input.dart';
-import '../../util/util.dart';
+import '../../../entities/simple_user.dart';
+import '../../../services/wallet_service.dart';
+import '../../../util/decimal_input.dart';
+import '../../../util/util.dart';
 
 class Send extends StatefulWidget {
   const Send({super.key, required this.user, required this.walletDto});
@@ -192,7 +192,7 @@ class _Send extends State<Send> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    DecimalTextInputFormatter(decimalRange: 18)
+                    DecimalTextInputFormatter(decimalRange: RBTC_DECIMAL_PLACES_COUNT)
                   ],
                   controller: amountController, // Only numbers can be entered
                 ),
@@ -307,7 +307,7 @@ class _Send extends State<Send> {
                                       widget.walletDto.wallet,
                                       destinationAddressController.text,
                                       BigInt.parse(bp
-                                          .times(1000000000000000000)
+                                          .times(RBTC_DECIMAL_PLACES)
                                           .toString()));
                                   sucesso = transactionPersist.transactionSent!;
                                 } catch (e) {

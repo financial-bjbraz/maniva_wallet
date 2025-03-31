@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:my_rootstock_wallet/entities/transaction_type.dart';
 import 'package:provider/provider.dart';
 
 import '../../entities/simple_user.dart';
@@ -127,7 +128,8 @@ class _ImportNewWalletByPKDetail
                                             publicKey: publicKey,
                                             walletId: walletId,
                                             walletName: "Wallet #",
-                                            ownerEmail: widget.user.email);
+                                            ownerEmail: widget.user.email,
+                                        );
 
                                         walletService
                                             .persistNewWallet(wallet);

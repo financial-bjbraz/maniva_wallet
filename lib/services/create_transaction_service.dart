@@ -45,8 +45,9 @@ class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTrans
       'valueInUsdFormatted': valueInUsdFormatted as String,
       'valueInWeiFormatted': valueInWeiFormatted as String,
       'status': status as String,
+      'type': type as int,
       } in walletMaps)
-      SimpleTransaction(status: status, transactionId: transactionId, amountInWeis: amountInWeis, date: date, walletId:walletId, valueInUsdFormatted:valueInUsdFormatted, valueInWeiFormatted:valueInWeiFormatted),
+      SimpleTransaction(status: status, transactionId: transactionId, amountInWeis: amountInWeis, date: date, walletId:walletId, valueInUsdFormatted:valueInUsdFormatted, valueInWeiFormatted:valueInWeiFormatted, type: type),
     ];
     return list;
   }

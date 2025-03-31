@@ -1,5 +1,7 @@
 import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
 import 'package:my_rootstock_wallet/entities/wallet_entity.dart';
+import 'package:my_rootstock_wallet/util/wei.dart';
+import 'package:web3dart/web3dart.dart';
 
 import '../util/util.dart';
 
@@ -12,6 +14,9 @@ class WalletDTO {
   late String valueInUsdFormatted;
   late String valueInWeiFormatted;
   Set<SimpleTransaction>? transactions;
+  bool updated = false;
+  late Wei lastBalanceReceivedInWei;
+  late EtherAmount lastBalanceReceivedInEtherAmount;
 
   WalletDTO({required this.wallet, required this.transactions});
 

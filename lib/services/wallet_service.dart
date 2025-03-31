@@ -1,11 +1,11 @@
 import 'dart:convert';
-
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hex/hex.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:my_rootstock_wallet/entities/transaction_type.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/util/coingeck_resopnse.dart';
 import 'package:my_rootstock_wallet/util/wei.dart';
@@ -16,6 +16,8 @@ import '../entities/simple_transaction.dart';
 import '../entities/wallet_entity.dart';
 import '../util/util.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logging/logging.dart';
+import 'create_transaction_service.dart';
 
 abstract class WalletAddressService {
   String generateMnemonic();
@@ -30,6 +32,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   static const walletName = "flutter_k2";
   static const publickey = "flutter_k3";
   static const wid = "flutter_k4";
+  final log = Logger("WalletServiceImpl");
+  CreateTransactionServiceImpl service = CreateTransactionServiceImpl();
 
   @override
   String generateMnemonic() {
@@ -87,7 +91,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
             publicKey: publicKey,
             walletId: walletId,
             walletName: walletName,
-            ownerEmail: ownerEmail),
+            ownerEmail: ownerEmail,),
     ];
   }
 
@@ -116,35 +120,41 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         "wallets", where: 'privateKey = ?', whereArgs: [wallet.privateKey]);
   }
 
-  Future<String> getBalance(WalletEntity wallet) async {
+  Future<String> getBalance(WalletDTO dto) async {
     const returnValue = "0.00";
     try {
-      final wei = await getBalanceInWei(wallet);
+      final wei = await getBalanceInWei(dto);
       return (wei.toRBTCTrimmedString());
     } catch (e) {
       return returnValue;
     }
   }
 
-  Future<Wei> getBalanceInWei(WalletEntity wallet) async {
-    var balance = web3.EtherAmount.zero();
+  Future<Wei> getBalanceInWei(WalletDTO dto) async {
     try {
-      final node = dotenv.env['ROOTSTOCK_NODE'];
-      final client = web3.Web3Client(node!, http.Client());
-      final credentials = web3.EthPrivateKey.fromHex(wallet.privateKey);
-      final address = credentials.address;
-      balance = await client.getBalance(address);
+      if(!dto.updated) {
+        final node = dotenv.env['ROOTSTOCK_NODE'];
+        final client = web3.Web3Client(node!, http.Client());
+        final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
+        final address = credentials.address;
+        dto.lastBalanceReceivedInEtherAmount = await client.getBalance(address);
+        dto.lastBalanceReceivedInWei = Wei(src: dto.lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
+        dto.updated = true;
+      }
     } catch (error) {
-      // error
+      log.severe("Error getting balance", error);
     }
-    return Wei(src: balance.getInWei, currency: "wei");
+    return dto.lastBalanceReceivedInWei;
   }
 
-  Future<SimpleTransaction> sendRBTC(WalletEntity wallet, String destinationAddress,
-      BigInt amount) async {
-    var persistTransaction = SimpleTransaction(transactionId: '', amountInWeis: amount.toInt(), date: DateFormat("dd/MM/yyyy").format(DateTime.now()), walletId: wallet.walletId,
+  // TODO implement persistence of transaction sent
+  Future<SimpleTransaction> sendRBTC(WalletEntity wallet, String destinationAddress, BigInt amount) async {
+
+    var transactionToPersist = SimpleTransaction(transactionId: '', amountInWeis: amount.toInt(), date: DateFormat("dd/MM/yyyy").format(DateTime.now()), walletId: wallet.walletId,
         valueInUsdFormatted: '',
-        valueInWeiFormatted: '');
+        valueInWeiFormatted: '',
+        type: TransactionType.REGULAR.type,
+    );
     try {
       var node = dotenv.env['ROOTSTOCK_NODE'];
       var httpClient = http.Client();
@@ -162,18 +172,24 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         value: unit,
       );
 
-      persistTransaction.transactionId = await client.sendTransaction(
+      transactionToPersist.transactionId = await client.sendTransaction(
         credentials,
         transaction,
         chainId: chainId.toInt()
       );
-      persistTransaction.transactionSent = true;
-
+      transactionToPersist.transactionSent = false;
       await client.dispose();
     } catch (error) {
-      persistTransaction.transactionSent = false;
+      log.severe("Error sending transaction", error);
+      transactionToPersist.transactionSent = false;
     }
-    return persistTransaction;
+    try{
+      service.createOrUpdateTransaction(transactionToPersist);
+      transactionToPersist.transactionSent = true;
+    }catch(error){
+      log.severe("Error persisting transaction", error);
+    }
+    return transactionToPersist;
   }
 
   // Tentar reutilizar isso em alguma classe para nao buscar toda hora do .env
@@ -182,9 +198,9 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return blockExplorer! + transactionId;
   }
 
-  Future<WalletDTO> createWalletToDisplay(WalletEntity wallet) async {
+  Future<WalletDTO> createWalletToDisplay(WalletDTO dto) async {
     var walletDto = WalletDTO(wallet: wallet, transactions: null);
-    final wei = await getBalanceInWei(wallet);
+    final wei = await getBalanceInWei(walletDto);
     final usdPrice = await getPrice();
     final value = wei.getWei() * usdPrice;
     final formatter = NumberFormat.simpleCurrency();
