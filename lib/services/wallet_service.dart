@@ -78,21 +78,25 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         'wallets', where: 'ownerEmail = ?', whereArgs: [ownerEmail]);
 
     // Convert the list of each fields into a list of `Wallet` objects.
-    return [
-      for (final {
-      'privateKey': privateKey as String,
-      'walletName': walletName as String,
-      'walletId': walletId as String,
-      'publicKey': publicKey as String,
-      'ownerEmail': ownerEmail as String,
-      'amount': amountValue as double,
-      } in walletMaps)
-        WalletEntity(amountValue, privateKey: privateKey,
+    if(walletMaps != null && walletMaps.isNotEmpty) {
+      return [
+        for (final {
+        'privateKey': privateKey as String,
+        'walletName': walletName as String,
+        'walletId': walletId as String,
+        'publicKey': publicKey as String,
+        'ownerEmail': ownerEmail as String,
+        'amount': amountValue as double,
+        } in walletMaps)
+          WalletEntity(amountValue, privateKey: privateKey,
             publicKey: publicKey,
             walletId: walletId,
             walletName: walletName,
             ownerEmail: ownerEmail,),
-    ];
+      ];
+    }
+
+    return [];
   }
 
   void persistNewWallet(WalletEntity wallet) async {
