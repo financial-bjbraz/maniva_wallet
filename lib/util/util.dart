@@ -235,9 +235,6 @@ Future<Database> openDataBase() async {
             'CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)',
           );
           await db.execute(
-            'DROP TABLE transactions',
-          );
-          await db.execute(
             'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)',
           );
           if (kDebugMode) {
@@ -253,7 +250,6 @@ Future<Database> openDataBase() async {
       await txn.execute(
           "CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)");
     });
-
     database.transaction((txn) async {
       await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)');
     });
