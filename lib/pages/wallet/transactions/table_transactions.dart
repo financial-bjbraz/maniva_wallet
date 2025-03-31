@@ -1,3 +1,7 @@
+import 'dart:collection';
+
+import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
+import 'package:my_rootstock_wallet/entities/transaction_type.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/outgoing_line.dart';
 import '../../../services/create_transaction_service.dart';
@@ -23,8 +27,10 @@ class TableTransactions extends StatefulWidget {
 class _TableTransactions extends State<TableTransactions> {
   late WalletServiceImpl walletService =
       Provider.of<WalletServiceImpl>(context, listen: false);
-  late CreateTransactionServiceImpl createTransactionServiceImpl =
-  Provider.of<CreateTransactionServiceImpl>(context, listen: false);
+  late CreateTransactionServiceImpl createTransactionServiceImpl = CreateTransactionServiceImpl();
+  var transactions = <TableRow>{};
+  final Map<String, int> txHashMap = HashMap();
+
 
   bool _isLoading = true;
   _TableTransactions();
@@ -32,17 +38,30 @@ class _TableTransactions extends State<TableTransactions> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    loadWalletData();
+    //loadWalletData();
   }
 
   loadWalletData() async {
-    await Future.delayed(const Duration(seconds: 3), () {
-      createTransactionServiceImpl.listTransactions(widget.wallet.walletId).then((listTransactions) => {
-            setState(() {
-              _isLoading = false;
-            })
-          });
-    });
+    if(this.mounted) {
+      await Future.delayed(const Duration(seconds: 5), () {
+        createTransactionServiceImpl
+            .listTransactions(widget.wallet.walletId)
+            .then((listTransactions) =>
+        {
+          setState(() {
+            if (listTransactions.isNotEmpty) {
+              for (final item in listTransactions) {
+                if(!txHashMap.containsKey(item.walletId)){
+                  transactions.add(generateItem(item));
+                  txHashMap.addAll({item.walletId: item.type});
+                }
+              }
+            }
+            _isLoading = false;
+          })
+        });
+      });
+    }
   }
 
   @override
@@ -72,16 +91,21 @@ class _TableTransactions extends State<TableTransactions> {
             5: FlexColumnWidth(1),
           },
           children: [
-            IncomingTransactionLine(widget.user).create("12/12/2024", "USD 10,00"),
-            OutgoingTransactionLine(widget.user).create("11/12/2024", "USD 10,00"),
-            IncomingTransactionLine(widget.user).create("10/12/2024", "USD 100,00"),
-            OutgoingTransactionLine(widget.user).create("09/12/2024", "USD 10,00"),
-            OutgoingTransactionLine(widget.user).create("06/12/2024", "USD 11.000,00"),
-            IncomingTransactionLine(widget.user).create("05/12/2024", "USD 1.000,00"),
+            ...transactions,
             const BlankTransactionLine().create(),
           ],
         ),
       ),
     );
+  }
+
+  TableRow generateItem(SimpleTransaction item) {
+    TableRow transactionItem = const TableRow();
+    if(item.type == TransactionType.REGULAR_OUTGOING.type) {
+      transactionItem = OutgoingTransactionLine(widget.user).create(item.date, item.valueInUsdFormatted);
+    }else{
+      transactionItem = IncomingTransactionLine(widget.user).create(item.date, item.valueInUsdFormatted);
+    }
+    return transactionItem;
   }
 }
