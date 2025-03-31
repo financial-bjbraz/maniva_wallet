@@ -70,6 +70,38 @@
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "ROOTSTOCK_NODE"
+            value = "https://go.getblock.io/1eced638ecbd41e797744989aac22a23"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SEED_TEST"
+            value = "crisp, rice, valve, aerobic, opinion, seminar, elder, rather, brief, isolate, another, sphere"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "PRIVATE_KEY"
+            value = "d55cc123c161da6c85f6d65ec33fb6c53cc2d22da3b637f3ad275fc0ceaf76fb"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "BLOCK_EXPLORER_URL"
+            value = "https://explorer.testnet.rootstock.io/tx/"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "CHAIN_ID"
+            value = "30"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "TESTNET_CHAIN_ID"
+            value = "31"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Profile"
