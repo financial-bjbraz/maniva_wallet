@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 const databaseName = "my_rootstock_wallet.db";
+const RBTC_DECIMAL_PLACES = 1000000000000000000;
+const RBTC_DECIMAL_PLACES_COUNT = 18;
 
 Color? orange() => const Color.fromRGBO(255, 145, 0, 1);
 Color? pink() => const Color.fromRGBO(255, 112, 224, 1);
@@ -233,7 +235,7 @@ Future<Database> openDataBase() async {
             'CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)',
           );
           await db.execute(
-            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT)',
+            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)',
           );
           if (kDebugMode) {
             print("created table users ");
@@ -249,7 +251,7 @@ Future<Database> openDataBase() async {
           "CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)");
     });
     database.transaction((txn) async {
-      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT)');
+      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)');
     });
   } catch(e){
     if (kDebugMode) {

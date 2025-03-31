@@ -8,6 +8,9 @@ import '../../entities/simple_user.dart';
 import '../../services/wallet_service.dart';
 import '../../util/util.dart';
 
+/**
+ * Essa classe pode ser adaptada para mostrar em uma tela completa todas as transacoes de uma wallet, ou podemos colocar filtros
+ */
 class AccountTransactions extends StatefulWidget {
   final SimpleUser user;
   final WalletDTO walletDto;

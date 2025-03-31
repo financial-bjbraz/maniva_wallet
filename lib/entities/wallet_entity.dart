@@ -1,3 +1,4 @@
+
 class WalletEntity{
 
   final String privateKey;
@@ -7,7 +8,7 @@ class WalletEntity{
   final String ownerEmail;
   double amount;
 
-  WalletEntity(this.amount, {required this.privateKey, required this.walletName, required this.walletId, required this.publicKey, required this.ownerEmail});
+  WalletEntity(this.amount, {required this.privateKey, required this.walletName, required this.walletId, required this.publicKey, required this.ownerEmail,});
 
   Map<String, Object?> toMap() {
     return {

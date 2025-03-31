@@ -1,18 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/outgoing_line.dart';
-import 'package:my_rootstock_wallet/wallets/info/account_receive.dart';
-import 'package:my_rootstock_wallet/wallets/info/account_send.dart';
-import 'package:provider/provider.dart';
-import '../../../entities/simple_user.dart';
-import '../../../entities/wallet_entity.dart';
 import '../../../services/wallet_service.dart';
+import '../../../entities/wallet_entity.dart';
+import '../../../entities/simple_user.dart';
 import '../../../util/shimmer_loading.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
 import 'blank_line.dart';
 
 class TableTransactions extends StatefulWidget {

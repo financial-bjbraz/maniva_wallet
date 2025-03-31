@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import '../../entities/simple_user.dart';
-import '../../services/wallet_service.dart';
+import '../../../entities/simple_user.dart';
+import '../../../services/wallet_service.dart';
 import 'dart:convert';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../util/util.dart';
+import '../../../util/util.dart';
 
 class Receive extends StatefulWidget {
   final SimpleUser user;
