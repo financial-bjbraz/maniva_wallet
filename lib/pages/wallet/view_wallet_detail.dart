@@ -117,9 +117,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       children: [
         ShimmerLoading(
           isLoading: _isLoading,
-          child: Padding(
+          child: const Padding(
             padding:
-                const EdgeInsets.only(left: 10, top: 5, bottom: 5, right: 10),
+                EdgeInsets.only(left: 10, top: 5, bottom: 5, right: 10),
             child: Row(
               children: [],
             ),
