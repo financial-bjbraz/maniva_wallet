@@ -41,7 +41,7 @@ class _TableTransactions extends State<TableTransactions> {
   }
 
   loadWalletData() async {
-    if (this.mounted) {
+    if (mounted) {
       await Future.delayed(const Duration(seconds: 5), () {
         createTransactionServiceImpl
             .listTransactions(widget.wallet.walletId)

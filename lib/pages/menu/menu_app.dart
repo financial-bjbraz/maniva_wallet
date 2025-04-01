@@ -56,7 +56,7 @@ class MenuApp extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: <Widget>[
-                  // TODO MENU
+                  // // TODO(alexjavabraz): Implementar qr code.
                   // Image.network(
                   //   "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png",
                   //   height: 100,

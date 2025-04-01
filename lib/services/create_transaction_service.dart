@@ -35,7 +35,7 @@ class CreateTransactionServiceImpl extends ChangeNotifier
     // Query the table for all the dogs.
     final List<Map<String, Object?>> walletMaps = await db
         .query('transactions', where: 'walletId = ? ', whereArgs: [walletId]);
-    if (walletMaps != null && walletMaps.isNotEmpty) {
+    if (walletMaps.isNotEmpty) {
       var list = [
         for (final {
               'transactionId': transactionId as String,

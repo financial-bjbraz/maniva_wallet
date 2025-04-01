@@ -78,7 +78,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         'wallets', where: 'ownerEmail = ?', whereArgs: [ownerEmail]);
 
     // Convert the list of each fields into a list of `Wallet` objects.
-    if(walletMaps != null && walletMaps.isNotEmpty) {
+    if(walletMaps.isNotEmpty) {
       return [
         for (final {
         'privateKey': privateKey as String,
@@ -151,7 +151,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return dto.lastBalanceReceivedInWei;
   }
 
-  // TODO implement persistence of transaction sent
+  // TODO(alexjavabraz): implement persistence of transaction sent
   Future<SimpleTransaction> sendRBTC(WalletDTO dto, String destinationAddress, BigInt amount) async {
     var unit = web3.EtherAmount.fromUnitAndValue(web3.EtherUnit.wei, amount);
     var transactionToPersist = await createTransactionInstance(dto, destinationAddress, amount);
