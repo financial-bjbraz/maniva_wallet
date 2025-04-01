@@ -53,17 +53,15 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   loadWalletData() async {
     await Future.delayed(const Duration(seconds: 3), () {
-      walletService
-          .convert(widget.wallet)
-            .then((value) => walletService.createWalletToDisplay(value)
-            .then((dto) => {
-              setState(() {
-                walletDto = dto;
-                balance = dto.valueInWeiFormatted;
-                balanceInUsd = dto.valueInUsdFormatted;
-                _isLoading = false;
-              })
-          }));
+      walletService.convert(widget.wallet).then(
+          (value) => walletService.createWalletToDisplay(value).then((dto) => {
+                setState(() {
+                  walletDto = dto;
+                  balance = dto.valueInWeiFormatted;
+                  balanceInUsd = dto.valueInUsdFormatted;
+                  _isLoading = false;
+                })
+              }));
     });
   }
 
@@ -94,6 +92,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   Widget _createMainScreen() {
+    final String copiedMessage = AppLocalizations.of(context)!.copiedMessage;
+
     return Column(
       children: [
         ShimmerLoading(
@@ -109,31 +109,26 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   size: iconSize,
                 ),
                 _showSaldo
-                    ? 
-
-                    Text.rich(
-                        addressText(address),
-                        textAlign: TextAlign.start,
-                        style: TextStyle(
-                          color: Colors.white,
-                          backgroundColor: lightBlue(),
-                          fontSize: 20,
+                    ? GestureDetector(
+                        child: Text.rich(
+                          addressText(address),
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                            color: Colors.white,
+                            backgroundColor: lightBlue(),
+                            fontSize: 20,
+                          ),
                         ),
+                        onTap: () async {
+                          await Clipboard.setData(ClipboardData(
+                              text: widget.wallet.publicKey.toString()));
+                          showMessage(copiedMessage, context);
+                        },
                       )
-
-
                     : Container(
                         height: 32, width: 230, color: Colors.grey[200]),
                 const SizedBox(
                   width: 5,
-                ),
-                GestureDetector(
-                  child: Icon(Icons.copy, color: lightBlue(), size: iconSize,),
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(
-                        text: widget.wallet.publicKey.toString()));
-                    showMessage("Copied to the clipboard", context);
-                  },
                 ),
               ],
             ),
@@ -166,10 +161,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                         )
                       : Container(
                           height: 32, width: 230, color: Colors.grey[200]),
-
-                      const SizedBox(
-                      width: 5,
-                      ),
+                  const SizedBox(
+                    width: 5,
+                  ),
                   GestureDetector(
                     onTap: () {
                       setState(() {

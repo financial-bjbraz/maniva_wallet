@@ -30,15 +30,12 @@ class _TableTransactions extends State<TableTransactions> {
   late CreateTransactionServiceImpl createTransactionServiceImpl = CreateTransactionServiceImpl();
   var transactions = <TableRow>{};
   final Map<String, int> txHashMap = HashMap();
-
-
   bool _isLoading = true;
   _TableTransactions();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    //loadWalletData();
   }
 
   loadWalletData() async {

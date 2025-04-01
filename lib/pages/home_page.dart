@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 _showMenu = !_showMenu;
                 _yPosition =
-                    _showMenu ? heightScreen * .75 : heightScreen * .22;
+                    _showMenu ? heightScreen * .42 : heightScreen * .22;
               });
             },
           ),

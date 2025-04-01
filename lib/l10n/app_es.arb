@@ -42,5 +42,10 @@
   "txSent": "Transaccion enviada",
   "txReceived": "Transaccion recibida",
   "amount": "Rellena el monto",
-  "destination": "Direccíon destino"
+  "destination": "Direccíon destino",
+  "copiedMessage": "Copiado",
+  "configureAccount": "Configurar cuenta",
+  "profile": "Perfil",
+  "help": "Ayuda",
+  "exit": "Salir"
 }

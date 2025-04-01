@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:my_rootstock_wallet/pages/menu/item_menu.dart';
 import 'package:my_rootstock_wallet/pages/login.dart';
@@ -27,6 +29,11 @@ class MenuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String configureAccount = AppLocalizations.of(context)!.configureAccount;
+    final String profile = AppLocalizations.of(context)!.profile;
+    final String help = AppLocalizations.of(context)!.help;
+    final String labelExit = AppLocalizations.of(context)!.exit;
+
     final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
       minimumSize: const Size(88, 36),
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -49,62 +56,63 @@ class MenuApp extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: <Widget>[
-                  Image.network(
-                    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png",
-                    height: 100,
-                    color: Colors.white,
-                  ),
-                  const Text.rich(
-                    TextSpan(text: "Banco ", children: [
-                      TextSpan(
-                        text: "260 - Nu Pagamentos S.A",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ]),
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(
-                    height: 5,
-                  ),
-                  const Text.rich(
-                    TextSpan(text: "Agência ", children: [
-                      TextSpan(
-                        text: "0001",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ]),
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(
-                    height: 5,
-                  ),
-                  const Text.rich(
-                    TextSpan(text: "Conta ", children: [
-                      TextSpan(
-                        text: "000000-0",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ]),
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
+                  // TODO MENU
+                  // Image.network(
+                  //   "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png",
+                  //   height: 100,
+                  //   color: Colors.white,
+                  // ),
+                  // const Text.rich(
+                  //   TextSpan(text: "Banco ", children: [
+                  //     TextSpan(
+                  //       text: "XXX - Pagamentos S.A",
+                  //       style: TextStyle(fontWeight: FontWeight.bold),
+                  //     ),
+                  //   ]),
+                  //   style: TextStyle(fontSize: 12),
+                  // ),
+                  // const SizedBox(
+                  //   height: 5,
+                  // ),
+                  // const Text.rich(
+                  //   TextSpan(text: "Agência ", children: [
+                  //     TextSpan(
+                  //       text: "0001",
+                  //       style: TextStyle(fontWeight: FontWeight.bold),
+                  //     ),
+                  //   ]),
+                  //   style: TextStyle(fontSize: 12),
+                  // ),
+                  // const SizedBox(
+                  //   height: 5,
+                  // ),
+                  // const Text.rich(
+                  //   TextSpan(text: "Conta ", children: [
+                  //     TextSpan(
+                  //       text: "000000-0",
+                  //       style: TextStyle(fontWeight: FontWeight.bold),
+                  //     ),
+                  //   ]),
+                  //   style: TextStyle(fontSize: 12),
+                  // ),
+                  // const SizedBox(
+                  //   height: 10,
+                  // ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: Column(
                       children: [
-                        const ItemMenu(
+                        ItemMenu(
                           icone: Icons.info_outline,
-                          text: "Me ajuda",
+                          text: help,
                         ),
-                        const ItemMenu(
+                        ItemMenu(
                           icone: Icons.person_outline,
-                          text: "Perfil",
+                          text: profile,
                         ),
-                        const ItemMenu(
+                        ItemMenu(
                           icone: Icons.settings,
-                          text: "Configurar conta",
+                          text: configureAccount,
                         ),
                         const SizedBox(
                           height: 22.6,
@@ -133,12 +141,15 @@ class MenuApp extends StatelessWidget {
                             // splashColor: Colors.purple[900],
                             child: GestureDetector(
                               onTap: () {
-
-                                Navigator.of(context).push(_createRoute());
+                                if (Platform.isAndroid) {
+                                  Navigator.of(context).push(_createRoute());
+                                } else if (Platform.isIOS) {
+                                  exit(0);
+                                }
                               },
-                              child: const Text(
-                              "SAIR DO APP",
-                              style: TextStyle(
+                              child: Text(
+                                labelExit,
+                              style: const TextStyle(
                                   fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                             )
