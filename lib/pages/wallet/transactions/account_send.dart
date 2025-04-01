@@ -303,8 +303,17 @@ class _Send extends State<Send> {
                                   pointedText =
                                       pointedText.replaceAll(",", ".");
                                   var bp = Big(pointedText);
+
+                                  if(!destinationAddressController.text.trim().startsWith("0x")){
+                                    throw const FormatException("Invalid address");
+                                  }
+
+                                  if(bp.toNumber() == 0){
+                                    throw const FormatException("Invalid value");
+                                  }
+
                                   var transactionPersist = await walletService.sendRBTC(
-                                      widget.walletDto.wallet,
+                                      widget.walletDto,
                                       destinationAddressController.text,
                                       BigInt.parse(bp
                                           .times(RBTC_DECIMAL_PLACES)

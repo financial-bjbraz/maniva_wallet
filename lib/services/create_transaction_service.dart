@@ -46,6 +46,7 @@ class CreateTransactionServiceImpl extends ChangeNotifier
               'valueinWeiFormatted': valueInWeiFormatted as String,
               'status': status as String?,
               'type': type as int,
+              'destination': destination as String?,
             } in walletMaps)
           SimpleTransaction(
               status: status ?? "",
@@ -55,7 +56,10 @@ class CreateTransactionServiceImpl extends ChangeNotifier
               walletId: walletId,
               valueInUsdFormatted: valueInUsdFormatted,
               valueInWeiFormatted: valueInWeiFormatted,
-              type: type),
+              type: type,
+              destination: destination,
+          ),
+
       ];
       return list;
     }
