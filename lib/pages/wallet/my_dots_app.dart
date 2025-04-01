@@ -81,52 +81,6 @@ class MyDotsApp extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-
-            // AnimatedContainer(
-            //   duration: const Duration(milliseconds: 300),
-            //   height: 7,
-            //   width: 7,
-            //   decoration: BoxDecoration(
-            //     color: getColor(3),
-            //     shape: BoxShape.circle,
-            //   ),
-            // ),
-            // const SizedBox(
-            //   width: 8,
-            // ),
-            // AnimatedContainer(
-            //   duration: const Duration(milliseconds: 300),
-            //   height: 7,
-            //   width: 7,
-            //   decoration: BoxDecoration(
-            //     color: getColor(4),
-            //     shape: BoxShape.circle,
-            //   ),
-            // ),
-            // const SizedBox(
-            //   width: 8,
-            // ),
-            // AnimatedContainer(
-            //   duration: const Duration(milliseconds: 300),
-            //   height: 7,
-            //   width: 7,
-            //   decoration: BoxDecoration(
-            //     color: getColor(5),
-            //     shape: BoxShape.circle,
-            //   ),
-            // ),
-            // const SizedBox(
-            //   width: 8,
-            // ),
-            // AnimatedContainer(
-            //   duration: const Duration(milliseconds: 300),
-            //   height: 7,
-            //   width: 7,
-            //   decoration: BoxDecoration(
-            //     color: getColor(6),
-            //     shape: BoxShape.circle,
-            //   ),
-            // ),
           ],
         ),
       ),
