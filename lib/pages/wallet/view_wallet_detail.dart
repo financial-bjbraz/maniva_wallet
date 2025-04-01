@@ -110,11 +110,11 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                 ),
                 _showSaldo
                     ? 
-                    
+
                     Text.rich(
                         addressText(address),
                         textAlign: TextAlign.start,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           backgroundColor: lightBlue(),
                           fontSize: 20,
