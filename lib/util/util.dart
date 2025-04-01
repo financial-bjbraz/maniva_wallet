@@ -235,7 +235,7 @@ Future<Database> openDataBase() async {
             'CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)',
           );
           await db.execute(
-            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)',
+            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER, destination TEXT)',
           );
           if (kDebugMode) {
             print("created table users ");
@@ -251,7 +251,7 @@ Future<Database> openDataBase() async {
           "CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)");
     });
     database.transaction((txn) async {
-      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER)');
+      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER, destination TEXT)');
     });
   } catch(e){
     if (kDebugMode) {

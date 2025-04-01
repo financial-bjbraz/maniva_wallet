@@ -152,22 +152,16 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   }
 
   // TODO implement persistence of transaction sent
-  Future<SimpleTransaction> sendRBTC(WalletEntity wallet, String destinationAddress, BigInt amount) async {
-
-    var transactionToPersist = SimpleTransaction(transactionId: '', amountInWeis: amount.toInt(), date: DateFormat("dd/MM/yyyy").format(DateTime.now()), walletId: wallet.walletId,
-        valueInUsdFormatted: '',
-        valueInWeiFormatted: '',
-        type: TransactionType.REGULAR_OUTGOING.type,
-    );
+  Future<SimpleTransaction> sendRBTC(WalletDTO dto, String destinationAddress, BigInt amount) async {
+    var unit = web3.EtherAmount.fromUnitAndValue(web3.EtherUnit.wei, amount);
+    var transactionToPersist = await createTransactionInstance(dto, destinationAddress, amount);
     try {
       var node = dotenv.env['ROOTSTOCK_NODE'];
       var httpClient = http.Client();
       final client = web3.Web3Client(node.toString(), httpClient);
-      final credentials = web3.EthPrivateKey.fromHex(wallet.privateKey);
+      final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
       var chainId = await client.getChainId();
       web3.EtherAmount gasPrice = await client.getGasPrice();
-
-      var unit = web3.EtherAmount.fromUnitAndValue(web3.EtherUnit.wei, amount);
 
       var transaction = web3.Transaction(
         to: web3.EthereumAddress.fromHex(destinationAddress),
@@ -181,7 +175,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         transaction,
         chainId: chainId.toInt()
       );
-      transactionToPersist.transactionSent = false;
+      transactionToPersist.transactionSent = true;
       await client.dispose();
     } catch (error) {
       log.severe("Error sending transaction", error);
@@ -246,6 +240,33 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     } else {
       return getLastUsdPrice();
     }
+  }
+
+  Future<SimpleTransaction> createTransactionInstance(WalletDTO dto, String destinationAddress, BigInt amount) async {
+    var wei = Wei(src: BigInt.zero, currency: 'wei');
+    var usdPrice = 0;
+    final formatter = NumberFormat.simpleCurrency();
+
+    try {
+      wei = Wei(src: amount, currency: 'wei');
+      usdPrice = await _getPrice();
+      final value = wei.getWei() * usdPrice;
+
+      final transactionToPersist = SimpleTransaction(
+        transactionId: '',
+        amountInWeis: amount.toInt(),
+        date: DateFormat("dd/MM/yyyy").format(DateTime.now()),
+        walletId: dto.wallet.walletId,
+        valueInUsdFormatted: (formatter.format(value)),
+        valueInWeiFormatted: (wei.toRBTCTrimmedStringPlaces(10)),
+        type: TransactionType.REGULAR_OUTGOING.type,
+        destination: destinationAddress
+      );
+      return transactionToPersist;
+    }catch(error){
+      log.severe("error creating transaction to be persisted", error);
+    }
+    return SimpleTransaction(transactionId: '', amountInWeis: 0, date: '', walletId: '', valueInUsdFormatted: '', valueInWeiFormatted: '', type: TransactionType.NONE.type, destination: destinationAddress);
   }
 
 }
