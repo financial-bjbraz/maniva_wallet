@@ -57,6 +57,10 @@ dependencies:
   share_plus: ^10.0.0
   mobile_scanner: ^6.0.3
   big_dart: ^1.0.1
+  convert: ^3.0.1
+  pointycastle: ^3.9.1
+  dartsv: ^2.1.0
+  bitcoin_base: ^6.1.0
 
 dev_dependencies:
   flutter_test:

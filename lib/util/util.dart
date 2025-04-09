@@ -6,6 +6,8 @@ import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'addresses.dart';
+
 const databaseName = "my_rootstock_wallet.db";
 const RBTC_DECIMAL_PLACES = 1000000000000000000;
 const RBTC_DECIMAL_PLACES_COUNT = 18;
@@ -273,21 +275,22 @@ createTable() async {
 }
 
 String formatAddress(final String publicKey) {
-  var address = publicKey;
+  var address = toChecksumAddress(publicKey, ROOTSTOCK_TESTNET_ID);
+
   address = "${address.substring(0, 8)}...${address.substring(
       address.length - 8, address.length)}";
   return address;
 }
 
 String formatAddressWithParameter(final String publicKey, final int param) {
-  var address = publicKey;
+  var address = toChecksumAddress(publicKey, ROOTSTOCK_TESTNET_ID);
   address = "${address.substring(0, param)}...${address.substring(
       address.length - param, address.length)}";
   return address;
 }
 
 String formatAddressMinimal(final String publicKey) {
-  var address = publicKey;
+  var address = toChecksumAddress(publicKey, ROOTSTOCK_TESTNET_ID);
   address = "${address.substring(0, 4)}...${address.substring(
       address.length - 4, address.length)}";
   return address;

@@ -4,16 +4,18 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
+import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 import 'package:provider/provider.dart';
+
 import '../../../entities/simple_user.dart';
 import '../../../services/wallet_service.dart';
 import '../../entities/wallet_entity.dart';
+import '../../util/addresses.dart';
+import '../../util/shimmer_loading.dart';
 import '../../util/util.dart';
 import '../../util/widget_shimmer.dart';
-import '../../util/shimmer_loading.dart';
 
 class ViewWalletDetailPage extends StatefulWidget {
   const ViewWalletDetailPage(
@@ -60,10 +62,13 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                 walletService.createWalletToDisplay(value).then((dto) =>
                 {
                   setState(() {
-                    walletDto = dto;
-                    balance = dto.valueInWeiFormatted;
-                    balanceInUsd = dto.valueInUsdFormatted;
-                    _isLoading = false;
+                    if(dto.valueInWeiFormatted != balance) {
+                      walletDto = dto;
+                      balance = dto.valueInWeiFormatted;
+                      balanceInUsd = dto.valueInUsdFormatted;
+                      _isLoading = false;
+
+                    }
                   })
                 }));
         loaded = true;
@@ -98,7 +103,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                     ),
                     onTap: () async {
                       await Clipboard.setData(ClipboardData(
-                          text: widget.wallet.publicKey.toString()));
+                          text: toChecksumAddress(widget.wallet.publicKey.toString(), ROOTSTOCK_TESTNET_ID)));
                       showMessage(copiedMessage, context);
                     },
                   )
@@ -152,6 +157,53 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                         )
                       : Container(
                           height: 32, width: 230, color: Colors.grey[200]),
+                  const SizedBox(
+                    width: 5,
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showSaldo = !_showSaldo;
+                      });
+                    },
+                    child: SvgPicture.asset(
+                        _showSaldo
+                            ? "assets/icons/eye-off-svgrepo-com.svg"
+                            : "assets/icons/eye-svgrepo-com.svg",
+                        semanticsLabel: "view",
+                        width: iconSize,
+                        color: orange()),
+                  ),
+                ],
+              ),
+            )),
+        ShimmerLoading(
+            isLoading: _isLoading,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  left: 10, top: 10, bottom: 10, right: 10),
+              child: Row(
+                children: [
+                  Image.asset(
+                    "assets/icons/btc.png",
+                    width: iconSize,
+                  ),
+                  _showSaldo
+                      ? Text.rich(
+                    TextSpan(
+                        text: balance,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          backgroundColor: orange(),
+                        )),
+                    textAlign: TextAlign.start,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                    ),
+                  )
+                      : Container(
+                      height: 32, width: 230, color: Colors.grey[200]),
                   const SizedBox(
                     width: 5,
                   ),

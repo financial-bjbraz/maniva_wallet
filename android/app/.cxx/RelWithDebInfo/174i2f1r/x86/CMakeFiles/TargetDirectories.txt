@@ -1,0 +1,2 @@
+/Users/abraz/projetos/myRootstockWallet/android/app/.cxx/RelWithDebInfo/174i2f1r/x86/CMakeFiles/edit_cache.dir
+/Users/abraz/projetos/myRootstockWallet/android/app/.cxx/RelWithDebInfo/174i2f1r/x86/CMakeFiles/rebuild_cache.dir

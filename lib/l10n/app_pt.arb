@@ -46,6 +46,8 @@
   "configureAccount": "Configurar conta",
   "profile": "Perfil",
   "help": "Ajuda",
-  "exit": "Sair"
+  "exit": "Sair",
+  "txSent": "Nova transação enviada",
+  "txReceived": "Nova transação recebida"
 
 }

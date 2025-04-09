@@ -1,22 +1,23 @@
 import 'dart:collection';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
-import 'package:my_rootstock_wallet/entities/transaction_type.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/outgoing_line.dart';
+import 'package:my_rootstock_wallet/util/transaction_type.dart';
+import 'package:provider/provider.dart';
+
+import '../../../entities/simple_user.dart';
+import '../../../entities/wallet_entity.dart';
 import '../../../services/create_transaction_service.dart';
 import '../../../services/wallet_service.dart';
-import '../../../entities/wallet_entity.dart';
-import '../../../entities/simple_user.dart';
 import '../../../util/shimmer_loading.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter/material.dart';
 import '../../../util/util.dart';
 import 'blank_line.dart';
 
 class TableTransactions extends StatefulWidget {
-  const TableTransactions(
-      {super.key, required this.wallet, required this.user});
+  const TableTransactions({super.key, required this.wallet, required this.user});
 
   final WalletEntity wallet;
   final SimpleUser user;
@@ -26,10 +27,8 @@ class TableTransactions extends StatefulWidget {
 }
 
 class _TableTransactions extends State<TableTransactions> {
-  late WalletServiceImpl walletService =
-      Provider.of<WalletServiceImpl>(context, listen: false);
-  late CreateTransactionServiceImpl createTransactionServiceImpl =
-      CreateTransactionServiceImpl();
+  late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context, listen: false);
+  late CreateTransactionServiceImpl createTransactionServiceImpl = CreateTransactionServiceImpl();
   var transactions = <TableRow>{};
   final Map<String, int> txHashMap = HashMap();
   bool _isLoading = true;
@@ -44,7 +43,7 @@ class _TableTransactions extends State<TableTransactions> {
     if (mounted) {
       await Future.delayed(const Duration(seconds: 5), () {
         createTransactionServiceImpl
-            .listTransactions(widget.wallet.walletId)
+            .listTransactionsOnDataBase(widget.wallet.walletId)
             .then((listTransactions) => {
                   setState(() {
                     if (listTransactions.isNotEmpty) {
@@ -52,14 +51,35 @@ class _TableTransactions extends State<TableTransactions> {
                         if (!txHashMap.containsKey(item.transactionId)) {
                           transactions.add(generateItem(item));
                           txHashMap.addAll({item.transactionId: item.type});
+                          displaySnackBar(item.type);
                         }
                       }
                     }
                     _isLoading = false;
                   })
-                });
+                })
+            .then((_) => {});
       });
     }
+  }
+
+  void displaySnackBar(int type) {
+    var message = "";
+    if (type == TransactionType.REGULAR_OUTGOING.type) {
+      message = AppLocalizations.of(context)!.txSent;
+    } else {
+      message = AppLocalizations.of(context)!.txReceived;
+    }
+    final snackBar = SnackBar(
+      content: Text(message),
+      action: SnackBarAction(
+        label: 'Ok',
+        onPressed: () {
+          setState(() {});
+        },
+      ),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   @override
@@ -87,8 +107,7 @@ class _TableTransactions extends State<TableTransactions> {
             child: Text.rich(
               TextSpan(
                   text: transactionsTitle,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, backgroundColor: pink())),
+                  style: TextStyle(fontWeight: FontWeight.bold, backgroundColor: pink())),
               textAlign: TextAlign.start,
               style: const TextStyle(
                 color: Colors.white,
