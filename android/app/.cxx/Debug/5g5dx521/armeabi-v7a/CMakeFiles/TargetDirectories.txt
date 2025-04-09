@@ -1,0 +1,2 @@
+/Users/abraz/projetos/myRootstockWallet/android/app/.cxx/Debug/5g5dx521/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/abraz/projetos/myRootstockWallet/android/app/.cxx/Debug/5g5dx521/armeabi-v7a/CMakeFiles/rebuild_cache.dir
