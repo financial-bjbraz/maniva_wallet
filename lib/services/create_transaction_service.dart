@@ -2,15 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../util/util.dart';
 
 abstract class CreateTransactionService {
   void createOrUpdateTransaction(SimpleTransaction transaction);
-  void listTransactions(String walletId);
+  void listTransactionsOnDataBase(String walletId);
 }
 
-class CreateTransactionServiceImpl extends ChangeNotifier
-    implements CreateTransactionService {
+class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTransactionService {
   @override
   void createOrUpdateTransaction(SimpleTransaction transaction) async {
     final db = await openDataBase();
@@ -23,7 +23,7 @@ class CreateTransactionServiceImpl extends ChangeNotifier
   }
 
   @override
-  Future<List<SimpleTransaction>> listTransactions(String walletId) async {
+  Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId) async {
     WidgetsFlutterBinding.ensureInitialized();
     final database = openDatabase(
       join(await getDatabasesPath(), databaseName),
@@ -33,8 +33,8 @@ class CreateTransactionServiceImpl extends ChangeNotifier
     final db = await database;
 
     // Query the table for all the dogs.
-    final List<Map<String, Object?>> walletMaps = await db
-        .query('transactions', where: 'walletId = ? ', whereArgs: [walletId]);
+    final List<Map<String, Object?>> walletMaps =
+        await db.query('transactions', where: 'walletId = ? ', whereArgs: [walletId]);
     if (walletMaps.isNotEmpty) {
       var list = [
         for (final {
@@ -49,17 +49,16 @@ class CreateTransactionServiceImpl extends ChangeNotifier
               'destination': destination as String?,
             } in walletMaps)
           SimpleTransaction(
-              status: status ?? "",
-              transactionId: transactionId,
-              amountInWeis: amountInWeis,
-              date: date,
-              walletId: walletId,
-              valueInUsdFormatted: valueInUsdFormatted,
-              valueInWeiFormatted: valueInWeiFormatted,
-              type: type,
-              destination: destination,
+            status: status ?? "",
+            transactionId: transactionId,
+            amountInWeis: amountInWeis,
+            date: date,
+            walletId: walletId,
+            valueInUsdFormatted: valueInUsdFormatted,
+            valueInWeiFormatted: valueInWeiFormatted,
+            type: type,
+            destination: destination,
           ),
-
       ];
       return list;
     }
