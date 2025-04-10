@@ -78,7 +78,7 @@ void main() {
   print(generatePublicKey(privateKey));
   // print(generatePublicKey(wif));
   var addressGenerated =
-      BitcoinWallet.generateCompressedAddress(privateKey, Network.TESTNET.networkByte);
+      BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
   print(addressGenerated);
 }
 

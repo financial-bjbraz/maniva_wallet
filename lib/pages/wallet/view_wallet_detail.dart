@@ -12,14 +12,13 @@ import 'package:provider/provider.dart';
 import '../../../entities/simple_user.dart';
 import '../../../services/wallet_service.dart';
 import '../../entities/wallet_entity.dart';
-import '../../util/addresses.dart';
+import '../../util/network.dart';
 import '../../util/shimmer_loading.dart';
 import '../../util/util.dart';
 import '../../util/widget_shimmer.dart';
 
 class ViewWalletDetailPage extends StatefulWidget {
-  const ViewWalletDetailPage(
-      {super.key, required this.wallet, required this.user});
+  const ViewWalletDetailPage({super.key, required this.wallet, required this.user});
 
   final WalletEntity wallet;
   final SimpleUser user;
@@ -30,20 +29,32 @@ class ViewWalletDetailPage extends StatefulWidget {
 
 class _ViewWalletApp extends State<ViewWalletDetailPage> {
   late WalletDTO walletDto;
-  late WalletServiceImpl walletService =
-      Provider.of<WalletServiceImpl>(context, listen: false);
+  late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context, listen: false);
   bool _showSaldo = true;
   bool _isLoading = true;
   final double iconSize = 48;
   late String balance = "0";
   late String balanceInUsd = "0";
-  late String address = formatAddressWithParameter(widget.wallet.publicKey, 11);
+  late String currentAddress =
+      Network.generateFormattedAddress(Network.ROOTSTOCK_TESTNET, widget.wallet);
+  late Network selectedNetwork = Network.ROOTSTOCK_TESTNET;
+
   int operation = 0;
   bool loaded = false;
   bool receiveScreenOpened = false;
 
   TextEditingController addressController = TextEditingController();
   TextEditingController amountController = TextEditingController();
+
+  Image rootstockSelected = Image.asset(
+    "assets/icons/rbtc2.png",
+    width: 48,
+  );
+  Image bitcoinSelected = Image.asset(
+    "assets/icons/btc.png",
+    width: 48,
+    color: Colors.grey,
+  );
 
   _ViewWalletApp();
 
@@ -54,20 +65,18 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   loadWalletData() async {
-    if(mounted) {
+    if (mounted) {
       int seconds = loaded ? 30 : 3;
       await Future.delayed(Duration(seconds: seconds), () {
-        walletService.convert(widget.wallet).then(
-                (value) =>
-                walletService.createWalletToDisplay(value).then((dto) =>
-                {
+        walletService
+            .convert(widget.wallet)
+            .then((value) => walletService.createWalletToDisplay(value).then((dto) => {
                   setState(() {
-                    if(dto.valueInWeiFormatted != balance) {
+                    if (dto.valueInWeiFormatted != balance) {
                       walletDto = dto;
                       balance = dto.valueInWeiFormatted;
                       balanceInUsd = dto.valueInUsdFormatted;
                       _isLoading = false;
-
                     }
                   })
                 }));
@@ -77,8 +86,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   Widget _buildFirstLine() {
-    final String copiedMessage = AppLocalizations.of(context)!.copiedMessage;
-
     return ShimmerLoading(
       isLoading: _isLoading,
       child: Padding(
@@ -93,7 +100,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
             _showSaldo
                 ? GestureDetector(
                     child: Text.rich(
-                      addressText(address),
+                      addressText(currentAddress),
                       textAlign: TextAlign.start,
                       style: TextStyle(
                         color: Colors.white,
@@ -103,8 +110,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                     ),
                     onTap: () async {
                       await Clipboard.setData(ClipboardData(
-                          text: toChecksumAddress(widget.wallet.publicKey.toString(), ROOTSTOCK_TESTNET_ID)));
-                      showMessage(copiedMessage, context);
+                          text: Network.generateAddress(selectedNetwork, widget.wallet)));
+                      showMessage(AppLocalizations.of(context)!.copiedMessage, context);
                     },
                   )
                 : Container(height: 32, width: 230, color: Colors.grey[200]),
@@ -117,14 +124,57 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
     );
   }
 
+  Widget _buildSegmentButton() {
+    return SegmentedButton<Network>(
+      showSelectedIcon: false,
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.resolveWith<Color>(
+          (Set<MaterialState> states) {
+            if (states.contains(MaterialState.selected)) {
+              return Colors.white;
+            }
+            return Colors.grey;
+          },
+        ),
+      ),
+      segments: <ButtonSegment<Network>>[
+        ButtonSegment<Network>(
+          value: Network.ROOTSTOCK_TESTNET,
+          label: const Text('Rootstock'),
+          icon: rootstockSelected,
+        ),
+        ButtonSegment<Network>(
+          value: Network.BITCOIN_TESTNET,
+          label: const Text('Bitcoin'),
+          icon: bitcoinSelected,
+        ),
+      ],
+      selected: <Network>{selectedNetwork},
+      onSelectionChanged: (Set<Network> newSelection) {
+        setState(() {
+          selectedNetwork = newSelection.first;
+
+          if (selectedNetwork == Network.ROOTSTOCK_TESTNET) {
+            rootstockSelected = Network.getIcon(Network.ROOTSTOCK_TESTNET);
+            bitcoinSelected = Network.getIconGrey(Network.BITCOIN_TESTNET);
+          } else {
+            rootstockSelected = Network.getIconGrey(Network.ROOTSTOCK_TESTNET);
+            bitcoinSelected = Network.getIcon(Network.BITCOIN_TESTNET);
+          }
+
+          currentAddress = Network.generateFormattedAddress(selectedNetwork, widget.wallet);
+        });
+      },
+    );
+  }
+
   Widget _createMainScreen() {
     return Column(
       children: [
         ShimmerLoading(
           isLoading: _isLoading,
           child: const Padding(
-            padding:
-                EdgeInsets.only(left: 10, top: 5, bottom: 5, right: 10),
+            padding: EdgeInsets.only(left: 10, top: 5, bottom: 5, right: 10),
             child: Row(
               children: [],
             ),
@@ -133,8 +183,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         ShimmerLoading(
             isLoading: _isLoading,
             child: Padding(
-              padding: const EdgeInsets.only(
-                  left: 10, top: 10, bottom: 10, right: 10),
+              padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
               child: Row(
                 children: [
                   Image.asset(
@@ -155,8 +204,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                             fontSize: 28,
                           ),
                         )
-                      : Container(
-                          height: 32, width: 230, color: Colors.grey[200]),
+                      : Container(height: 32, width: 230, color: Colors.grey[200]),
                   const SizedBox(
                     width: 5,
                   ),
@@ -180,8 +228,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         ShimmerLoading(
             isLoading: _isLoading,
             child: Padding(
-              padding: const EdgeInsets.only(
-                  left: 10, top: 10, bottom: 10, right: 10),
+              padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
               child: Row(
                 children: [
                   Image.asset(
@@ -190,20 +237,19 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   ),
                   _showSaldo
                       ? Text.rich(
-                    TextSpan(
-                        text: balance,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          backgroundColor: orange(),
-                        )),
-                    textAlign: TextAlign.start,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                    ),
-                  )
-                      : Container(
-                      height: 32, width: 230, color: Colors.grey[200]),
+                          TextSpan(
+                              text: balance,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                backgroundColor: orange(),
+                              )),
+                          textAlign: TextAlign.start,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                          ),
+                        )
+                      : Container(height: 32, width: 230, color: Colors.grey[200]),
                   const SizedBox(
                     width: 5,
                   ),
@@ -227,8 +273,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         ShimmerLoading(
           isLoading: _isLoading,
           child: Padding(
-            padding:
-                const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
+            padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
             child: Row(
               children: [
                 Icon(
@@ -242,16 +287,14 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                             text: balanceInUsd,
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                backgroundColor:
-                                    Color.fromRGBO(121, 198, 0, 1))),
+                                backgroundColor: Color.fromRGBO(121, 198, 0, 1))),
                         textAlign: TextAlign.start,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
                         ),
                       )
-                    : Container(
-                        height: 32, width: 230, color: Colors.grey[200]),
+                    : Container(height: 32, width: 230, color: Colors.grey[200]),
               ],
             ),
           ),
@@ -271,27 +314,23 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
     return ShimmerLoading(
       isLoading: _isLoading,
       child: Padding(
-        padding:
-            const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
+        padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton(
               style: blackWhiteButton,
               onPressed: () {
-                final Send sendScreenChild =
-                    Send(user: widget.user, walletDto: walletDto);
+                final Send sendScreenChild = Send(user: widget.user, walletDto: walletDto);
 
                 Navigator.of(context).push(PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       DetailList(child: sendScreenChild),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
                     var begin = const Offset(0.0, 1.0);
                     var end = Offset.zero;
                     var curve = Curves.ease;
-                    var tween = Tween(begin: begin, end: end)
-                        .chain(CurveTween(curve: curve));
+                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
                     return SlideTransition(
                       position: animation.drive(tween),
@@ -385,6 +424,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
           child: ListView(
             physics: _isLoading ? const NeverScrollableScrollPhysics() : null,
             children: [
+              _buildSegmentButton(),
+              const SizedBox(height: 16),
               _buildFirstLine(),
               const SizedBox(height: 16),
               _createMainScreen(),
