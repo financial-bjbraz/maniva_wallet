@@ -1,16 +1,16 @@
 import "dart:convert";
 import "dart:typed_data";
+
 import "package:convert/convert.dart" show hex;
 import 'package:pointycastle/digests/keccak.dart';
 import "package:pointycastle/ecc/curves/secp256k1.dart";
 import 'package:pointycastle/pointycastle.dart';
+
 const HEX_PREFIX = '0x';
-const ROOTSTOCK_NETWORK_ID = 30;
 const ETHEREUM_NETWORK_ID = 1;
 const POLYGON_NETWORK_ID = 137;
 const ETHEREUM_TESTNET_ID = 3;
 const POLYGON_TESTNET_ID = 80001;
-const ROOTSTOCK_TESTNET_ID = 31;
 const POLYGON_MUMBAI_TESTNET_ID = 80001;
 const POLYGON_ZKEVM_TESTNET_ID = 1442;
 const POLYGON_ZKEVM_MAINNET_ID = 1101;
