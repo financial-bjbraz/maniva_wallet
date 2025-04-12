@@ -1,12 +1,13 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:my_rootstock_wallet/pages/wallet/my_dots_app.dart';
-import 'package:my_rootstock_wallet/pages/wallet/central_widgets_content.dart';
-import 'package:my_rootstock_wallet/util/util.dart';
-import '../entities/wallet_entity.dart';
 import 'package:flutter/material.dart';
-import '../entities/simple_user.dart';
-import 'menu/my_app_bar.dart';
+import 'package:my_rootstock_wallet/pages/wallet/central_widgets_content.dart';
+import 'package:my_rootstock_wallet/pages/wallet/my_dots_app.dart';
+import 'package:my_rootstock_wallet/util/util.dart';
+
+import '../entities/user_helper.dart';
+import '../entities/wallet_helper.dart';
 import 'menu/menu_app.dart';
+import 'menu/my_app_bar.dart';
 
 class HomePage extends StatefulWidget {
   final SimpleUser user;
@@ -36,10 +37,10 @@ class _HomePageState extends State<HomePage> {
 
   loadWallets() async {
     try {
-        setState(() {
-          _walletQuantity = widget.wallets.length;
-        });
-    }catch(e) {
+      setState(() {
+        _walletQuantity = widget.wallets.length;
+      });
+    } catch (e) {
       // print('error occurred $e');
     }
   }
@@ -54,7 +55,6 @@ class _HomePageState extends State<HomePage> {
     }
     return Scaffold(
       backgroundColor: Colors.black,
-
       body: Stack(
         alignment: Alignment.topCenter,
         children: <Widget>[
@@ -64,8 +64,7 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               setState(() {
                 _showMenu = !_showMenu;
-                _yPosition =
-                    _showMenu ? heightScreen * .42 : heightScreen * .22;
+                _yPosition = _showMenu ? heightScreen * .42 : heightScreen * .22;
               });
             },
           ),
@@ -73,7 +72,6 @@ class _HomePageState extends State<HomePage> {
             top: heightScreen * .205,
             showMenu: _showMenu,
           ),
-
           CentralWidgetsContent(
             user: widget.user,
             showMenu: _showMenu,
@@ -93,19 +91,14 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 _yPosition += details.delta.dy;
 
-                _yPosition = _yPosition < positionTopLimit
-                    ? positionTopLimit
-                    : _yPosition;
+                _yPosition = _yPosition < positionTopLimit ? positionTopLimit : _yPosition;
 
-                _yPosition = _yPosition > positionBottonLimit
-                    ? positionBottonLimit
-                    : _yPosition;
+                _yPosition = _yPosition > positionBottonLimit ? positionBottonLimit : _yPosition;
 
                 if (_yPosition != positionBottonLimit && details.delta.dy > 0) {
-                  _yPosition =
-                      _yPosition > positionTopLimit + middlePosition - 50
-                          ? positionBottonLimit
-                          : _yPosition;
+                  _yPosition = _yPosition > positionTopLimit + middlePosition - 50
+                      ? positionBottonLimit
+                      : _yPosition;
                 }
 
                 if (_yPosition != positionTopLimit && details.delta.dy < 0) {
@@ -121,9 +114,7 @@ class _HomePageState extends State<HomePage> {
                 }
               });
             },
-
           ),
-
           MyDotsApp(
             showMenu: _showMenu,
             top: heightScreen * .90,
@@ -132,56 +123,59 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      bottomNavigationBar: CurvedNavigationBar(
+          color: orange()!,
+          backgroundColor: Colors.black,
+          buttonBackgroundColor: orange(),
+          items: [
+            GestureDetector(
+              child: const Icon(Icons.home, color: Colors.white),
+              onTap: () => {
+                Navigator.of(context).push(PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      HomePage(user: widget.user, wallets: widget.wallets),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    var begin = const Offset(0.0, 1.0);
+                    var end = Offset.zero;
+                    var curve = Curves.ease;
 
-      bottomNavigationBar:
-      CurvedNavigationBar(color: orange()!, backgroundColor: Colors.black, buttonBackgroundColor: orange(), items: [
-        GestureDetector(
-            child: const Icon(Icons.home, color: Colors.white),
-            onTap: () => {
-              Navigator.of(context).push(PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => HomePage(user: widget.user, wallets: widget.wallets),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                  var begin = const Offset(0.0, 1.0);
-                  var end = Offset.zero;
-                  var curve = Curves.ease;
+                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
-                  var tween = Tween(begin: begin, end: end)
-                      .chain(CurveTween(curve: curve));
-
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-              ))
-            },
-        ),
-        _walletQuantity > 0 ? GestureDetector(
-          child: const Icon(Icons.call_made, color: Colors.white),
-          onTap: () => {
-            Navigator.of(context).push(PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => HomePage(user: widget.user, wallets: widget.wallets),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                var begin = const Offset(0.0, 1.0);
-                var end = Offset.zero;
-                var curve = Curves.ease;
-
-                var tween = Tween(begin: begin, end: end)
-                    .chain(CurveTween(curve: curve));
-
-                return SlideTransition(
-                  position: animation.drive(tween),
-                  child: child,
-                );
+                    return SlideTransition(
+                      position: animation.drive(tween),
+                      child: child,
+                    );
+                  },
+                ))
               },
-            ))
-          },
-        ) : const SizedBox(),
+            ),
+            _walletQuantity > 0
+                ? GestureDetector(
+                    child: const Icon(Icons.call_made, color: Colors.white),
+                    onTap: () => {
+                      Navigator.of(context).push(PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            HomePage(user: widget.user, wallets: widget.wallets),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          var begin = const Offset(0.0, 1.0);
+                          var end = Offset.zero;
+                          var curve = Curves.ease;
 
-        _walletQuantity > 0 ? const Icon(Icons.call_received, color: Colors.white) : const SizedBox(),
-      ]),
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                          return SlideTransition(
+                            position: animation.drive(tween),
+                            child: child,
+                          );
+                        },
+                      ))
+                    },
+                  )
+                : const SizedBox(),
+            _walletQuantity > 0
+                ? const Icon(Icons.call_received, color: Colors.white)
+                : const SizedBox(),
+          ]),
     );
   }
 }

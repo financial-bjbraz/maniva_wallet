@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import '../../entities/simple_user.dart';
-import '../../entities/wallet_entity.dart';
+
+import '../../entities/user_helper.dart';
+import '../../entities/wallet_helper.dart';
 import '../../pages/home_page.dart';
 import '../../services/wallet_service.dart';
 import '../../util/util.dart';
@@ -16,10 +17,8 @@ class ImportNewWalletByPrivateKeyDetail extends StatefulWidget {
   _ImportNewWalletByPKDetail createState() => _ImportNewWalletByPKDetail();
 }
 
-class _ImportNewWalletByPKDetail
-    extends State<ImportNewWalletByPrivateKeyDetail> {
-  late WalletServiceImpl walletService =
-      Provider.of<WalletServiceImpl>(context, listen: false);
+class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail> {
+  late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context, listen: false);
   bool inputSeedEnabled = true;
 
   _ImportNewWalletByPKDetail();
@@ -65,8 +64,7 @@ class _ImportNewWalletByPKDetail
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 20, top: 20, bottom: 20),
+                            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20),
                             child: SizedBox(
                               width: double.infinity,
                               child: Column(
@@ -91,18 +89,14 @@ class _ImportNewWalletByPKDetail
                                     controller: mailController,
                                     enabled: inputSeedEnabled,
                                     decoration: InputDecoration(
-                                        labelText:
-                                            "Type or Paste your PrivateKey",
+                                        labelText: "Type or Paste your PrivateKey",
                                         border: const OutlineInputBorder(
-                                            borderSide: BorderSide(
-                                                width: 5,
-                                                color: Colors.white)),
+                                            borderSide: BorderSide(width: 5, color: Colors.white)),
                                         suffixIcon: IconButton(
                                           icon: const Icon(Icons.done),
                                           splashColor: Colors.white,
                                           onPressed: () {
-                                            FocusScope.of(context)
-                                                .requestFocus(FocusNode());
+                                            FocusScope.of(context).requestFocus(FocusNode());
                                           },
                                         )),
                                   ),
@@ -114,42 +108,36 @@ class _ImportNewWalletByPKDetail
                                       var privateKey = mailController.text;
 
                                       if (privateKey.isEmpty) {
-                                        showMessage(
-                                            "Invalid privateKey", context);
+                                        showMessage("Invalid privateKey", context);
                                       } else {
-                                        var publicKey = await walletService
-                                            .getPublicKeyString(privateKey);
+                                        var publicKey =
+                                            await walletService.getPublicKeyString(privateKey);
                                         var walletId = await getIndex();
                                         WalletEntity wallet = WalletEntity(
-                                            BigInt.zero.toDouble(),
-                                            privateKey: privateKey,
-                                            publicKey: publicKey,
-                                            walletId: walletId,
-                                            walletName: "Wallet #",
-                                            ownerEmail: widget.user.email,
+                                          BigInt.zero.toDouble(),
+                                          privateKey: privateKey,
+                                          publicKey: publicKey,
+                                          walletId: walletId,
+                                          walletName: "Wallet #",
+                                          ownerEmail: widget.user.email,
                                         );
 
-                                        walletService
-                                            .persistNewWallet(wallet);
+                                        walletService.persistNewWallet(wallet);
                                         showMessage(
-                                            "Account ${wallet.walletName} Created",
-                                            context);
+                                            "Account ${wallet.walletName} Created", context);
                                         final user = SimpleUser(
-                                            name: AppLocalizations.of(
-                                                context)!
-                                                .anonimus,
+                                            name: AppLocalizations.of(context)!.anonimus,
                                             email:
-                                            "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
+                                                "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
                                             password: "");
-                                        final List<WalletEntity> wallets = await walletService.getWallets(user.email);
+                                        final List<WalletEntity> wallets =
+                                            await walletService.getWallets(user.email);
 
-                                        Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                                builder:
-                                                    (context) => HomePage(
-                                                          wallets: wallets,
-                                                          user: user,
-                                                        )));
+                                        Navigator.of(context).pushReplacement(MaterialPageRoute(
+                                            builder: (context) => HomePage(
+                                                  wallets: wallets,
+                                                  user: user,
+                                                )));
                                       }
                                     },
                                     style: raisedButtonStyle,
@@ -188,19 +176,12 @@ class _ImportNewWalletByPKDetail
                         borderRadius: BorderRadius.circular(5),
                         child: Container(
                           width: 7,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             children: <Widget>[
-                              Expanded(
-                                  flex: 1,
-                                  child: Container(color: Colors.orange)),
-                              Expanded(
-                                  flex: 2,
-                                  child: Container(color: Colors.blue)),
-                              Expanded(
-                                  flex: 3,
-                                  child: Container(color: Colors.green)),
+                              Expanded(flex: 1, child: Container(color: Colors.orange)),
+                              Expanded(flex: 2, child: Container(color: Colors.blue)),
+                              Expanded(flex: 3, child: Container(color: Colors.green)),
                             ],
                           ),
                         ),

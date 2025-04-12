@@ -1,11 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import '../../../entities/simple_user.dart';
-import '../../../services/wallet_service.dart';
-import 'dart:convert';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+
+import '../../../entities/user_helper.dart';
+import '../../../services/wallet_service.dart';
 import '../../../util/util.dart';
 
 class Receive extends StatefulWidget {
@@ -67,10 +69,7 @@ class _Receive extends State<Receive> {
               decoration: const BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.all(Radius.circular(15)),
-                  boxShadow: [
-                    BoxShadow(
-                        blurRadius: 10, color: Colors.black, spreadRadius: 5)
-                  ]),
+                  boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black, spreadRadius: 5)]),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -227,8 +226,7 @@ class _CopyButton extends State<CopyButton> {
         ? ElevatedButton(
             style: blackWhiteButton,
             onPressed: () async {
-              await Clipboard.setData(
-                  ClipboardData(text: widget.completeAddress));
+              await Clipboard.setData(ClipboardData(text: widget.completeAddress));
 
               setState(() {
                 checkingFlight = true;

@@ -7,11 +7,10 @@ import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
-import 'package:provider/provider.dart';
 
-import '../../../entities/simple_user.dart';
 import '../../../services/wallet_service.dart';
-import '../../entities/wallet_entity.dart';
+import '../../entities/user_helper.dart';
+import '../../entities/wallet_helper.dart';
 import '../../util/network.dart';
 import '../../util/shimmer_loading.dart';
 import '../../util/util.dart';
@@ -29,7 +28,7 @@ class ViewWalletDetailPage extends StatefulWidget {
 
 class _ViewWalletApp extends State<ViewWalletDetailPage> {
   late WalletDTO walletDto;
-  late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context, listen: false);
+  late WalletServiceImpl walletService = WalletServiceImpl();
   bool _showSaldo = true;
   bool _isLoading = true;
   final double iconSize = 48;
@@ -58,15 +57,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   _ViewWalletApp();
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    loadWalletData();
-  }
-
   loadWalletData() async {
     if (mounted) {
-      int seconds = loaded ? 30 : 3;
+      int seconds = loaded ? 30 : 4;
       await Future.delayed(Duration(seconds: seconds), () {
         walletService
             .convert(widget.wallet)

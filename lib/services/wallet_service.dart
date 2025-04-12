@@ -12,12 +12,10 @@ import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/util/coingeck_resopnse.dart';
 import 'package:my_rootstock_wallet/util/transaction_type.dart';
 import 'package:my_rootstock_wallet/util/wei.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:web3dart/web3dart.dart' as web3;
 
-import '../entities/simple_transaction.dart';
-import '../entities/wallet_entity.dart';
+import '../entities/transaction_helper.dart';
+import '../entities/wallet_helper.dart';
 import '../util/util.dart';
 import 'create_transaction_service.dart';
 
@@ -65,62 +63,20 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
   Future<List<WalletEntity>> getWallets(final String ownerEmail) async {
     WidgetsFlutterBinding.ensureInitialized();
-    // Open the database and store the reference.
-    final database = openDatabase(
-      // Set the path to the database. Note: Using the `join` function from the
-      // `path` package is best practice to ensure the path is correctly
-      // constructed for each platform.
-      join(await getDatabasesPath(), databaseName),
-    );
-    // Get a reference to the database.
-    final db = await database;
-
-    // Query the table for all the wallets.
-    final List<Map<String, Object?>> walletMaps =
-        await db.query('wallets', where: 'ownerEmail = ?', whereArgs: [ownerEmail]);
-
-    // Convert the list of each fields into a list of `Wallet` objects.
-    if (walletMaps.isNotEmpty) {
-      return [
-        for (final {
-              'privateKey': privateKey as String,
-              'walletName': walletName as String,
-              'walletId': walletId as String,
-              'publicKey': publicKey as String,
-              'ownerEmail': ownerEmail as String,
-              'amount': amountValue as double,
-            } in walletMaps)
-          WalletEntity(
-            amountValue,
-            privateKey: privateKey,
-            publicKey: publicKey,
-            walletId: walletId,
-            walletName: walletName,
-            ownerEmail: ownerEmail,
-          ),
-      ];
-    }
-
-    return [];
+    WalletHelper walletHelper = WalletHelper();
+    return walletHelper.fetchItems(ownerEmail);
   }
 
   void persistNewWallet(WalletEntity wallet) async {
-    final database = openDatabase(
-      // Set the path to the database. Note: Using the `join` function from the
-      // `path` package is best practice to ensure the path is correctly
-      // constructed for each platform.
-      join(await getDatabasesPath(), databaseName),
-    );
-    // Get a reference to the database.
-    final db = await database;
+    WalletHelper helper = WalletHelper();
+    var inserted = await helper.insertItem(wallet);
 
-    await db.insert(
-      'wallets',
-      wallet.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    db.close();
+    if (inserted > 0) {
+      log.info("Wallet persisted successfully");
+    } else {
+      log.warning("Failed to persist wallet");
+      throw Exception("Failed to persist wallet");
+    }
   }
 
   void delete(WalletEntity wallet) async {
