@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:my_rootstock_wallet/pages/wallet/create_import/create_wallet_app.dart';
-import 'package:my_rootstock_wallet/entities/simple_user.dart';
 import 'package:provider/provider.dart';
-import 'create_import/import_seed_pk_app.dart';
-import 'view_wallet_detail.dart';
-import '../../entities/wallet_entity.dart';
+
+import '../../entities/user_helper.dart';
+import '../../entities/wallet_helper.dart';
 import '../../services/wallet_service.dart';
 import '../../wallets/create_import/create_wallet_detail.dart';
 import '../../wallets/create_import/import_wallet_pk_detail.dart';
 import '../../wallets/create_import/import_wallet_seed_detail.dart';
+import 'create_import/import_seed_pk_app.dart';
+import 'view_wallet_detail.dart';
 
 class CentralWidgetsContent extends StatefulWidget {
   final double top;
@@ -32,8 +33,7 @@ class CentralWidgetsContent extends StatefulWidget {
 }
 
 class _PageViewAppState extends State<CentralWidgetsContent> {
-  late WalletServiceImpl walletService =
-      Provider.of<WalletServiceImpl>(context);
+  late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context);
   late Tween<double> _tween;
   var widgets = <Widget>{};
   bool isExpanded = false;

@@ -4,7 +4,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../entities/simple_user.dart';
+
+import '../../entities/user_helper.dart';
 import '../../services/wallet_service.dart';
 import '../../util/util.dart';
 
@@ -51,8 +52,7 @@ class _AccountSendBackup extends State<AccountSendBackup> {
     if (address.isEmpty) {
       address = widget.walletDto.getAddress();
     }
-    final String sendTransaction =
-        AppLocalizations.of(context)!.sendTransaction;
+    final String sendTransaction = AppLocalizations.of(context)!.sendTransaction;
 
     return Scaffold(
         backgroundColor: Colors.white,
@@ -90,8 +90,8 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                       child: Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 10, top: 10, bottom: 10, right: 10),
+                            padding:
+                                const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
                             child: Row(
                               children: [
                                 Icon(
@@ -100,10 +100,9 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                   size: 48,
                                 ),
                                 TextField(
-                                  style:  const TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
-                                    backgroundColor:
-                                    Color.fromRGBO(7, 255, 208, 1),
+                                    backgroundColor: Color.fromRGBO(7, 255, 208, 1),
                                     fontSize: 20,
                                   ),
                                   decoration: const InputDecoration(labelText: "Enter your number"),
@@ -112,20 +111,22 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                     FilteringTextInputFormatter.digitsOnly
                                   ], // Only numbers can be entered
                                 ),
-
-                            Column(children: [
-                              Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: TextField(
-                                  style: const TextStyle(color: Colors.white),
-                                  cursorColor: Colors.white,
-                                  controller: addressController,
-                                  decoration: simmpleDecoration(AppLocalizations.of(context)!.emailField,  const Icon(Icons.person, color: Colors.white,)),
-                                ),
-                              ),]
-                            ),
-
-
+                                Column(children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: TextField(
+                                      style: const TextStyle(color: Colors.white),
+                                      cursorColor: Colors.white,
+                                      controller: addressController,
+                                      decoration: simmpleDecoration(
+                                          AppLocalizations.of(context)!.emailField,
+                                          const Icon(
+                                            Icons.person,
+                                            color: Colors.white,
+                                          )),
+                                    ),
+                                  ),
+                                ]),
                                 TextField(
                                   controller: addressController,
                                   // decoration: InputDecoration(
@@ -147,18 +148,16 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                 GestureDetector(
                                   child: Icon(Icons.camera_alt_outlined, color: lightBlue()),
                                   onTap: () async {
-                                    await Clipboard.setData(
-                                        ClipboardData(text: address));
-                                    showMessage(
-                                        "Copied to the clipboard", context);
+                                    await Clipboard.setData(ClipboardData(text: address));
+                                    showMessage("Copied to the clipboard", context);
                                   },
                                 ),
                               ],
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 10, top: 10, bottom: 10, right: 10),
+                            padding:
+                                const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
                             child: Row(
                               children: [
                                 Image.asset(
@@ -166,18 +165,18 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                   width: 48,
                                 ),
                                 Text.rich(
-                                        TextSpan(
-                                            text: balance,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              backgroundColor: orange(),
-                                            )),
-                                        textAlign: TextAlign.start,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 28,
-                                        ),
-                                      ),
+                                  TextSpan(
+                                      text: balance,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        backgroundColor: orange(),
+                                      )),
+                                  textAlign: TextAlign.start,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                  ),
+                                ),
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -196,8 +195,8 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 10, top: 10, bottom: 10, right: 10),
+                            padding:
+                                const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
                             child: Row(
                               children: [
                                 const Icon(
@@ -206,18 +205,17 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                   size: 48,
                                 ),
                                 Text.rich(
-                                        TextSpan(
-                                            text: balanceInUsd,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                backgroundColor: Color.fromRGBO(
-                                                    121, 198, 0, 1))),
-                                        textAlign: TextAlign.start,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 28,
-                                        ),
-                                      ),
+                                  TextSpan(
+                                      text: balanceInUsd,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          backgroundColor: Color.fromRGBO(121, 198, 0, 1))),
+                                  textAlign: TextAlign.start,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -235,46 +233,44 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: <Widget>[
-                                  Expanded(child:
-                                  ElevatedButton(
-                                    style: blackWhiteButton,
-                                    onPressed: () async {
-                                      final Uri url = Uri.parse('https://flutter.dev');
-                                      if (!await launchUrl(url)) {
-                                        throw Exception('Could not launch $url');
-                                      }
-                                    },
-                                    child: const Row(
-                                      children: <Widget>[
-                                        Row(
-                                          children: <Widget>[
-                                            Icon(Icons.remove_circle, color: Colors.red),
-                                            SizedBox(
-                                              width: 10,
-                                            ),
-                                            Text(
-                                              "0xe6e495a493d67ae081cc473ca7db387f7adacb376ac8fb74f1fdb6501205fc3d",
-                                              style: smallBlackText,
-                                            ),
-                                            SizedBox(
-                                              width: 10,
-                                            ),
-                                            Icon(
-                                              Icons.open_in_new,
-                                              color: Colors.black,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: blackWhiteButton,
+                                      onPressed: () async {
+                                        final Uri url = Uri.parse('https://flutter.dev');
+                                        if (!await launchUrl(url)) {
+                                          throw Exception('Could not launch $url');
+                                        }
+                                      },
+                                      child: const Row(
+                                        children: <Widget>[
+                                          Row(
+                                            children: <Widget>[
+                                              Icon(Icons.remove_circle, color: Colors.red),
+                                              SizedBox(
+                                                width: 10,
+                                              ),
+                                              Text(
+                                                "0xe6e495a493d67ae081cc473ca7db387f7adacb376ac8fb74f1fdb6501205fc3d",
+                                                style: smallBlackText,
+                                              ),
+                                              SizedBox(
+                                                width: 10,
+                                              ),
+                                              Icon(
+                                                Icons.open_in_new,
+                                                color: Colors.black,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
                                   ),
                                 ],
                               )
                             ],
                           ),
-
-
                         ],
                       ),
                     ),
@@ -289,19 +285,12 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                         borderRadius: BorderRadius.circular(5),
                         child: Container(
                           width: 7,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             children: <Widget>[
-                              Expanded(
-                                  flex: 1,
-                                  child: Container(color: Colors.orange)),
-                              Expanded(
-                                  flex: 2,
-                                  child: Container(color: Colors.blue)),
-                              Expanded(
-                                  flex: 3,
-                                  child: Container(color: Colors.green)),
+                              Expanded(flex: 1, child: Container(color: Colors.orange)),
+                              Expanded(flex: 2, child: Container(color: Colors.blue)),
+                              Expanded(flex: 3, child: Container(color: Colors.green)),
                             ],
                           ),
                         ),

@@ -2,7 +2,8 @@ import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import '../../../entities/simple_user.dart';
+
+import '../../../entities/user_helper.dart';
 import '../../../services/wallet_service.dart';
 import '../../../util/decimal_input.dart';
 import '../../../util/util.dart';
@@ -40,7 +41,10 @@ class _Send extends State<Send> {
     color: Colors.black,
   );
 
-  Icon sucessIcon = const Icon(Icons.check,color: Colors.green,);
+  Icon sucessIcon = const Icon(
+    Icons.check,
+    color: Colors.green,
+  );
 
   @override
   void initState() {
@@ -82,8 +86,7 @@ class _Send extends State<Send> {
     balance = widget.walletDto.valueInWeiFormatted;
     balanceInUsd = widget.walletDto.valueInUsdFormatted;
 
-    final String sendTransaction =
-        AppLocalizations.of(context)!.sendTransaction;
+    final String sendTransaction = AppLocalizations.of(context)!.sendTransaction;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -125,8 +128,7 @@ class _Send extends State<Send> {
                     backgroundColor: Color.fromRGBO(7, 255, 208, 1),
                     fontSize: 20,
                   ),
-                  decoration:
-                      const InputDecoration(labelText: "Destination Address"),
+                  decoration: const InputDecoration(labelText: "Destination Address"),
                   keyboardType: TextInputType.text,
                   controller: destinationAddressController,
                 )),
@@ -189,8 +191,7 @@ class _Send extends State<Send> {
                     fontSize: 20,
                   ),
                   decoration: const InputDecoration(labelText: "Enter amount"),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
                     DecimalTextInputFormatter(decimalRange: RBTC_DECIMAL_PLACES_COUNT)
                   ],
@@ -295,49 +296,53 @@ class _Send extends State<Send> {
                                 setState(() {
                                   sendingTransaction = true;
                                 });
-                                await Future.delayed(
-                                    const Duration(seconds: 1));
+                                await Future.delayed(const Duration(seconds: 1));
                                 var sucesso = false;
-                                try{
+                                try {
                                   var pointedText = amountController.text;
-                                  pointedText =
-                                      pointedText.replaceAll(",", ".");
+                                  pointedText = pointedText.replaceAll(",", ".");
                                   var bp = Big(pointedText);
 
-                                  if(!destinationAddressController.text.trim().startsWith("0x")){
+                                  if (!destinationAddressController.text.trim().startsWith("0x")) {
                                     throw const FormatException("Invalid address");
                                   }
 
-                                  if(bp.toNumber() == 0){
+                                  if (bp.toNumber() == 0) {
                                     throw const FormatException("Invalid value");
                                   }
 
                                   var transactionPersist = await walletService.sendRBTC(
                                       widget.walletDto,
                                       destinationAddressController.text,
-                                      BigInt.parse(bp
-                                          .times(RBTC_DECIMAL_PLACES)
-                                          .toString()));
+                                      BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
                                   sucesso = transactionPersist.transactionSent!;
                                 } catch (e) {
                                   displaySnackBar(
                                       "Error sending transaction, review and try again");
                                   success = false;
-                                  sucessIcon = const Icon(Icons.dangerous_outlined, color: Colors.red,);
+                                  sucessIcon = const Icon(
+                                    Icons.dangerous_outlined,
+                                    color: Colors.red,
+                                  );
                                 }
 
                                 setState(() {
-                                    success = sucesso;
-                                    if(!success){
-                                      //displaySnackBar(
-                                      //   "Verify your balance, review and try again");
-                                      sucessIcon = const Icon(Icons.dangerous_outlined, color: Colors.red,);
-                                    }else{
-                                      sucessIcon = const Icon(Icons.check, color: Colors.green,);
-                                    }
+                                  success = sucesso;
+                                  if (!success) {
+                                    //displaySnackBar(
+                                    //   "Verify your balance, review and try again");
+                                    sucessIcon = const Icon(
+                                      Icons.dangerous_outlined,
+                                      color: Colors.red,
+                                    );
+                                  } else {
+                                    sucessIcon = const Icon(
+                                      Icons.check,
+                                      color: Colors.green,
+                                    );
+                                  }
                                 });
-                                await Future.delayed(
-                                    const Duration(milliseconds: 500));
+                                await Future.delayed(const Duration(milliseconds: 500));
                                 if (success) {
                                   Navigator.pop(context);
                                 }
@@ -345,7 +350,7 @@ class _Send extends State<Send> {
                                 setState(() {
                                   sendingTransaction = false;
                                 });
-                                },
+                              },
                               child: const Row(
                                 children: <Widget>[
                                   Row(

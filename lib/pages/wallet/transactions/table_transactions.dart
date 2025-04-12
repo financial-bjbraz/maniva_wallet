@@ -2,14 +2,14 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/outgoing_line.dart';
 import 'package:my_rootstock_wallet/util/transaction_type.dart';
 import 'package:provider/provider.dart';
 
-import '../../../entities/simple_user.dart';
-import '../../../entities/wallet_entity.dart';
+import '../../../entities/transaction_helper.dart';
+import '../../../entities/user_helper.dart';
+import '../../../entities/wallet_helper.dart';
 import '../../../services/create_transaction_service.dart';
 import '../../../services/wallet_service.dart';
 import '../../../util/shimmer_loading.dart';
