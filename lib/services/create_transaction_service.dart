@@ -1,9 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 
-import '../util/util.dart';
+import '../entities/transaction_helper.dart';
 
 abstract class CreateTransactionService {
   void createOrUpdateTransaction(SimpleTransaction transaction);
@@ -11,57 +8,20 @@ abstract class CreateTransactionService {
 }
 
 class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTransactionService {
-  @override
-  void createOrUpdateTransaction(SimpleTransaction transaction) async {
-    final db = await openDataBase();
+  TransactionHelper helper = TransactionHelper();
 
-    await db.insert(
-      'transactions',
-      transaction.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  @override
+  Future<int> createOrUpdateTransaction(SimpleTransaction transaction) async {
+    var inserted = await helper.insertItem(transaction);
+    helper.close();
+    return inserted;
   }
 
   @override
   Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId) async {
     WidgetsFlutterBinding.ensureInitialized();
-    final database = openDatabase(
-      join(await getDatabasesPath(), databaseName),
-    );
-
-    // Get a reference to the database.
-    final db = await database;
-
-    // Query the table for all the dogs.
-    final List<Map<String, Object?>> walletMaps =
-        await db.query('transactions', where: 'walletId = ? ', whereArgs: [walletId]);
-    if (walletMaps.isNotEmpty) {
-      var list = [
-        for (final {
-              'transactionId': transactionId as String,
-              'amountInWeis': amountInWeis as int,
-              'date': date as String,
-              'walletId': walletId as String,
-              'valueInUsdFormatted': valueInUsdFormatted as String,
-              'valueinWeiFormatted': valueInWeiFormatted as String,
-              'status': status as String?,
-              'type': type as int,
-              'destination': destination as String?,
-            } in walletMaps)
-          SimpleTransaction(
-            status: status ?? "",
-            transactionId: transactionId,
-            amountInWeis: amountInWeis,
-            date: date,
-            walletId: walletId,
-            valueInUsdFormatted: valueInUsdFormatted,
-            valueInWeiFormatted: valueInWeiFormatted,
-            type: type,
-            destination: destination,
-          ),
-      ];
-      return list;
-    }
-    return [];
+    var list = await helper.fetchItems(walletId);
+    helper.close();
+    return list;
   }
 }

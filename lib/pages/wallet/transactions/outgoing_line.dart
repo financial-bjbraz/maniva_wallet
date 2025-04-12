@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
-import '../../../entities/simple_user.dart';
+
+import '../../../entities/transaction_helper.dart';
+import '../../../entities/user_helper.dart';
 import '../../../util/util.dart';
 
 class OutgoingTransactionLine extends TableRow {
@@ -8,7 +9,7 @@ class OutgoingTransactionLine extends TableRow {
   const OutgoingTransactionLine(this.user);
 
   TableRow create(SimpleTransaction tx) {
-    return  TableRow(children: [
+    return TableRow(children: [
       const Icon(Icons.call_made_rounded, color: Colors.red),
       Text(
         tx.date,

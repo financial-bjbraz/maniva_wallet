@@ -4,11 +4,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/wallets/create_import/import_wallet_seed_detail.dart';
 import 'package:provider/provider.dart';
 import 'package:web3dart/web3dart.dart';
-import '../../entities/simple_user.dart';
+
+import '../../entities/user_helper.dart';
 import '../../pages/details/detail_list.dart';
 import '../../services/wallet_service.dart';
 import '../../util/util.dart';
-
 
 // seeed generation page, this component doesnt create a new wallet, just creates seed to be imported
 class CreateNewWalletDetail extends StatefulWidget {
@@ -81,14 +81,15 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
     sentToDetail() {
       processing = false;
       Navigator.of(context).push(PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            DetailList(child: ImportNewWalletBySeedDetail(user: widget.user,)),
+        pageBuilder: (context, animation, secondaryAnimation) => DetailList(
+            child: ImportNewWalletBySeedDetail(
+          user: widget.user,
+        )),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           var begin = const Offset(0.0, 1.0);
           var end = Offset.zero;
           var curve = Curves.ease;
-          var tween =
-              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
           return SlideTransition(
             position: animation.drive(tween),
@@ -135,8 +136,7 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 20, top: 20, bottom: 20),
+                            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -144,17 +144,19 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                 Padding(
                                   padding: createPaddingBetweenRows(),
                                   child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                     ],
                                   ),
                                 ),
@@ -162,17 +164,19 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                 Padding(
                                   padding: createPaddingBetweenRows(),
                                   child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                     ],
                                   ),
                                 ),
@@ -180,17 +184,19 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                 Padding(
                                   padding: createPaddingBetweenRows(),
                                   child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                     ],
                                   ),
                                 ),
@@ -198,17 +204,19 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                 Padding(
                                   padding: createPaddingBetweenRows(),
                                   child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                       const SizedBox(width: 5),
-                                      createTextFieldWithSeed(
-                                          splittedMnemonic.length > contador ? splittedMnemonic.elementAt(contador) : ""),
+                                      createTextFieldWithSeed(splittedMnemonic.length > contador
+                                          ? splittedMnemonic.elementAt(contador)
+                                          : ""),
                                     ],
                                   ),
                                 ),
@@ -217,24 +225,19 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                   child: !processing
                                       ? ElevatedButton(
                                           onPressed: () async {
-                                            await Clipboard.setData(
-                                                ClipboardData(
-                                                    text: splittedMnemonic
-                                                        .toString()
-                                                        .replaceAll("[", "")
-                                                        .replaceAll("]", "")));
-                                            showMessage(
-                                                "Copied to the clipboard",
-                                                context);
+                                            await Clipboard.setData(ClipboardData(
+                                                text: splittedMnemonic
+                                                    .toString()
+                                                    .replaceAll("[", "")
+                                                    .replaceAll("]", "")));
+                                            showMessage("Copied to the clipboard", context);
 
                                             setState(() {
                                               processing = true;
-                                              delay(context, 5)
-                                                  .whenComplete(() {
-                                                    processing = false;
-                                                    sentToDetail();
-                                                  });
-
+                                              delay(context, 5).whenComplete(() {
+                                                processing = false;
+                                                sentToDetail();
+                                              });
                                             });
                                           },
                                           style: raisedButtonStyle,
@@ -248,8 +251,7 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                                   ),
                                                   Text(
                                                     copy,
-                                                    style: const TextStyle(
-                                                        fontSize: 20),
+                                                    style: const TextStyle(fontSize: 20),
                                                   ),
                                                 ],
                                               ),
@@ -257,13 +259,9 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                           ),
                                         )
                                       : const Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                              CircularProgressIndicator()
-                                            ]),
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [CircularProgressIndicator()]),
                                 ),
                               ],
                             ),
@@ -313,19 +311,12 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                         borderRadius: BorderRadius.circular(5),
                         child: Container(
                           width: 7,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             children: <Widget>[
-                              Expanded(
-                                  flex: 1,
-                                  child: Container(color: Colors.orange)),
-                              Expanded(
-                                  flex: 2,
-                                  child: Container(color: Colors.blue)),
-                              Expanded(
-                                  flex: 3,
-                                  child: Container(color: Colors.green)),
+                              Expanded(flex: 1, child: Container(color: Colors.orange)),
+                              Expanded(flex: 2, child: Container(color: Colors.blue)),
+                              Expanded(flex: 3, child: Container(color: Colors.green)),
                             ],
                           ),
                         ),

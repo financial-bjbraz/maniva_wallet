@@ -3,7 +3,7 @@ import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
 import 'package:my_rootstock_wallet/wallets/create_import/create_wallet.dart';
 import 'package:my_rootstock_wallet/wallets/create_import/create_wallet_detail.dart';
 
-import '../../../entities/simple_user.dart';
+import '../../../entities/user_helper.dart';
 
 class CreateWalletApp extends StatelessWidget {
   final SimpleUser user;
@@ -14,7 +14,6 @@ class CreateWalletApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     Future<void> dialogBuilder(BuildContext context) {
       return showDialog<void>(
         context: context,
@@ -23,11 +22,11 @@ class CreateWalletApp extends StatelessWidget {
             title: const Text('Create new seed'),
             content: const Text(
               'You will create a new seed and from this seed a new private key and an account will be generated.\n'
-                  'Make sure you have privacy so that your seed and privateKey are not copied.\n'
-                  'Make sure you make a backup or you may lose access to your account.\n'
-                  'We are not responsible for lost seeds.\n'
-                  'Are you sure you want to create a new seed \n'
-                  'and that you are in a safe environment to do so?',
+              'Make sure you have privacy so that your seed and privateKey are not copied.\n'
+              'Make sure you make a backup or you may lose access to your account.\n'
+              'We are not responsible for lost seeds.\n'
+              'Are you sure you want to create a new seed \n'
+              'and that you are in a safe environment to do so?',
             ),
             actions: <Widget>[
               TextButton(
@@ -47,13 +46,13 @@ class CreateWalletApp extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).push(PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => DetailList(child: detailChild),
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        DetailList(child: detailChild),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       var begin = const Offset(0.0, 1.0);
                       var end = Offset.zero;
                       var curve = Curves.ease;
-                      var tween = Tween(begin: begin, end: end)
-                          .chain(CurveTween(curve: curve));
+                      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
                       return SlideTransition(
                         position: animation.drive(tween),
@@ -68,17 +67,20 @@ class CreateWalletApp extends StatelessWidget {
         },
       );
     }
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: GestureDetector(
         child: Container(
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20), color: Colors.black, border: Border.all(color: Colors.white)),
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.black,
+              border: Border.all(color: Colors.white)),
           child: createWalletBox,
         ),
         onTap: () {
           dialogBuilder(context);
-        //if
+          //if
         },
       ),
     );

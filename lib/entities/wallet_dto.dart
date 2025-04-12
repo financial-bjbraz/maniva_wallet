@@ -1,12 +1,11 @@
-import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
-import 'package:my_rootstock_wallet/entities/wallet_entity.dart';
+import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
+import 'package:my_rootstock_wallet/entities/wallet_helper.dart';
 import 'package:my_rootstock_wallet/util/wei.dart';
 import 'package:web3dart/web3dart.dart';
 
 import '../util/util.dart';
 
 class WalletDTO {
-
   late String? publicKey;
   final WalletEntity wallet;
   late double amountInUsd;
@@ -36,8 +35,7 @@ class WalletDTO {
     return wallet.publicKey;
   }
 
-  String getValueInUsd(){
+  String getValueInUsd() {
     return valueInUsdFormatted;
   }
-
 }

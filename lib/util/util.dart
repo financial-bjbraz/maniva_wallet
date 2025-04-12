@@ -1,15 +1,17 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 
+import '../entities/transaction_helper.dart';
+import '../entities/user_helper.dart';
+import '../entities/wallet_helper.dart';
 import 'addresses.dart';
 import 'network.dart';
 
-const databaseName = "my_rootstock_wallet.db";
+const DATA_BASE_NAME = "my_rootstock_wallet.db";
+const DATA_BASE_VERSION = 7;
+
 const RBTC_DECIMAL_PLACES = 1000000000000000000;
 const RBTC_DECIMAL_PLACES_COUNT = 18;
 
@@ -187,57 +189,14 @@ Future<int> getLastUsdPrice() async {
   return int.parse(valor ?? "0");
 }
 
-Future<Database> openDataBase() async {
-  if (kDebugMode) {
-    print("====================================================================");
-    print("==================== Opening database ==================");
-  }
+openDataBase() async {
+  final walletTable = WalletHelper();
+  final userHelper = UserHelper();
+  final transactionHelper = TransactionHelper();
 
-  var databasesPath = await getDatabasesPath();
-  String path = join(databasesPath, databaseName);
-  Database database =
-      await openDatabase(path, version: 3, onCreate: (Database db, int version) async {
-    await db.execute(
-      'CREATE TABLE wallets(privateKey TEXT PRIMARY KEY, walletName TEXT, walletId TEXT,publicKey TEXT, ownerEmail TEXT, amount REAL)',
-    );
-    if (kDebugMode) {
-      print("creating table users ");
-    }
-    await db.execute(
-      'CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)',
-    );
-    await db.execute(
-      'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER, destination TEXT)',
-    );
-    if (kDebugMode) {
-      print("created table users ");
-    }
-  });
-  try {
-    database.transaction((txn) async {
-      await txn.execute(
-          "CREATE TABLE wallets(privateKey TEXT PRIMARY KEY, walletName TEXT, walletId TEXT,publicKey TEXT, ownerEmail TEXT, amount REAL);");
-    });
-    database.transaction((txn) async {
-      await txn.execute(
-          "CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)");
-    });
-    database.transaction((txn) async {
-      await txn.execute(
-          'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis INTEGER, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT, type INTEGER, destination TEXT)');
-    });
-  } catch (e) {
-    if (kDebugMode) {
-      print("Error occurred");
-    }
-  }
-
-  if (kDebugMode) {
-    print("====================================================================");
-    print("==========Database opened  =============");
-  }
-
-  return database;
+  walletTable.close();
+  userHelper.close();
+  transactionHelper.close();
 }
 
 createTable() async {
