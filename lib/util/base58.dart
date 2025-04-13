@@ -1,5 +1,6 @@
 import "package:convert/convert.dart" show hex;
 import 'package:crypto/crypto.dart';
+import 'package:my_rootstock_wallet/util/util.dart';
 import 'package:pointycastle/export.dart';
 
 import 'bitcoin.dart';
@@ -80,6 +81,9 @@ void main() {
   var addressGenerated =
       BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
   print(addressGenerated);
+
+  String enc = encrypt(MAINNET);
+  print(decrypt(enc));
 }
 
 /*

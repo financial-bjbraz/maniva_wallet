@@ -7,6 +7,7 @@ class WalletHelper extends EntityHelper {
   static const walletName = 'walletName';
   static const walletId = 'walletId';
   static const publicKey = 'publicKey';
+  static const btcAddress = 'btcAddress';
   static const ownerEmail = 'ownerEmail';
   static const amount = 'amount';
 
@@ -25,6 +26,7 @@ class WalletHelper extends EntityHelper {
             $walletName TEXT, 
             $walletId TEXT,
             $publicKey TEXT, 
+            $btcAddress TEXT, 
             $ownerEmail TEXT, 
             $amount REAL
           )
@@ -58,6 +60,7 @@ class WalletHelper extends EntityHelper {
               'walletName': walletName as String,
               'walletId': walletId as String,
               'publicKey': publicKey as String,
+              'btcAddress': btcAddress as String,
               'ownerEmail': ownerEmail as String,
               'amount': amountValue as double,
             } in walletMaps)
@@ -65,6 +68,7 @@ class WalletHelper extends EntityHelper {
             amountValue,
             privateKey: privateKey,
             publicKey: publicKey,
+            btcAddress: btcAddress,
             walletId: walletId,
             walletName: walletName,
             ownerEmail: ownerEmail,
@@ -81,6 +85,7 @@ class WalletEntity {
   final String walletName;
   final String walletId;
   final String publicKey;
+  final String btcAddress;
   final String ownerEmail;
   double amount;
 
@@ -91,6 +96,7 @@ class WalletEntity {
     required this.walletId,
     required this.publicKey,
     required this.ownerEmail,
+    required this.btcAddress,
   });
 
   Map<String, Object?> toMap() {
@@ -99,6 +105,7 @@ class WalletEntity {
       'walletName': walletName,
       'walletId': walletId,
       'publicKey': publicKey,
+      'btcAddress': btcAddress,
       'ownerEmail': ownerEmail,
       'amount': amount,
     };
@@ -106,6 +113,6 @@ class WalletEntity {
 
   @override
   String toString() {
-    return 'WalletEntity{privateKey: $privateKey, walletName: $walletName, walletId: $walletId, publicKey: $publicKey ownerEmail: $ownerEmail} amount: $amount';
+    return 'WalletEntity{btcAddress: $btcAddress, walletName: $walletName, walletId: $walletId, publicKey: $publicKey ownerEmail: $ownerEmail} amount: $amount';
   }
 }

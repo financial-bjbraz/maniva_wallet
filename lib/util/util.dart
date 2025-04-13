@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../entities/transaction_helper.dart';
-import '../entities/user_helper.dart';
-import '../entities/wallet_helper.dart';
+import '../entities/entity_helper.dart';
 import 'addresses.dart';
 import 'network.dart';
 
@@ -190,17 +190,40 @@ Future<int> getLastUsdPrice() async {
 }
 
 openDataBase() async {
-  final walletTable = WalletHelper();
-  final userHelper = UserHelper();
-  final transactionHelper = TransactionHelper();
+  final entityHelper = EntityHelper();
+  entityHelper.close();
 
-  walletTable.close();
-  userHelper.close();
-  transactionHelper.close();
+  print("Teste de criptacao");
+  final plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
+  var encriptedText = encrypt(plainText);
+  print(encriptedText);
+  var decryptedText = decrypt(encriptedText);
+  print(decryptedText);
+}
+
+enc.Encrypter generateEncrypter() {
+  final key = enc.Key.fromUtf8(getPlainKey());
+  return enc.Encrypter(enc.AES(key));
+}
+
+String encrypt(String plainText) {
+  final encrypter = generateEncrypter();
+  final encrypted = encrypter.encrypt(plainText, iv: enc.IV.fromUtf8("baseutf8"));
+  return encrypted.base16;
+}
+
+String decrypt(String encryptedText) {
+  final encrypter = generateEncrypter();
+  return encrypter.decrypt16(encryptedText, iv: enc.IV.fromUtf8("baseutf8"));
 }
 
 createTable() async {
   openDataBase();
+}
+
+String getPlainKey() {
+  var plainKey = dotenv.env['PLAIN_KEY'];
+  return plainKey ?? "";
 }
 
 String formatAddress(final String publicKey) {

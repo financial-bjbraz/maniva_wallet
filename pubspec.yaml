@@ -61,6 +61,7 @@ dependencies:
   pointycastle: ^3.9.1
   dartsv: ^2.1.0
   bitcoin_base: ^6.1.0
+  encrypt: ^5.0.3
 
 dev_dependencies:
   flutter_test:

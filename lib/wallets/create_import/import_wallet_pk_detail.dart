@@ -112,11 +112,14 @@ class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail
                                       } else {
                                         var publicKey =
                                             await walletService.getPublicKeyString(privateKey);
+                                        var btcAdress =
+                                            walletService.getBtcAddressFromPrivateKey(privateKey);
                                         var walletId = await getIndex();
                                         WalletEntity wallet = WalletEntity(
                                           BigInt.zero.toDouble(),
                                           privateKey: privateKey,
                                           publicKey: publicKey,
+                                          btcAddress: btcAdress,
                                           walletId: walletId,
                                           walletName: "Wallet #",
                                           ownerEmail: widget.user.email,

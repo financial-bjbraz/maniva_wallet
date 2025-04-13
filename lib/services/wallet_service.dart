@@ -16,6 +16,8 @@ import 'package:web3dart/web3dart.dart' as web3;
 
 import '../entities/transaction_helper.dart';
 import '../entities/wallet_helper.dart';
+import '../util/bitcoin.dart';
+import '../util/network.dart';
 import '../util/util.dart';
 import 'create_transaction_service.dart';
 
@@ -232,5 +234,9 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         valueInWeiFormatted: '',
         type: TransactionType.NONE.type,
         destination: destinationAddress);
+  }
+
+  String getBtcAddressFromPrivateKey(final String privateKey) {
+    return BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
   }
 }
