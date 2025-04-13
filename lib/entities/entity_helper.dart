@@ -18,6 +18,7 @@ class EntityHelper {
   }
 
   Future close() async {
+    database;
     final db = _database;
     _database = null;
     return db?.close();
