@@ -1,8 +1,9 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
 import 'package:my_rootstock_wallet/entities/user_helper.dart';
 import 'package:my_rootstock_wallet/entities/wallet_helper.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import '../util/util.dart';
 
@@ -25,8 +26,9 @@ class EntityHelper {
   }
 
   Future<Database> _initDatabase() async {
+    var dbKey = dotenv.env['PRIVATE_KEY'];
     String path = join(await getDatabasesPath(), DATA_BASE_NAME);
-    return openDatabase(path, version: DATA_BASE_VERSION, onCreate: (db, version) {
+    return openDatabase(path, password: dbKey, version: DATA_BASE_VERSION, onCreate: (db, version) {
       db.execute(TransactionHelper.scriptCreation());
       db.execute(WalletHelper.scriptCreation());
       db.execute(UserHelper.scriptCreation());

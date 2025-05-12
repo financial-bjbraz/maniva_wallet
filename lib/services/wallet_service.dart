@@ -96,7 +96,35 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     }
   }
 
+  Future<String> getBalanceBitcoin(WalletDTO dto) async {
+    const returnValue = "0.00";
+    try {
+      final wei = await getBalanceInWei(dto);
+      return (wei.toRBTCTrimmedString());
+    } catch (e) {
+      return returnValue;
+    }
+  }
+
   Future<Wei> getBalanceInWei(WalletDTO dto) async {
+    try {
+      if (!dto.updated) {
+        final node = dotenv.env['ROOTSTOCK_NODE'];
+        final client = web3.Web3Client(node!, http.Client());
+        final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
+        final address = credentials.address;
+        dto.lastBalanceReceivedInEtherAmount = await client.getBalance(address);
+        dto.lastBalanceReceivedInWei =
+            Wei(src: dto.lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
+        dto.updated = true;
+      }
+    } catch (error) {
+      log.severe("Error getting balance", error);
+    }
+    return dto.lastBalanceReceivedInWei;
+  }
+
+  Future<Wei> getBalanceInSatoshis(WalletDTO dto) async {
     try {
       if (!dto.updated) {
         final node = dotenv.env['ROOTSTOCK_NODE'];
@@ -158,28 +186,74 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   }
 
   Future<WalletDTO> convert(WalletEntity entity) async {
-    return WalletDTO(wallet: entity, transactions: null);
+    return WalletDTO(wallet: entity, transactions: null, btcTransactions: null);
   }
 
-  Future<WalletDTO> createWalletToDisplay(WalletDTO dto) async {
-    final wei = await getBalanceInWei(dto);
-    final usdPrice = await _getPrice();
-    final value = wei.getWei() * usdPrice;
-    final formatter = NumberFormat.simpleCurrency();
-    dto.amountInWeis = wei.getWei();
-    dto.amountInUsd = value;
-    dto.valueInWeiFormatted = (wei.toRBTCTrimmedStringPlaces(10));
-    dto.valueInUsdFormatted = formatter.format(value);
-
-    if (wei.src.compareTo(BigInt.from(dto.wallet.amount)) != 0) {
-      dto.wallet.amount = wei.src.toDouble();
-      persistNewWallet(dto.wallet);
+  Future<WalletDTO> createGenericWalletToDisplay(Network network, WalletDTO dto) async {
+    switch (network) {
+      case Network.BITCOIN_TESTNET:
+        dto = await setBitcoinWallet(dto);
+        break;
+      case Network.ROOTSTOCK_TESTNET:
+        dto = await setRootstockWallet(dto);
+        break;
+      case Network.BITCOIN_MAINNET:
+        throw UnimplementedError();
+      case Network.ROOTSTOCK_MAINNET:
+        throw UnimplementedError();
     }
-
     return dto;
   }
 
+  Future<WalletDTO> setBitcoinWallet(WalletDTO dto) async {
+    try {
+      final usdPrice = await _getPrice();
+      final formatter = NumberFormat.simpleCurrency();
+      dto.amountInUsd = 0.00;
+      dto.valueInWeiFormatted = "0.00";
+      dto.balanceInUsd = "0";
+      dto.balance = "0";
+
+      return dto;
+    } catch (error) {
+      log.severe("Error creating wallet to display $error");
+      throw Exception("Error creating wallet to display");
+    }
+  }
+
+  Future<WalletDTO> setRootstockWallet(WalletDTO dto) async {
+    try {
+      final wei = await getBalanceInWei(dto);
+      final usdPrice = await _getPrice();
+      final value = wei.getWei() * usdPrice;
+      final formatter = NumberFormat.simpleCurrency();
+      dto.amountInWeis = wei.getWei();
+      dto.amountInUsd = value;
+      dto.valueInWeiFormatted = (wei.toRBTCTrimmedStringPlaces(10));
+      dto.valueInUsdFormatted = formatter.format(value);
+
+      // If last received value is != than stored value, udpate stored value
+      if (wei.src.compareTo(BigInt.from(dto.wallet.amount)) != 0) {
+        dto.wallet.amount = wei.src.toDouble();
+        persistNewWallet(dto.wallet);
+      }
+
+      dto.balance = dto.valueInWeiFormatted;
+      dto.balanceInUsd = dto.valueInUsdFormatted;
+
+      return dto;
+    } catch (error) {
+      log.severe("Error creating wallet to display $error");
+      throw Exception("Error creating wallet to display");
+    }
+  }
+
   Future<int> _getPrice() async {
+    if (!await isTimeToQuery()) {
+      // setted to 4 hours
+      return getLastUsdPrice();
+    }
+
     final response = await http.get(Uri.parse(
         'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=100&page=1&sparkline=false'));
 
@@ -192,13 +266,18 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
           )
           .toList();
       var price = (prices.elementAt(0).currentPrice);
-
       setLastUsdPrice(price);
-
       return price;
     } else {
       return getLastUsdPrice();
     }
+  }
+
+  Future<bool> isTimeToQuery() async {
+    final now = DateTime.now();
+    final lastQuery = await getLastUsdPriceTime();
+    final difference = now.difference(lastQuery);
+    return difference.inHours > 4; // 4 hours
   }
 
   Future<SimpleTransaction> createTransactionInstance(

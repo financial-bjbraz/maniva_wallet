@@ -1,34 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:my_rootstock_wallet/util/util.dart';
 
+import '../entities/wallet_dto.dart';
 import '../entities/wallet_helper.dart';
+import '../services/wallet_service.dart';
 import 'addresses.dart';
 import 'bitcoin.dart';
 
 enum Network {
   BITCOIN_TESTNET(
     networkByte: 0x6f,
-    name: 'Testnet',
+    name: 'Bitcoin Testnet',
     networkId: 0,
   ),
-  BITCOIN_MAINNET(networkByte: 0x00, name: 'Mainnet', networkId: 0),
-  ROOTSTOCK_MAINNET(networkByte: 0x00, name: 'Mainnet', networkId: 30),
-  ROOTSTOCK_TESTNET(networkByte: 0x00, name: 'Testnet', networkId: 31);
+  BITCOIN_MAINNET(
+    networkByte: 0x00,
+    name: 'Bitcoin',
+    networkId: 0,
+  ),
+  ROOTSTOCK_MAINNET(
+    networkByte: 0x00,
+    name: 'Rootstock',
+    networkId: 30,
+  ),
+  ROOTSTOCK_TESTNET(
+    networkByte: 0x00,
+    name: 'Rootstock Testnet',
+    networkId: 31,
+  );
 
   const Network({required this.networkByte, required this.name, required this.networkId});
 
   static String generateFormattedAddress(Network n, WalletEntity wallet) {
     switch (n) {
       case Network.BITCOIN_TESTNET:
-        return formatTextWithParameter(
-            BitcoinWallet.generateCompressedAddress(
-                wallet.privateKey, Network.BITCOIN_TESTNET.networkByte),
-            11);
+        return formatTextWithParameter(wallet.btcAddress, 11);
       case Network.BITCOIN_MAINNET:
-        return formatTextWithParameter(
-            BitcoinWallet.generateCompressedAddress(
-                wallet.privateKey, Network.BITCOIN_MAINNET.networkByte),
-            11);
+        return formatTextWithParameter(wallet.btcAddress, 11);
       case Network.ROOTSTOCK_MAINNET:
         return formatAddressWithParameter(
             toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_TESTNET.networkId),
@@ -52,6 +60,20 @@ enum Network {
         return toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_TESTNET.networkId);
       case Network.ROOTSTOCK_TESTNET:
         return toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_TESTNET.networkId);
+    }
+  }
+
+  static Future<String> getBalance(WalletDTO dto, Network network) async {
+    WalletServiceImpl walletService = WalletServiceImpl();
+    switch (network) {
+      case Network.BITCOIN_TESTNET:
+        return walletService.getBalanceBitcoin(dto);
+      case Network.BITCOIN_MAINNET:
+        return walletService.getBalanceBitcoin(dto);
+      case Network.ROOTSTOCK_MAINNET:
+        return walletService.getBalance(dto);
+      case Network.ROOTSTOCK_TESTNET:
+        return walletService.getBalance(dto);
     }
   }
 

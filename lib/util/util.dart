@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../entities/entity_helper.dart';
@@ -14,6 +15,7 @@ const DATA_BASE_VERSION = 7;
 
 const RBTC_DECIMAL_PLACES = 1000000000000000000;
 const RBTC_DECIMAL_PLACES_COUNT = 18;
+const SIMPLE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
 Color? orange() => const Color.fromRGBO(255, 145, 0, 1);
 Color pink() => const Color.fromRGBO(255, 112, 224, 1);
@@ -181,6 +183,21 @@ setDataBaseCreated() async {
 setLastUsdPrice(int price) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString("lastBtcPrice", price.toString());
+  setLastUsdPriceTime();
+}
+
+setLastUsdPriceTime() async {
+  DateFormat df = DateFormat(SIMPLE_DATE_FORMAT);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString("lastBtcTime", df.format(DateTime.now()));
+}
+
+Future<DateTime> getLastUsdPriceTime() async {
+  DateFormat df = DateFormat(SIMPLE_DATE_FORMAT);
+  final prefs = await SharedPreferences.getInstance();
+  final String valor = prefs.getString("lastBtcTime") ?? "2025-04-01 00:00:00";
+  DateTime data = df.parse(valor, false);
+  return data;
 }
 
 Future<int> getLastUsdPrice() async {

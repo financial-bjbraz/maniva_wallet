@@ -34,6 +34,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   final double iconSize = 48;
   late String balance = "0";
   late String balanceInUsd = "0";
+
   late String currentAddress =
       Network.generateFormattedAddress(Network.ROOTSTOCK_TESTNET, widget.wallet);
   late Network selectedNetwork = Network.ROOTSTOCK_TESTNET;
@@ -58,27 +59,43 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   _ViewWalletApp();
 
   loadWalletData() async {
-    if (mounted) {
-      int seconds = loaded ? 30 : 4;
-      await Future.delayed(Duration(seconds: seconds), () {
-        walletService
-            .convert(widget.wallet)
-            .then((value) => walletService.createWalletToDisplay(value).then((dto) => {
-                  setState(() {
-                    if (dto.valueInWeiFormatted != balance) {
-                      walletDto = dto;
-                      balance = dto.valueInWeiFormatted;
-                      balanceInUsd = dto.valueInUsdFormatted;
-                      _isLoading = false;
-                    }
-                  })
-                }));
-        loaded = true;
-      });
+    if (loaded) {
+      return;
     }
+
+    int seconds = loaded ? 30 : 1;
+    await Future.delayed(Duration(seconds: seconds), () {
+      walletService
+          .convert(widget.wallet)
+          .then((value) => walletService.createGenericWalletToDisplay(selectedNetwork, value).then(
+                  (dto) => {
+                        if (mounted)
+                          {
+                            setState(() {
+                              if (dto.balance != balance || dto.balanceInUsd != balanceInUsd) {
+                                walletDto = dto;
+                                balance = dto.balance;
+                                balanceInUsd = dto.balanceInUsd;
+                              }
+                              _isLoading = false;
+                            })
+                          }
+                      }, onError: (err) {
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                    balance = "0";
+                    balanceInUsd = "0";
+                    loaded = false;
+                  });
+                }
+              }))
+          .whenComplete(() => loaded = true);
+    });
   }
 
   Widget _buildFirstLine() {
+    loadWalletData();
     return ShimmerLoading(
       isLoading: _isLoading,
       child: Padding(
@@ -133,12 +150,12 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       segments: <ButtonSegment<Network>>[
         ButtonSegment<Network>(
           value: Network.ROOTSTOCK_TESTNET,
-          label: const Text('Rootstock'),
+          label: Text(Network.ROOTSTOCK_TESTNET.name),
           icon: rootstockSelected,
         ),
         ButtonSegment<Network>(
           value: Network.BITCOIN_TESTNET,
-          label: const Text('Bitcoin'),
+          label: Text(Network.BITCOIN_TESTNET.name),
           icon: bitcoinSelected,
         ),
       ],
@@ -146,7 +163,10 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       onSelectionChanged: (Set<Network> newSelection) {
         setState(() {
           selectedNetwork = newSelection.first;
-
+          balance = "0.00";
+          balanceInUsd = "0.00";
+          loaded = false;
+          _isLoading = true;
           if (selectedNetwork == Network.ROOTSTOCK_TESTNET) {
             rootstockSelected = Network.getIcon(Network.ROOTSTOCK_TESTNET);
             bitcoinSelected = Network.getIconGrey(Network.BITCOIN_TESTNET);
@@ -154,8 +174,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
             rootstockSelected = Network.getIconGrey(Network.ROOTSTOCK_TESTNET);
             bitcoinSelected = Network.getIcon(Network.BITCOIN_TESTNET);
           }
-
           currentAddress = Network.generateFormattedAddress(selectedNetwork, widget.wallet);
+          loadWalletData();
         });
       },
     );
@@ -173,96 +193,91 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
             ),
           ),
         ),
-        ShimmerLoading(
-            isLoading: _isLoading,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
-              child: Row(
-                children: [
-                  Image.asset(
-                    "assets/icons/rbtc2.png",
-                    width: iconSize,
+        selectedNetwork.networkId == Network.ROOTSTOCK_TESTNET.networkId
+            ? ShimmerLoading(
+                isLoading: _isLoading,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
+                  child: Row(
+                    children: [
+                      Network.getIcon(selectedNetwork),
+                      _showSaldo
+                          ? Text.rich(
+                              TextSpan(
+                                  text: balance,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    backgroundColor: orange(),
+                                  )),
+                              textAlign: TextAlign.start,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                              ),
+                            )
+                          : Container(height: 32, width: 230, color: Colors.grey[200]),
+                      const SizedBox(
+                        width: 5,
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showSaldo = !_showSaldo;
+                          });
+                        },
+                        child: SvgPicture.asset(
+                            _showSaldo
+                                ? "assets/icons/eye-off-svgrepo-com.svg"
+                                : "assets/icons/eye-svgrepo-com.svg",
+                            semanticsLabel: "view",
+                            width: iconSize,
+                            color: orange()),
+                      ),
+                    ],
                   ),
-                  _showSaldo
-                      ? Text.rich(
-                          TextSpan(
-                              text: balance,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                backgroundColor: orange(),
-                              )),
-                          textAlign: TextAlign.start,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                          ),
-                        )
-                      : Container(height: 32, width: 230, color: Colors.grey[200]),
-                  const SizedBox(
-                    width: 5,
+                ))
+            : ShimmerLoading(
+                isLoading: _isLoading,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
+                  child: Row(
+                    children: [
+                      Network.getIcon(selectedNetwork),
+                      _showSaldo
+                          ? Text.rich(
+                              TextSpan(
+                                  text: balance,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    backgroundColor: orange(),
+                                  )),
+                              textAlign: TextAlign.start,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                              ),
+                            )
+                          : Container(height: 32, width: 230, color: Colors.grey[200]),
+                      const SizedBox(
+                        width: 5,
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showSaldo = !_showSaldo;
+                          });
+                        },
+                        child: SvgPicture.asset(
+                            _showSaldo
+                                ? "assets/icons/eye-off-svgrepo-com.svg"
+                                : "assets/icons/eye-svgrepo-com.svg",
+                            semanticsLabel: "view",
+                            width: iconSize,
+                            color: orange()),
+                      ),
+                    ],
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showSaldo = !_showSaldo;
-                      });
-                    },
-                    child: SvgPicture.asset(
-                        _showSaldo
-                            ? "assets/icons/eye-off-svgrepo-com.svg"
-                            : "assets/icons/eye-svgrepo-com.svg",
-                        semanticsLabel: "view",
-                        width: iconSize,
-                        color: orange()),
-                  ),
-                ],
-              ),
-            )),
-        ShimmerLoading(
-            isLoading: _isLoading,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
-              child: Row(
-                children: [
-                  Image.asset(
-                    "assets/icons/btc.png",
-                    width: iconSize,
-                  ),
-                  _showSaldo
-                      ? Text.rich(
-                          TextSpan(
-                              text: balance,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                backgroundColor: orange(),
-                              )),
-                          textAlign: TextAlign.start,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                          ),
-                        )
-                      : Container(height: 32, width: 230, color: Colors.grey[200]),
-                  const SizedBox(
-                    width: 5,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showSaldo = !_showSaldo;
-                      });
-                    },
-                    child: SvgPicture.asset(
-                        _showSaldo
-                            ? "assets/icons/eye-off-svgrepo-com.svg"
-                            : "assets/icons/eye-svgrepo-com.svg",
-                        semanticsLabel: "view",
-                        width: iconSize,
-                        color: orange()),
-                  ),
-                ],
-              ),
-            )),
+                )),
         ShimmerLoading(
           isLoading: _isLoading,
           child: Padding(
@@ -399,6 +414,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   @override
   void dispose() {
     _isLoading = false;
+    loadWalletData();
     super.dispose();
   }
 
