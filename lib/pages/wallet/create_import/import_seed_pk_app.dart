@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../entities/user_helper.dart';
-import '../../../wallets/create_import/import_wallet_pk_detail.dart';
-import '../../../wallets/create_import/import_wallet_seed_detail.dart';
 import '../../details/detail_list.dart';
+import 'import_wallet_pk_detail.dart';
+import 'import_wallet_seed_detail.dart';
 
 class ImportSeedPkApp extends StatelessWidget {
   final ImportNewWalletByPrivateKeyDetail importWalletByPrivateKey;

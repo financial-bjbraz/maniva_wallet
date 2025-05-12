@@ -62,6 +62,7 @@ dependencies:
   dartsv: ^2.1.0
   bitcoin_base: ^6.1.0
   encrypt: ^5.0.3
+  sqflite_sqlcipher: ^3.1.0+1
 
 dev_dependencies:
   flutter_test:

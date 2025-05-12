@@ -5,10 +5,10 @@ import 'package:provider/provider.dart';
 import '../../entities/user_helper.dart';
 import '../../entities/wallet_helper.dart';
 import '../../services/wallet_service.dart';
-import '../../wallets/create_import/create_wallet_detail.dart';
-import '../../wallets/create_import/import_wallet_pk_detail.dart';
-import '../../wallets/create_import/import_wallet_seed_detail.dart';
+import 'create_import/create_wallet_detail.dart';
 import 'create_import/import_seed_pk_app.dart';
+import 'create_import/import_wallet_pk_detail.dart';
+import 'create_import/import_wallet_seed_detail.dart';
 import 'view_wallet_detail.dart';
 
 class CentralWidgetsContent extends StatefulWidget {

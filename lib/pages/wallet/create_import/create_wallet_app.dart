@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
-import 'package:my_rootstock_wallet/wallets/create_import/create_wallet.dart';
-import 'package:my_rootstock_wallet/wallets/create_import/create_wallet_detail.dart';
+import 'package:my_rootstock_wallet/pages/wallet/create_import/create_wallet.dart';
+import 'package:my_rootstock_wallet/pages/wallet/create_import/create_wallet_detail.dart';
 
 import '../../../entities/user_helper.dart';
 

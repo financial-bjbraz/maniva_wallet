@@ -13,11 +13,14 @@ class WalletDTO {
   late String valueInUsdFormatted;
   late String valueInWeiFormatted;
   Set<SimpleTransaction>? transactions;
+  Set<SimpleTransaction>? btcTransactions;
   bool updated = false;
   late Wei lastBalanceReceivedInWei;
   late EtherAmount lastBalanceReceivedInEtherAmount;
+  late String balance;
+  late String balanceInUsd;
 
-  WalletDTO({required this.wallet, required this.transactions});
+  WalletDTO({required this.wallet, required this.transactions, required this.btcTransactions});
 
   String getName() {
     return "Wallet #${wallet.walletId}";
