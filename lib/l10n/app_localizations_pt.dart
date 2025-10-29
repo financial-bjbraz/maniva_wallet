@@ -143,4 +143,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get exit => 'Sair';
+
+  @override
+  String get createNewWallet => 'Criar uma nova Carteira';
+
+  @override
+  String get restoreWallet => 'Restaurar uma carteira a partir de um Frase de recuperação';
+
+  @override
+  String get restoreWalletWithPrivateKey =>
+      'Restarurar uma carterira a partir de uma Chave Privada';
 }

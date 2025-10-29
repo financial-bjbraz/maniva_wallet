@@ -48,6 +48,9 @@
   "help": "Ajuda",
   "exit": "Sair",
   "txSent": "Nova transação enviada",
-  "txReceived": "Nova transação recebida"
+  "txReceived": "Nova transação recebida",
+  "createNewWallet": "Criar uma nova Carteira",
+  "restoreWallet": "Restaurar uma carteira a partir de um Frase de recuperação",
+  "restoreWalletWithPrivateKey": "Restarurar uma carterira a partir de uma Chave Privada"
 
 }

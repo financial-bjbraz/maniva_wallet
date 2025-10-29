@@ -64,6 +64,7 @@ dependencies:
   sqflite_sqlcipher: ^3.1.0+1
   stac: ^0.11.0
   hux: ^0.17.0
+  flutter_exit_app: ^2.0.0
 
 dev_dependencies:
   flutter_test:

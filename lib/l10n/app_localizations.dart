@@ -363,6 +363,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exit'**
   String get exit;
+
+  /// No description provided for @createNewWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Wallet'**
+  String get createNewWallet;
+
+  /// No description provided for @restoreWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Wallet with Seed Phrase'**
+  String get restoreWallet;
+
+  /// No description provided for @restoreWalletWithPrivateKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Wallet with Private Key'**
+  String get restoreWalletWithPrivateKey;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

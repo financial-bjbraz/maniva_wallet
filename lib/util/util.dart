@@ -10,8 +10,8 @@ import '../entities/entity_helper.dart';
 import 'addresses.dart';
 import 'network.dart';
 
-const DATA_BASE_NAME = "my_rootstock_wallet.db";
-const DATA_BASE_VERSION = 7;
+const DATA_BASE_NAME = "rwallet.db";
+const DATA_BASE_VERSION = 2;
 
 const RBTC_DECIMAL_PLACES = 1000000000000000000;
 const RBTC_DECIMAL_PLACES_COUNT = 18;
@@ -126,14 +126,12 @@ Future<void> delay(BuildContext context, int seconds) {
   return Future.delayed(Duration(seconds: seconds), () {});
 }
 
-verifyAndCreateDataBase() async {
+Future<bool> verifyAndCreateDataBase() async {
   var created = await isTableCreated();
-
-  openDataBase();
-
   if (!created) {
     createTable();
   }
+  return created;
 }
 
 TextSpan addressText(String address) {
@@ -154,7 +152,7 @@ EdgeInsets createPaddingBetweenDifferentRows() {
 
 Future<bool> isTableCreated() async {
   final prefs = await SharedPreferences.getInstance();
-  var created = prefs.getString("dataBaseCreated_4");
+  var created = prefs.getString("dataBaseCreated$DATA_BASE_VERSION");
   return created != null;
 }
 
@@ -177,7 +175,7 @@ Future<String> getIndex() async {
 
 setDataBaseCreated() async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString("dataBaseCreated", "true");
+  await prefs.setString("dataBaseCreated$DATA_BASE_VERSION", "true");
 }
 
 setLastUsdPrice(int price) async {
@@ -222,15 +220,17 @@ Future<int> getLastUsdPrice() async {
 }
 
 openDataBase() async {
-  final entityHelper = EntityHelper();
-  entityHelper.close();
+  await EntityHelper().setUp();
+}
 
-  print("Teste de criptacao");
+testEncriptData() {
+  print("Teste de encriptacao");
   final plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
+  print("PlainText:$plainText");
   var encriptedText = encrypt(plainText);
-  print(encriptedText);
+  print("Encripted:$encriptedText");
   var decryptedText = decrypt(encriptedText);
-  print(decryptedText);
+  print("Decripted$decryptedText");
 }
 
 enc.Encrypter generateEncrypter() {

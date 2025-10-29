@@ -144,8 +144,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       onTabChanged: (index) {
         setState(() {
           selectedNetwork = index == 0 ? Network.BITCOIN_TESTNET : Network.ROOTSTOCK_TESTNET;
-          balance = formatBalance("0");
-          balanceInUsd = formatUsd("0");
           loaded = false;
           _isLoading = false;
           currentAddress = Network.generateFormattedAddress(selectedNetwork, widget.wallet);

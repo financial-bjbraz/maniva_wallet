@@ -12,7 +12,6 @@ class TokenServiceImpl extends ChangeNotifier implements TokenService {
   @override
   Future<int> createOrUpdate(Token token) async {
     var inserted = await helper.insertItem(token);
-    helper.close();
     return inserted;
   }
 
@@ -20,7 +19,6 @@ class TokenServiceImpl extends ChangeNotifier implements TokenService {
   Future<List<Token>> list() async {
     WidgetsFlutterBinding.ensureInitialized();
     var list = await helper.fetchItems();
-    helper.close();
     return list;
   }
 }
