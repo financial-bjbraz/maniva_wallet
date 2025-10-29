@@ -22,6 +22,10 @@ This is an open source project in flutter to create a crypto wallet compatible w
 ![image](./assets/screens/8.png)
 ![image](./assets/screens/9.png)
 
+### Generate launcher icon
+``` dart run flutter_launcher_icons -f icons.yaml
+```
+
 
 ## Building
 ```
@@ -31,6 +35,10 @@ flutter clean && flutter pub get && cd ios/ && pod install && cd ../
 
 ```
 
+## Cleanning and generating dependencies
+```
+flutter clean && flutter pub get && dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs && flutter gen-l10n
+```
 ### Creating Bitcoin raw transaction
 ## List Unspent
 ```

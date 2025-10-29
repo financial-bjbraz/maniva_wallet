@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/pages/details/account_statements_detail.dart';
 import 'package:my_rootstock_wallet/pages/menu/item_menu_botton.dart';
 
+import '../../l10n/app_localizations.dart';
 
 class BottomMenu extends StatefulWidget {
   final bool showMenu;
@@ -38,9 +38,7 @@ class _BottomMenuState extends State<BottomMenu> {
         builder: (context, value, child) {
           return AnimatedPositioned(
             duration: const Duration(milliseconds: 350),
-            bottom: !widget.showMenu
-                ? 0 + MediaQuery.of(context).padding.bottom
-                : 0,
+            bottom: !widget.showMenu ? 0 + MediaQuery.of(context).padding.bottom : 0,
             left: value,
             right: value * -1,
             height: MediaQuery.of(context).size.height * 0.14,
