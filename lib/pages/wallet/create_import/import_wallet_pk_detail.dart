@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../../entities/user_helper.dart';
 import '../../../entities/wallet_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
 import '../../../util/util.dart';
 import '../../home_page.dart';

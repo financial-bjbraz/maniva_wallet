@@ -1,9 +1,9 @@
 import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 
 import '../../../entities/user_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
 import '../../../util/decimal_input.dart';
 import '../../../util/util.dart';

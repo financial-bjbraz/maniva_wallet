@@ -49,9 +49,11 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     loadWallets();
     double heightScreen = MediaQuery.of(context).size.height;
+    double distanciaParaTopo = .16;
+    double distanciaParaTopoComMenuExpandido = .45;
 
     if (_yPosition == 0) {
-      _yPosition = heightScreen * .22;
+      _yPosition = heightScreen * distanciaParaTopo;
     }
     return Scaffold(
       backgroundColor: Colors.black,
@@ -64,7 +66,9 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               setState(() {
                 _showMenu = !_showMenu;
-                _yPosition = _showMenu ? heightScreen * .42 : heightScreen * .22;
+                _yPosition = _showMenu
+                    ? heightScreen * distanciaParaTopoComMenuExpandido
+                    : heightScreen * distanciaParaTopo;
               });
             },
           ),
@@ -117,7 +121,7 @@ class _HomePageState extends State<HomePage> {
           ),
           MyDotsApp(
             showMenu: _showMenu,
-            top: heightScreen * .90,
+            top: heightScreen * .85,
             currentIndex: _currentIndex,
             walletQuantity: _walletQuantity,
           ),

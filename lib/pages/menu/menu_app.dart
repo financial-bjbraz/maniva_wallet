@@ -1,8 +1,11 @@
 import 'dart:io';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/menu/item_menu.dart';
+import 'package:hux/hux.dart';
 import 'package:my_rootstock_wallet/pages/login.dart';
+import 'package:my_rootstock_wallet/pages/menu/item_menu.dart';
+
+import '../../l10n/app_localizations.dart';
 
 class MenuApp extends StatelessWidget {
   const MenuApp({super.key, required this.top, required this.showMenu});
@@ -16,7 +19,7 @@ class MenuApp extends StatelessWidget {
         const begin = Offset(0.0, 1.8);
         const end = Offset.zero;
         const curve = Curves.ease;
-        
+
         var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
         return SlideTransition(
@@ -32,7 +35,7 @@ class MenuApp extends StatelessWidget {
     final String configureAccount = AppLocalizations.of(context)!.configureAccount;
     final String profile = AppLocalizations.of(context)!.profile;
     final String help = AppLocalizations.of(context)!.help;
-    final String labelExit = AppLocalizations.of(context)!.exit;
+    final String lblExit = AppLocalizations.of(context)!.exit;
 
     final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
       minimumSize: const Size(88, 36),
@@ -115,45 +118,19 @@ class MenuApp extends StatelessWidget {
                           text: configureAccount,
                         ),
                         const SizedBox(
-                          height: 22.6,
+                          height: 20,
                         ),
-                        Container(
-                          height: 35,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              width: 0.7,
-                              color: Colors.white54,
-                            ),
-                          ),
-                          child: ElevatedButton(
-                            style: raisedButtonStyle,
-                            // color: Colors.purple[800],
-                            // highlightColor: Colors.transparent,
-                            // elevation: 0,
-                            // disabledElevation: 0,
-                            // highlightElevation: 0,
-                            // hoverElevation: 0,
-                            onPressed: () {
-
-                            },
-                            // focusElevation: 0,
-                            // splashColor: Colors.purple[900],
-                            child: GestureDetector(
-                              onTap: () {
-                                if (Platform.isAndroid) {
-                                  Navigator.of(context).push(_createRoute());
-                                } else if (Platform.isIOS) {
-                                  exit(0);
-                                }
-                              },
-                              child: Text(
-                                labelExit,
-                              style: const TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                            )
-                          ),
+                        HuxButton(
+                          onPressed: () {
+                            if (Platform.isAndroid) {
+                              Navigator.of(context).push(_createRoute());
+                            } else if (Platform.isIOS) {
+                              exit(0);
+                            }
+                          },
+                          icon: Icons.exit_to_app,
+                          primaryColor: Colors.white, // Text color auto-calculated for readability
+                          child: Text(lblExit),
                         ),
                       ],
                     ),

@@ -186,6 +186,21 @@ setLastUsdPrice(int price) async {
   setLastUsdPriceTime();
 }
 
+String formatBalance(String balance) {
+  if (balance == "0" || balance == "0.0") {
+    return "0.0000";
+  }
+  return balance;
+}
+
+String formatUsd(String balanceInUsd) {
+  try {
+    double value = double.parse(balanceInUsd);
+    return value.toStringAsFixed(2);
+  } catch (e) {}
+  return balanceInUsd;
+}
+
 setLastUsdPriceTime() async {
   DateFormat df = DateFormat(SIMPLE_DATE_FORMAT);
   final prefs = await SharedPreferences.getInstance();

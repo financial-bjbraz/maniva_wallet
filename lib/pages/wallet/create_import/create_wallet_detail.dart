@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_rootstock_wallet/pages/wallet/create_import/import_wallet_seed_detail.dart';
 import 'package:provider/provider.dart';
 import 'package:web3dart/web3dart.dart';
 
 import '../../../entities/user_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
 import '../../../util/util.dart';
 import '../../details/detail_list.dart';
