@@ -293,8 +293,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       final transactionToPersist = SimpleTransaction(
           transactionId: '',
-          amountInWeis: amount.toInt(),
-          date: DateFormat("dd/MM/yyyy").format(DateTime.now()),
+          amountInWeis: amount.toString(),
+          ddateTime: DateFormat("dd/MM/yyyy").format(DateTime.now()),
           walletId: dto.wallet.walletId,
           valueInUsdFormatted: (formatter.format(value)),
           valueInWeiFormatted: (wei.toRBTCTrimmedStringPlaces(10)),
@@ -306,8 +306,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     }
     return SimpleTransaction(
         transactionId: '',
-        amountInWeis: 0,
-        date: '',
+        amountInWeis: "0",
+        ddateTime: '',
         walletId: '',
         valueInUsdFormatted: '',
         valueInWeiFormatted: '',

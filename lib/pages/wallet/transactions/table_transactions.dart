@@ -46,7 +46,7 @@ class _TableTransactions extends State<TableTransactions> {
             .listTransactionsOnDataBase(widget.wallet.walletId)
             .then((listTransactions) => {
                   setState(() {
-                    if (listTransactions.isNotEmpty) {
+                    if (null != listTransactions || listTransactions.isNotEmpty) {
                       for (final item in listTransactions) {
                         if (!txHashMap.containsKey(item.transactionId)) {
                           transactions.add(generateItem(item));

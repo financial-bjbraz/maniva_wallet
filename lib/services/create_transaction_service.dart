@@ -13,7 +13,6 @@ class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTrans
   @override
   Future<int> createOrUpdateTransaction(SimpleTransaction transaction) async {
     var inserted = await helper.insertItem(transaction);
-    helper.close();
     return inserted;
   }
 
@@ -21,7 +20,6 @@ class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTrans
   Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId) async {
     WidgetsFlutterBinding.ensureInitialized();
     var list = await helper.fetchItems(walletId);
-    helper.close();
     return list;
   }
 }

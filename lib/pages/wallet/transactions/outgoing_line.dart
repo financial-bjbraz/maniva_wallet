@@ -12,7 +12,7 @@ class OutgoingTransactionLine extends TableRow {
     return TableRow(children: [
       const Icon(Icons.call_made_rounded, color: Colors.red),
       Text(
-        tx.date,
+        tx.ddateTime,
         style: const TextStyle(
           color: Colors.red,
           fontSize: 14,

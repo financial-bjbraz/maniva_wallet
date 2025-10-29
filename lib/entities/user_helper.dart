@@ -36,7 +36,7 @@ class UserHelper extends EntityHelper {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    db.close();
+    //db.close();
 
     return inserted;
   }

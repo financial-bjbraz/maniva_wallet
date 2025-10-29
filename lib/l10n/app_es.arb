@@ -49,5 +49,8 @@
   "help": "Ayuda",
   "exit": "Salir",
   "txSent": "Nueva tx enviada",
-  "txReceived": "Nueva tx recibida"
+  "txReceived": "Nueva tx recibida",
+  "createNewWallet": "Create New Wallet",
+  "restoreWallet": "Restore Wallet with Seed Phrase",
+  "restoreWalletWithPrivateKey": "Restore Wallet with Private Key"
 }

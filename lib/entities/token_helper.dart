@@ -29,7 +29,7 @@ class TokenHelper extends EntityHelper {
             $symbol TEXT NOT NULL,
             $symbol2 TEXT NOT NULL,
             $address TEXT NOT NULL,
-            $nodeUrl TEXT NOT NULL,
+            $nodeUrl TEXT NOT NULL
           )
           ''';
     return createTable;
@@ -42,7 +42,7 @@ class TokenHelper extends EntityHelper {
       token.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    close();
+
     return inserted;
   }
 

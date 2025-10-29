@@ -9,7 +9,7 @@ class TransactionHelper extends EntityHelper {
   static const amountInWeis = 'amountInWeis';
   static const valueInUsdFormatted = 'valueInUsdFormatted';
   static const valueinWeiFormatted = 'valueinWeiFormatted';
-  static const date = 'date';
+  static const ddateTime = 'ddateTime';
   static const status = 'status';
   static const type = 'type';
   static const destination = 'destination';
@@ -30,7 +30,7 @@ class TransactionHelper extends EntityHelper {
             $amountInWeis TEXT NOT NULL,
             $valueInUsdFormatted TEXT NOT NULL,
             $valueinWeiFormatted TEXT NOT NULL,
-            $date TEXT NOT NULL,
+            $ddateTime TEXT NOT NULL,
             $status TEXT NOT NULL,
             $type INTEGER NOT NULL,
             $destination TEXT NOT NULL
@@ -46,20 +46,19 @@ class TransactionHelper extends EntityHelper {
       transaction.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    close();
     return inserted;
   }
 
   Future<List<SimpleTransaction>> fetchItems(final String walletId) async {
     final db = await database;
     final List<Map<String, Object?>> walletMaps =
-        await db.query(table, where: 'walletId = ? ', whereArgs: [walletId]);
+        await db.query(table); //, where: 'walletId = ? ', whereArgs: [walletId]);
     if (walletMaps.isNotEmpty) {
       var list = [
         for (final {
               'transactionId': transactionId as String,
-              'amountInWeis': amountInWeis as int,
-              'date': date as String,
+              'amountInWeis': amountInWeis as String,
+              'ddateTime': ddateTime as String,
               'walletId': walletId as String,
               'valueInUsdFormatted': valueInUsdFormatted as String,
               'valueinWeiFormatted': valueInWeiFormatted as String,
@@ -71,7 +70,7 @@ class TransactionHelper extends EntityHelper {
             status: status ?? "",
             transactionId: transactionId,
             amountInWeis: amountInWeis,
-            date: date,
+            ddateTime: ddateTime,
             walletId: walletId,
             valueInUsdFormatted: valueInUsdFormatted,
             valueInWeiFormatted: valueInWeiFormatted,
@@ -87,11 +86,11 @@ class TransactionHelper extends EntityHelper {
 
 class SimpleTransaction {
   late String transactionId;
-  late int amountInWeis;
+  late String amountInWeis;
   late String valueInUsdFormatted;
   late String valueInWeiFormatted;
   late bool? transactionSent;
-  String date = '';
+  String ddateTime = '';
   int type = 0; // TransactionType
   final String walletId;
   final String? status;
@@ -101,7 +100,7 @@ class SimpleTransaction {
       {this.status,
       required this.transactionId,
       required this.amountInWeis,
-      required this.date,
+      required this.ddateTime,
       required this.walletId,
       required this.valueInUsdFormatted,
       required this.valueInWeiFormatted,
@@ -112,7 +111,7 @@ class SimpleTransaction {
     return {
       'transactionId': transactionId,
       'amountInWeis': amountInWeis,
-      'date': date,
+      'ddateTime': ddateTime,
       'walletId': walletId,
       'valueInUsdFormatted': valueInUsdFormatted,
       'valueInWeiFormatted': valueInWeiFormatted,
@@ -124,6 +123,6 @@ class SimpleTransaction {
 
   @override
   String toString() {
-    return 'SimpleTransaction{transactionId: $transactionId, amountInWeis: $amountInWeis, date: $date,  walletId: $walletId}, valueInUsdFormatted: ${valueInUsdFormatted}, valueInWeiFormatted: ${valueInWeiFormatted},  status: ${status} type: $type destination: $destination';
+    return 'SimpleTransaction{transactionId: $transactionId, amountInWeis: $amountInWeis, ddateTime: $ddateTime,  walletId: $walletId}, valueInUsdFormatted: ${valueInUsdFormatted}, valueInWeiFormatted: ${valueInWeiFormatted},  status: ${status} type: $type destination: $destination';
   }
 }
