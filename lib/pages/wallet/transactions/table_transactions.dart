@@ -41,25 +41,26 @@ class _TableTransactions extends State<TableTransactions> {
 
   loadWalletData() async {
     if (mounted) {
-      await Future.delayed(const Duration(seconds: 5), () {
-        createTransactionServiceImpl
-            .listTransactionsOnDataBase(widget.wallet.walletId)
-            .then((listTransactions) => {
-                  setState(() {
-                    if (null != listTransactions || listTransactions.isNotEmpty) {
-                      for (final item in listTransactions) {
-                        if (!txHashMap.containsKey(item.transactionId)) {
-                          transactions.add(generateItem(item));
-                          txHashMap.addAll({item.transactionId: item.type});
-                          displaySnackBar(item.type);
-                        }
+      createTransactionServiceImpl
+          .listTransactionsOnDataBase(widget.wallet.walletId)
+          .then((listTransactions) => {
+                setState(() {
+                  if (null != listTransactions || listTransactions.isNotEmpty) {
+                    for (final item in listTransactions) {
+                      if (!txHashMap.containsKey(item.transactionId)) {
+                        transactions.add(generateItem(item));
+                        txHashMap.addAll({item.transactionId: item.type});
+                        //displaySnackBar(item.type);
                       }
                     }
-                    _isLoading = false;
-                  })
+                  }
                 })
-            .then((_) => {});
-      });
+              })
+          .then((_) => {
+                setState(() {
+                  _isLoading = false;
+                })
+              });
     }
   }
 
