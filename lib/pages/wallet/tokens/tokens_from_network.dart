@@ -1,15 +1,18 @@
+import 'dart:math';
+
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:my_rootstock_wallet/contracts/MetaCoin.g.dart';
-import 'package:web3dart/web3dart.dart' as web3;
+import 'package:my_rootstock_wallet/pages/wallet/tokens/token_item.dart';
+import 'package:my_rootstock_wallet/services/tokken_service.dart';
+import 'package:web3dart/web3dart.dart' as _i1;
 
+import '../../../contracts/ERC20.g.dart';
 import '../../../entities/user_helper.dart';
 import '../../../entities/wallet_helper.dart';
 import '../../../util/network.dart';
 import '../../../util/shimmer_loading.dart';
-import '../../../util/util.dart';
 
 class TokensFromNetwork extends StatefulWidget {
   const TokensFromNetwork(
@@ -18,12 +21,14 @@ class TokensFromNetwork extends StatefulWidget {
       required this.user,
       required this.selectedNetwork,
       required this.isLoading,
+      required this.loaded,
       required this.currentAddress});
 
   final WalletEntity wallet;
   final SimpleUser user;
   final Network selectedNetwork;
   final bool isLoading;
+  final bool loaded;
   final String currentAddress;
 
   @override
@@ -32,83 +37,91 @@ class TokensFromNetwork extends StatefulWidget {
 
 class _TokensFromNetwork extends State<TokensFromNetwork> {
   String accountBalance = "0";
-  final String contractAddress = "0xEb58823463DBa4921fACA328750763f1173C9457";
-  final String myAddress = "0x02E221A95224F090e492066Bc1B7a35B5Fd94542";
   String tokenSymbol = "";
+  TokenServiceImpl service = TokenServiceImpl();
+  List<Widget> tokens = [];
 
-  getDataFromGeneratedAbi() async {
-    try {
-      final node = dotenv.env['ROOTSTOCK_NODE'];
-      final client = web3.Web3Client(node!, http.Client());
-      final credentials = web3.EthPrivateKey.fromHex(widget.wallet.privateKey);
-      final address = credentials.address;
-      final ownAddress = await credentials.extractAddress();
+  @override
+  void initState() {
+    super.initState();
+    searchTokensForCurrentChainId();
+  }
 
-      final web3.EthereumAddress contractAddr = web3.EthereumAddress.fromHex(contractAddress);
-      final web3.EthereumAddress account = web3.EthereumAddress.fromHex(myAddress);
-      MetaCoin token = MetaCoin(address: contractAddr, client: client);
+  searchTokensForCurrentChainId() async {
+    if (widget.loaded) {
+      return;
+    }
+    final dbTokens = await service.list(widget.selectedNetwork.networkId);
+    final futures = dbTokens.map<Future<Widget>>((dbToken) async {
+      const String contractAddress = "0x369197080bAcFFf3147eC2F59076168F45f5b75d";
+      const String myAddress = "0x02E221A95224F090e492066Bc1B7a35B5Fd94542";
 
-      ({web3.EthereumAddress addr}) record = (addr: account);
-      var balanceObtained = await token.getBalance(record);
-      print("We have ${balanceObtained.toString()} MyTokens :) at address ${ownAddress.hex}");
-    } catch (e) {
-      print("Error occured on call contract $e");
+      final balance = await callSmartContract(contractAddress, myAddress);
+
+      return TokenItem(
+        tokenName: dbToken.symbol2,
+        tokenSymbol: dbToken.symbol,
+        tokenAddress: dbToken.address,
+        tokenBalance: balance,
+      );
+    });
+
+    final listTokens = await Future.wait(futures);
+
+    if (mounted) {
+      setState(() {
+        tokens = listTokens;
+      });
     }
   }
 
-  loadWalletData() async {
-    final node = dotenv.env['ROOTSTOCK_NODE'];
-    final client = web3.Web3Client(node!, http.Client());
-    final credentials = web3.EthPrivateKey.fromHex(widget.wallet.privateKey);
+  Future<String> callSmartContract(String tokenAddress, String myAddress) async {
+    print("Calling Token Balance");
+    var accountBalance = "0.000";
+    _i1.Web3Client? client;
+    try {
+      final node = dotenv.env['ROOTSTOCK_NODE'];
+      if (node == null || node.isEmpty) {
+        print("ROOTSTOCK_NODE environment variable not set.");
+        return "0.00";
+      }
+      client = _i1.Web3Client(node!, http.Client());
+      final credentials = _i1.EthPrivateKey.fromHex(widget.wallet.privateKey);
+      final address = credentials.address;
+      final ownAddress = await credentials.extractAddress();
 
-    final web3.EthereumAddress contractAddr = web3.EthereumAddress.fromHex(contractAddress);
-    final web3.EthereumAddress receiver = web3.EthereumAddress.fromHex(myAddress);
+      final _i1.EthereumAddress contractAddr = _i1.EthereumAddress.fromHex(tokenAddress);
+      final _i1.EthereumAddress myAccount = _i1.EthereumAddress.fromHex(myAddress);
+      ERC20 token = ERC20(address: contractAddr, client: client);
 
-    final abiCode = await rootBundle.loadString('assets/contracts/MetaCoin.abi.json');
-    final contract =
-        web3.DeployedContract(web3.ContractAbi.fromJson(abiCode, 'MetaCoin'), contractAddr);
+      final BigInt balanceObtained = await token.balanceOf((account: myAccount));
+      final BigInt decimalsObtained = await token.decimals();
+      print("We have ${balanceObtained.toString()} MyTokens :) at address ${ownAddress.hex}");
+      final int decimals = decimalsObtained.toInt();
 
-    final balanceFunction = contract.function('getBalance');
-
-    final balance =
-        await client.call(contract: contract, function: balanceFunction, params: [receiver]);
-    var balanceObtained = balance.first.toString();
-
-    setState(() {
-      accountBalance = balanceObtained;
-      print('We have 2 ${accountBalance} MyTokens');
-    });
+      Decimal balanceDecimal = Decimal.parse(balanceObtained.toString());
+      Decimal divisor = Decimal.parse(pow(10, decimals).toString());
+      final Decimal formattedBalance = Decimal.parse((balanceDecimal / divisor).toString());
+      accountBalance = formattedBalance.toString();
+    } catch (e) {
+      accountBalance = "0.000";
+      print("Error occured on call contract $e");
+    } finally {
+      client?.dispose();
+    }
+    return accountBalance;
   }
 
   @override
   Widget build(BuildContext context) {
-    loadWalletData();
-    getDataFromGeneratedAbi();
-
+    searchTokensForCurrentChainId();
     return ShimmerLoading(
-      isLoading: widget.isLoading,
-      child: Row(
+      isLoading: !widget.loaded,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(
-            Icons.wallet_rounded,
-            color: lightBlue(),
-          ),
-          GestureDetector(
-            child: Text.rich(
-              TextSpan(
-                  text: accountBalance,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  )),
-              textAlign: TextAlign.start,
-              style: TextStyle(
-                color: Colors.white,
-                backgroundColor: lightBlue(),
-                fontSize: 20,
-              ),
-            ),
-            onTap: () async {},
-          )
+          ...tokens,
         ],
       ),
     );

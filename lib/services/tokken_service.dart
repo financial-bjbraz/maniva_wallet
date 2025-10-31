@@ -3,7 +3,7 @@ import 'package:my_rootstock_wallet/entities/token_helper.dart';
 
 abstract class TokenService {
   void createOrUpdate(Token token);
-  void list();
+  void list(int chainId);
 }
 
 class TokenServiceImpl extends ChangeNotifier implements TokenService {
@@ -16,9 +16,9 @@ class TokenServiceImpl extends ChangeNotifier implements TokenService {
   }
 
   @override
-  Future<List<Token>> list() async {
+  Future<List<Token>> list(int chainId) async {
     WidgetsFlutterBinding.ensureInitialized();
-    var list = await helper.fetchItems();
+    var list = await helper.fetchItems(chainId);
     return list;
   }
 }
