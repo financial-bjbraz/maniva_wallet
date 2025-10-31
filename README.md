@@ -23,7 +23,13 @@ This is an open source project in flutter to create a crypto wallet compatible w
 ![image](./assets/screens/9.png)
 
 ### Generate launcher icon
-``` dart run flutter_launcher_icons -f icons.yaml
+``` 
+dart run flutter_launcher_icons -f icons.yaml
+```
+
+### Generate Smart Contract wrappers
+```
+flutter pub run build_runner build
 ```
 
 
