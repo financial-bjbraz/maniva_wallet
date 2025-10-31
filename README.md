@@ -12,9 +12,9 @@ Unofficial wallet that supports Rootstock accounts
 
 This is an open source project in flutter to create a crypto wallet compatible with Rootstock accounts.
 
-![image](./assets/screens/1.png = 250x500)
-![image](./assets/screens/2.png {width=40px height=400px})
-![image](./assets/screens/3.png {width=40px height=400px})
+![image](./assets/screens/1.png)
+![image](./assets/screens/2.png)
+![image](./assets/screens/3.png)
 ![image](./assets/screens/4.png)
 ![image](./assets/screens/5.png)
 ![image](./assets/screens/6.png)
