@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web3dart/web3dart.dart' as web3;
 
 import '../entities/entity_helper.dart';
 import 'addresses.dart';
@@ -308,4 +311,23 @@ InputDecoration simmpleDecoration(final String labelText, final Icon icon) {
         tooltip: "Submit",
         onPressed: () {},
       ));
+}
+
+loadWalletDataExample(String myAddress, String contractAddress, String privateKey) async {
+  final node = dotenv.env['ROOTSTOCK_NODE'];
+  final client = web3.Web3Client(node!, http.Client());
+  final credentials = web3.EthPrivateKey.fromHex(privateKey);
+
+  final web3.EthereumAddress contractAddr = web3.EthereumAddress.fromHex(contractAddress);
+  final web3.EthereumAddress receiver = web3.EthereumAddress.fromHex(myAddress);
+
+  final abiCode = await rootBundle.loadString('assets/contracts/MetaCoin.abi');
+  final contract =
+      web3.DeployedContract(web3.ContractAbi.fromJson(abiCode, 'MetaCoin'), contractAddr);
+
+  final balanceFunction = contract.function('getBalance');
+
+  final balance =
+      await client.call(contract: contract, function: balanceFunction, params: [receiver]);
+  var balanceObtained = balance.first.toString();
 }

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:hux/hux.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 
 import '../../../services/wallet_service.dart';
@@ -16,7 +14,6 @@ import '../../util/network.dart';
 import '../../util/shimmer_loading.dart';
 import '../../util/util.dart';
 import '../../util/widget_shimmer.dart';
-import '../details/detail_list.dart';
 
 class ViewWalletDetailPage extends StatefulWidget {
   const ViewWalletDetailPage({super.key, required this.wallet, required this.user});
@@ -101,93 +98,67 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   Widget _buildFirstLine() {
     loadWalletData();
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: ShimmerLoading(
+    return ShimmerLoading(
         isLoading: _isLoading,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Icon(
-              Icons.wallet_rounded,
-              color: lightBlue(),
-              size: iconSize,
-            ),
-            _showSaldo
-                ? GestureDetector(
-                    child: Text.rich(
-                      addressText(currentAddress),
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                        color: Colors.white,
-                        backgroundColor: lightBlue(),
-                        fontSize: fontSize,
-                      ),
-                    ),
-                    onTap: () async {
-                      await Clipboard.setData(ClipboardData(
-                          text: Network.generateAddress(selectedNetwork, widget.wallet)));
-                      showMessage(AppLocalizations.of(context)!.copiedMessage, context);
-                    },
-                  )
-                : Container(height: 32, width: 230, color: Colors.grey[200]),
-            HuxButton(
-              onPressed: () async {
-                await Clipboard.setData(
-                    ClipboardData(text: Network.generateAddress(selectedNetwork, widget.wallet)));
-                showMessage(AppLocalizations.of(context)!.copiedMessage, context);
-              },
-              isLoading: _isLoading,
-              primaryColor: Colors.white, // Text color auto-calculated for readability
-              child: const Icon(Icons.copy),
-            ),
-            HuxButton(
-              onPressed: () {
-                final Send sendScreenChild = Send(user: widget.user, walletDto: walletDto);
-
-                Navigator.of(context).push(PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      DetailList(child: sendScreenChild),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    var begin = const Offset(0.0, 1.0);
-                    var end = Offset.zero;
-                    var curve = Curves.ease;
-                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                    return SlideTransition(
-                      position: animation.drive(tween),
-                      child: child,
-                    );
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            HuxContextMenu(
+              menuItems: [
+                HuxContextMenuItem(
+                  text: 'Copy',
+                  icon: FeatherIcons.copy,
+                  onTap: () => print('Copy action'),
+                ),
+                HuxContextMenuItem(
+                  text: 'Share',
+                  icon: FeatherIcons.clipboard,
+                  onTap: () async {
+                    await Clipboard.setData(ClipboardData(
+                        text: Network.generateAddress(selectedNetwork, widget.wallet)));
+                    showMessage(AppLocalizations.of(context)!.copiedMessage, context);
                   },
-                ));
-              },
-              isLoading: _isLoading,
-              primaryColor: Colors.white, // Text color auto-calculated for readability
-              child: const Icon(Icons.call_made),
-            ),
-            HuxButton(
-              onPressed: () {
-                if (!receiveScreenOpened) {
-                  final Receive receiveScreenChild =
-                      Receive(user: widget.user, walletDto: walletDto);
-                  showBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.black,
-                    builder: (context) => receiveScreenChild,
-                  );
-                } else {
-                  Navigator.pop(context);
-                }
-                receiveScreenOpened = !receiveScreenOpened;
-              },
-              isLoading: _isLoading,
-              primaryColor: Colors.white, // Text color auto-calculated for readability
-              child: const Icon(Icons.call_received),
+                ),
+              ],
+              child: Card(
+                elevation: 5, // Adds a shadow to the card
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10), // Rounded corners
+                ),
+                margin: const EdgeInsets.all(16), // Margin around the card
+                child: ListTile(
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
+                    child: Icon(
+                      Icons.wallet_rounded,
+                      color: lightBlue(),
+                      size: iconSize,
+                    ),
+                  ), // Icon on the left
+                  title: Text(
+                    currentAddress,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ), // Main text
+                  subtitle: Text(
+                    "${balance} ~ ${balanceInUsd}",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ), // Secondary text
+                  onTap: () {
+                    // Handle tap event on the card
+                    print('Card tapped!');
+                  },
+                ),
+              ),
             ),
           ],
-        ),
-      ),
-    );
+        ));
   }
 
   Widget _buildSegmentButton() {
@@ -211,65 +182,70 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   Widget _createMainScreen() {
-    final String send = AppLocalizations.of(context)!.send;
-    final String receive = AppLocalizations.of(context)!.receive;
-
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: ShimmerLoading(
+    return ShimmerLoading(
         isLoading: _isLoading,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Network.getIcon(selectedNetwork),
-            _showSaldo
-                ? Text.rich(
-                    TextSpan(
-                        text: balance,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          backgroundColor: orange(),
-                        )),
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: fontSize,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            HuxContextMenu(
+              menuItems: [
+                HuxContextMenuItem(
+                  text: 'Copy',
+                  icon: FeatherIcons.copy,
+                  onTap: () => print('Copy action'),
+                ),
+                HuxContextMenuItem(
+                  text: 'Paste',
+                  icon: FeatherIcons.clipboard,
+                  onTap: () => print('Paste action'),
+                ),
+              ],
+              child: Card(
+                elevation: 5, // Adds a shadow to the card
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10), // Rounded corners
+                ),
+                margin: const EdgeInsets.all(16), // Margin around the card
+                child: ListTile(
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
+                    child: Image.asset(
+                      "assets/icons/btc.png",
+                      fit: BoxFit.cover,
                     ),
-                  )
-                : Container(height: 32, width: 230, color: Colors.grey[200]),
-            _showSaldo
-                ? Text.rich(
-                    TextSpan(
-                        text: balanceInUsd,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          backgroundColor: orange(),
-                        )),
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: fontSize,
+                  ), // Icon on the left
+                  title: Text(
+                    selectedNetwork.name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                  )
-                : Container(height: 32, width: 230, color: Colors.grey[200]),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showSaldo = !_showSaldo;
-                });
-              },
-              child: SvgPicture.asset(
-                  _showSaldo
-                      ? "assets/icons/eye-off-svgrepo-com.svg"
-                      : "assets/icons/eye-svgrepo-com.svg",
-                  semanticsLabel: "view",
-                  width: iconSize,
-                  color: orange()),
+                  ), // Main text
+                  subtitle: _showSaldo
+                      ? Text(
+                          "${balance} ~ ${balanceInUsd}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        )
+                      : const Text(
+                          "- ~ -",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ), // Secondary text
+                  onTap: () {
+                    // Handle tap event on the card
+                    print('Card tapped!');
+                  },
+                ),
+              ),
             ),
           ],
-        ),
-      ),
-    );
+        ));
   }
 
   Widget _lastTransactions() {
@@ -311,6 +287,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   user: widget.user,
                   selectedNetwork: selectedNetwork,
                   isLoading: _isLoading,
+                  loaded: loaded,
                   currentAddress: currentAddress),
               const SizedBox(height: 16),
               _lastTransactions(),
