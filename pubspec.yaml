@@ -62,7 +62,7 @@ dependencies:
   bitcoin_base: ^6.1.0
   encrypt: ^5.0.3
   sqflite_sqlcipher: ^3.1.0+1
-  stac: ^0.11.0
+  stac: ^1.0.1
   hux: ^0.17.0
   flutter_exit_app: ^2.0.0
   flutter_feather_icons: ^2.0.0+1
