@@ -143,4 +143,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exit => 'Exit';
+
+  @override
+  String get createNewWallet => 'Create New Wallet';
+
+  @override
+  String get restoreWallet => 'Restore Wallet with Seed Phrase';
+
+  @override
+  String get restoreWalletWithPrivateKey => 'Restore Wallet with Private Key';
 }

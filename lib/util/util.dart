@@ -2,16 +2,19 @@ import 'dart:async';
 
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web3dart/web3dart.dart' as web3;
 
 import '../entities/entity_helper.dart';
 import 'addresses.dart';
 import 'network.dart';
 
-const DATA_BASE_NAME = "my_rootstock_wallet.db";
-const DATA_BASE_VERSION = 7;
+const DATA_BASE_NAME = "rwallet.db";
+const DATA_BASE_VERSION = 2;
 
 const RBTC_DECIMAL_PLACES = 1000000000000000000;
 const RBTC_DECIMAL_PLACES_COUNT = 18;
@@ -126,14 +129,12 @@ Future<void> delay(BuildContext context, int seconds) {
   return Future.delayed(Duration(seconds: seconds), () {});
 }
 
-verifyAndCreateDataBase() async {
+Future<bool> verifyAndCreateDataBase() async {
   var created = await isTableCreated();
-
-  openDataBase();
-
   if (!created) {
     createTable();
   }
+  return created;
 }
 
 TextSpan addressText(String address) {
@@ -154,7 +155,7 @@ EdgeInsets createPaddingBetweenDifferentRows() {
 
 Future<bool> isTableCreated() async {
   final prefs = await SharedPreferences.getInstance();
-  var created = prefs.getString("dataBaseCreated_4");
+  var created = prefs.getString("dataBaseCreated$DATA_BASE_VERSION");
   return created != null;
 }
 
@@ -177,7 +178,7 @@ Future<String> getIndex() async {
 
 setDataBaseCreated() async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString("dataBaseCreated", "true");
+  await prefs.setString("dataBaseCreated$DATA_BASE_VERSION", "true");
 }
 
 setLastUsdPrice(int price) async {
@@ -222,15 +223,17 @@ Future<int> getLastUsdPrice() async {
 }
 
 openDataBase() async {
-  final entityHelper = EntityHelper();
-  entityHelper.close();
+  await EntityHelper().setUp();
+}
 
-  print("Teste de criptacao");
+testEncriptData() {
+  print("Teste de encriptacao");
   final plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
+  print("PlainText:$plainText");
   var encriptedText = encrypt(plainText);
-  print(encriptedText);
+  print("Encripted:$encriptedText");
   var decryptedText = decrypt(encriptedText);
-  print(decryptedText);
+  print("Decripted$decryptedText");
 }
 
 enc.Encrypter generateEncrypter() {
@@ -308,4 +311,23 @@ InputDecoration simmpleDecoration(final String labelText, final Icon icon) {
         tooltip: "Submit",
         onPressed: () {},
       ));
+}
+
+loadWalletDataExample(String myAddress, String contractAddress, String privateKey) async {
+  final node = dotenv.env['ROOTSTOCK_NODE'];
+  final client = web3.Web3Client(node!, http.Client());
+  final credentials = web3.EthPrivateKey.fromHex(privateKey);
+
+  final web3.EthereumAddress contractAddr = web3.EthereumAddress.fromHex(contractAddress);
+  final web3.EthereumAddress receiver = web3.EthereumAddress.fromHex(myAddress);
+
+  final abiCode = await rootBundle.loadString('assets/contracts/MetaCoin.abi');
+  final contract =
+      web3.DeployedContract(web3.ContractAbi.fromJson(abiCode, 'MetaCoin'), contractAddr);
+
+  final balanceFunction = contract.function('getBalance');
+
+  final balance =
+      await client.call(contract: contract, function: balanceFunction, params: [receiver]);
+  var balanceObtained = balance.first.toString();
 }

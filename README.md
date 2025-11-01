@@ -1,8 +1,8 @@
-# my_rootstock_wallet
+# Maniva Wallet
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rsksmart/2wp-app/badge)](https://scorecard.dev/viewer/?uri=github.com/financial-bjbraz/rootstock_wallet)
 
-[Releases](github.com/financial-bjbraz/rootstock_wallet/releases/latest)
+[Releases](github.com/financial-bjbraz/maniva_wallet/releases/latest)
 
 ## Attention this is an unofficial wallet that supports Rootstock accounts
 
@@ -23,7 +23,13 @@ This is an open source project in flutter to create a crypto wallet compatible w
 ![image](./assets/screens/9.png)
 
 ### Generate launcher icon
-``` dart run flutter_launcher_icons -f icons.yaml
+``` 
+dart run flutter_launcher_icons -f icons.yaml
+```
+
+### Generate Smart Contract wrappers
+```
+flutter pub run build_runner build
 ```
 
 
@@ -75,3 +81,8 @@ flutter clean && flutter pub get && dart run build_runner clean && dart run buil
 ./src/bitcoin-cli signrawtransaction 02000000012c1b66845e1affead6eb4d46debb495410d228a1e0f7dc4ed512392439bc3aa10000000000fdffffff0100301a1e010000001976a9140256c57c9f26e7db4d04b2126880e8fa9176f15088ac00000000
 
 ```
+
+### Support this project
+If you like this project and want to support it, you can buy me a coffee:
+
+![image](./assets/images/rootstock.png = 150x150)

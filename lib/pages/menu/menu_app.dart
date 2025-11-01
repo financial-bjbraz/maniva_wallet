@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_exit_app/flutter_exit_app.dart';
 import 'package:hux/hux.dart';
 import 'package:my_rootstock_wallet/pages/login.dart';
 import 'package:my_rootstock_wallet/pages/menu/item_menu.dart';
@@ -121,12 +120,8 @@ class MenuApp extends StatelessWidget {
                           height: 20,
                         ),
                         HuxButton(
-                          onPressed: () {
-                            if (Platform.isAndroid) {
-                              Navigator.of(context).push(_createRoute());
-                            } else if (Platform.isIOS) {
-                              exit(0);
-                            }
+                          onPressed: () async {
+                            await FlutterExitApp.exitApp();
                           },
                           icon: Icons.exit_to_app,
                           primaryColor: Colors.white, // Text color auto-calculated for readability

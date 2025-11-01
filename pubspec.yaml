@@ -64,6 +64,9 @@ dependencies:
   sqflite_sqlcipher: ^3.1.0+1
   stac: ^0.11.0
   hux: ^0.17.0
+  flutter_exit_app: ^2.0.0
+  flutter_feather_icons: ^2.0.0+1
+  decimal: ^2.3.3
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +80,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   build_runner: ^2.1.8
   flutter_launcher_icons: "^0.14.4"
+  web3dart_builders: ^0.1.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -100,6 +104,7 @@ flutter:
     - assets/icons/rbtc2.png
     - assets/icons/
     - assets/images/
+    - assets/contracts/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

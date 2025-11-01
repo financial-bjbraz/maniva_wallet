@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../entities/transaction_helper.dart';
 import '../../../entities/user_helper.dart';
-import '../../../util/util.dart';
 
 class IncomingTransactionLine extends TableRow {
   final SimpleUser user;
@@ -12,7 +11,7 @@ class IncomingTransactionLine extends TableRow {
     return TableRow(children: [
       const Icon(Icons.call_received_rounded, color: Colors.blue),
       Text(
-        tx.date,
+        tx.ddateTime,
         style: const TextStyle(
           color: Colors.blue,
           fontSize: 14,
@@ -26,7 +25,7 @@ class IncomingTransactionLine extends TableRow {
         ),
       ),
       Text(
-        "   ${formatAddressMinimal(tx.transactionId)}",
+        "   ${(tx.transactionId)}",
         style: const TextStyle(
           color: Colors.blue,
           fontSize: 14,

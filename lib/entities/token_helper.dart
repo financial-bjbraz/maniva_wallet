@@ -29,7 +29,7 @@ class TokenHelper extends EntityHelper {
             $symbol TEXT NOT NULL,
             $symbol2 TEXT NOT NULL,
             $address TEXT NOT NULL,
-            $nodeUrl TEXT NOT NULL,
+            $nodeUrl TEXT NOT NULL
           )
           ''';
     return createTable;
@@ -42,13 +42,14 @@ class TokenHelper extends EntityHelper {
       token.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    close();
+
     return inserted;
   }
 
-  Future<List<Token>> fetchItems() async {
+  Future<List<Token>> fetchItems(int chainId) async {
     final db = await database;
-    final List<Map<String, Object?>> walletMaps = await db.query(table);
+    final List<Map<String, Object?>> walletMaps =
+        await db.query(table, where: 'network = ? ', whereArgs: [chainId]);
     if (walletMaps.isNotEmpty) {
       var list = [
         for (final {
