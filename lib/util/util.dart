@@ -1,20 +1,31 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:web3dart/web3dart.dart' as web3;
 
-const databaseName = "my_rootstock_wallet.db";
+import '../entities/entity_helper.dart';
+import 'addresses.dart';
+import 'network.dart';
+
+const DATA_BASE_NAME = "rwallet.db";
+const DATA_BASE_VERSION = 2;
+
+const RBTC_DECIMAL_PLACES = 1000000000000000000;
+const RBTC_DECIMAL_PLACES_COUNT = 18;
+const SIMPLE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
 Color? orange() => const Color.fromRGBO(255, 145, 0, 1);
-Color? pink() => const Color.fromRGBO(255, 112, 224, 1);
+Color pink() => const Color.fromRGBO(255, 112, 224, 1);
 Color? green() => const Color.fromRGBO(121, 198, 0, 1);
 Color? lightBlue() => const Color.fromRGBO(8, 255, 208, 1);
 Color? purple() => const Color.fromRGBO(158, 118, 255, 1);
 Color? yellow() => const Color.fromRGBO(222, 255, 26, 1);
-
 
 const shimmerGradient = LinearGradient(
   colors: [
@@ -57,10 +68,7 @@ final ButtonStyle orangeButton = ElevatedButton.styleFrom(
   backgroundColor: orange(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle yellowButton = ElevatedButton.styleFrom(
@@ -68,10 +76,7 @@ final ButtonStyle yellowButton = ElevatedButton.styleFrom(
   backgroundColor: yellow(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle lightBlueButton = ElevatedButton.styleFrom(
@@ -79,10 +84,7 @@ final ButtonStyle lightBlueButton = ElevatedButton.styleFrom(
   backgroundColor: lightBlue(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle pinkButton = ElevatedButton.styleFrom(
@@ -90,10 +92,7 @@ final ButtonStyle pinkButton = ElevatedButton.styleFrom(
   backgroundColor: pink(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle greenButton = ElevatedButton.styleFrom(
@@ -101,10 +100,7 @@ final ButtonStyle greenButton = ElevatedButton.styleFrom(
   backgroundColor: green(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle pinkButtonStyle = ElevatedButton.styleFrom(
@@ -112,10 +108,7 @@ final ButtonStyle pinkButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: pink(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle blackWhiteButton = ElevatedButton.styleFrom(
@@ -123,39 +116,25 @@ final ButtonStyle blackWhiteButton = ElevatedButton.styleFrom(
   backgroundColor: Colors.white,
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(
-      width: 2,
-      color: Colors.black
-  ),
+  side: const BorderSide(width: 2, color: Colors.black),
 );
 
-const whiteText = TextStyle(
-    fontWeight: FontWeight.normal,
-    fontSize: 20,
-    color: Colors.white);
+const whiteText = TextStyle(fontWeight: FontWeight.normal, fontSize: 20, color: Colors.white);
 
-const blackText = TextStyle(
-    fontWeight: FontWeight.normal,
-    fontSize: 20,
-    color: Colors.black);
+const blackText = TextStyle(fontWeight: FontWeight.normal, fontSize: 20, color: Colors.black);
 
-const smallBlackText = TextStyle(
-    fontWeight: FontWeight.normal,
-    fontSize: 12,
-    color: Colors.black);
+const smallBlackText = TextStyle(fontWeight: FontWeight.normal, fontSize: 12, color: Colors.black);
 
 Future<void> delay(BuildContext context, int seconds) {
   return Future.delayed(Duration(seconds: seconds), () {});
 }
 
-verifyAndCreateDataBase() async {
+Future<bool> verifyAndCreateDataBase() async {
   var created = await isTableCreated();
-
-  openDataBase();
-
-  if(!created) {
+  if (!created) {
     createTable();
   }
+  return created;
 }
 
 TextSpan addressText(String address) {
@@ -176,7 +155,7 @@ EdgeInsets createPaddingBetweenDifferentRows() {
 
 Future<bool> isTableCreated() async {
   final prefs = await SharedPreferences.getInstance();
-  var created = prefs.getString("dataBaseCreated_2");
+  var created = prefs.getString("dataBaseCreated$DATA_BASE_VERSION");
   return created != null;
 }
 
@@ -185,7 +164,7 @@ Future<String> getIndex() async {
   final prefs = await SharedPreferences.getInstance();
   var indexStorage = prefs.getString("index");
 
-  if(indexStorage != null) {
+  if (indexStorage != null) {
     index = int.parse(indexStorage);
     indexStorage = (index + 1).toString();
   } else {
@@ -198,13 +177,43 @@ Future<String> getIndex() async {
 }
 
 setDataBaseCreated() async {
-   final prefs = await SharedPreferences.getInstance();
-   await prefs.setString("dataBaseCreated", "true");
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString("dataBaseCreated$DATA_BASE_VERSION", "true");
 }
 
 setLastUsdPrice(int price) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString("lastBtcPrice", price.toString());
+  setLastUsdPriceTime();
+}
+
+String formatBalance(String balance) {
+  if (balance == "0" || balance == "0.0") {
+    return "0.0000";
+  }
+  return balance;
+}
+
+String formatUsd(String balanceInUsd) {
+  try {
+    double value = double.parse(balanceInUsd);
+    return value.toStringAsFixed(2);
+  } catch (e) {}
+  return balanceInUsd;
+}
+
+setLastUsdPriceTime() async {
+  DateFormat df = DateFormat(SIMPLE_DATE_FORMAT);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString("lastBtcTime", df.format(DateTime.now()));
+}
+
+Future<DateTime> getLastUsdPriceTime() async {
+  DateFormat df = DateFormat(SIMPLE_DATE_FORMAT);
+  final prefs = await SharedPreferences.getInstance();
+  final String valor = prefs.getString("lastBtcTime") ?? "2025-04-01 00:00:00";
+  DateTime data = df.parse(valor, false);
+  return data;
 }
 
 Future<int> getLastUsdPrice() async {
@@ -213,67 +222,66 @@ Future<int> getLastUsdPrice() async {
   return int.parse(valor ?? "0");
 }
 
-Future<Database> openDataBase() async {
-  if (kDebugMode) {
-    print("====================================================================");
-    print("==================== Opening database ==================");
-  }
-
-  var databasesPath = await getDatabasesPath();
-  String path = join(databasesPath, databaseName);
-  Database database = await openDatabase(path, version: 3,
-        onCreate: (Database db, int version) async {
-          await db.execute(
-            'CREATE TABLE wallets(privateKey TEXT PRIMARY KEY, walletName TEXT, walletId TEXT,publicKey TEXT, ownerEmail TEXT, amount REAL)',
-          );
-          if (kDebugMode) {
-            print("creating table users ");
-          }
-          await db.execute(
-            'CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)',
-          );
-          await db.execute(
-            'CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT)',
-          );
-          if (kDebugMode) {
-            print("created table users ");
-          }
-        });
-  try {
-    database.transaction((txn) async {
-      await txn.execute(
-          "CREATE TABLE wallets(privateKey TEXT PRIMARY KEY, walletName TEXT, walletId TEXT,publicKey TEXT, ownerEmail TEXT, amount REAL);");
-    });
-    database.transaction((txn) async {
-      await txn.execute(
-          "CREATE TABLE users(name TEXT PRIMARY KEY, email TEXT, userId TEXT, password TEXT)");
-    });
-    database.transaction((txn) async {
-      await txn.execute('CREATE TABLE transactions(transactionId TEXT PRIMARY KEY, walletId TEXT, amountInWeis TEXT, valueInUsdFormatted TEXT, valueinWeiFormatted TEXT, date TEXT, status TEXT)');
-    });
-  } catch(e){
-    if (kDebugMode) {
-      print("Error occurred");
-    }
-  }
-
-  if (kDebugMode) {
-    print("====================================================================");
-    print("==========Database opened  =============");
-  }
-
-  return database;
+openDataBase() async {
+  await EntityHelper().setUp();
 }
 
+testEncriptData() {
+  print("Teste de encriptacao");
+  final plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
+  print("PlainText:$plainText");
+  var encriptedText = encrypt(plainText);
+  print("Encripted:$encriptedText");
+  var decryptedText = decrypt(encriptedText);
+  print("Decripted$decryptedText");
+}
+
+enc.Encrypter generateEncrypter() {
+  final key = enc.Key.fromUtf8(getPlainKey());
+  return enc.Encrypter(enc.AES(key));
+}
+
+String encrypt(String plainText) {
+  final encrypter = generateEncrypter();
+  final encrypted = encrypter.encrypt(plainText, iv: enc.IV.fromUtf8("baseutf8"));
+  return encrypted.base16;
+}
+
+String decrypt(String encryptedText) {
+  final encrypter = generateEncrypter();
+  return encrypter.decrypt16(encryptedText, iv: enc.IV.fromUtf8("baseutf8"));
+}
 
 createTable() async {
   openDataBase();
 }
 
+String getPlainKey() {
+  var plainKey = dotenv.env['PLAIN_KEY'];
+  return plainKey ?? "";
+}
+
 String formatAddress(final String publicKey) {
-  var address = publicKey;
-  address = "${address.substring(0, 8)}...${address.substring(
-      address.length - 8, address.length)}";
+  var address = toChecksumAddress(publicKey, Network.ROOTSTOCK_TESTNET.networkId);
+
+  address = "${address.substring(0, 8)}...${address.substring(address.length - 8, address.length)}";
+  return address;
+}
+
+String formatAddressWithParameter(final String publicKey, final int param) {
+  var address = toChecksumAddress(publicKey, Network.ROOTSTOCK_TESTNET.networkId);
+  address =
+      "${address.substring(0, param)}...${address.substring(address.length - param, address.length)}";
+  return address;
+}
+
+String formatTextWithParameter(final String text, final int param) {
+  return "${text.substring(0, param)}...${text.substring(text.length - param, text.length)}";
+}
+
+String formatAddressMinimal(final String publicKey) {
+  var address = toChecksumAddress(publicKey, Network.ROOTSTOCK_TESTNET.networkId);
+  address = "${address.substring(0, 4)}...${address.substring(address.length - 4, address.length)}";
   return address;
 }
 
@@ -281,29 +289,45 @@ InputDecoration simmpleDecoration(final String labelText, final Icon icon) {
   return InputDecoration(
       focusColor: Colors.white,
       enabled: true,
-
       fillColor: Colors.white,
       prefixIcon: icon,
       labelText: labelText,
-      labelStyle: const TextStyle( color: Colors.white ),
+      labelStyle: const TextStyle(color: Colors.white),
       enabledBorder: const OutlineInputBorder(
-        borderSide:
-        BorderSide(color: Colors.white),
+        borderSide: BorderSide(color: Colors.white),
       ),
       focusedBorder: const OutlineInputBorder(
-        borderSide:
-        BorderSide(width: 2, color: Colors.white),
+        borderSide: BorderSide(width: 2, color: Colors.white),
       ),
       border: const OutlineInputBorder(
-        borderSide:
-        BorderSide(width: 1, color: Colors.white),
+        borderSide: BorderSide(width: 1, color: Colors.white),
       ),
       suffixIcon: IconButton(
-        icon: const Icon(Icons.done, color: Colors.white,),
+        icon: const Icon(
+          Icons.done,
+          color: Colors.white,
+        ),
         splashColor: Colors.green,
         tooltip: "Submit",
-        onPressed: () {
-
-        },
+        onPressed: () {},
       ));
+}
+
+loadWalletDataExample(String myAddress, String contractAddress, String privateKey) async {
+  final node = dotenv.env['ROOTSTOCK_NODE'];
+  final client = web3.Web3Client(node!, http.Client());
+  final credentials = web3.EthPrivateKey.fromHex(privateKey);
+
+  final web3.EthereumAddress contractAddr = web3.EthereumAddress.fromHex(contractAddress);
+  final web3.EthereumAddress receiver = web3.EthereumAddress.fromHex(myAddress);
+
+  final abiCode = await rootBundle.loadString('assets/contracts/MetaCoin.abi');
+  final contract =
+      web3.DeployedContract(web3.ContractAbi.fromJson(abiCode, 'MetaCoin'), contractAddr);
+
+  final balanceFunction = contract.function('getBalance');
+
+  final balance =
+      await client.call(contract: contract, function: balanceFunction, params: [receiver]);
+  var balanceObtained = balance.first.toString();
 }

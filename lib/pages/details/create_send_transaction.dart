@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:my_rootstock_wallet/entities/simple_user.dart';
 import 'package:my_rootstock_wallet/util/util.dart';
 import 'package:provider/provider.dart';
 
-import '../../entities/wallet_entity.dart';
+import '../../entities/user_helper.dart';
+import '../../entities/wallet_helper.dart';
 import '../../services/wallet_service.dart';
-
 
 class CreateSendTransaction extends StatefulWidget {
   const CreateSendTransaction({super.key, required this.user});
@@ -18,15 +17,16 @@ class CreateSendTransaction extends StatefulWidget {
   _CreateSendTransaction createState() => _CreateSendTransaction();
 }
 
-class _CreateSendTransaction extends State<CreateSendTransaction> with AutomaticKeepAliveClientMixin {
+class _CreateSendTransaction extends State<CreateSendTransaction>
+    with AutomaticKeepAliveClientMixin {
   bool _showSaldo = false;
   String currentBalance = " 0,00";
   final TextEditingController _controller = TextEditingController();
   late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context, listen: false);
   late List<WalletEntity> wallets;
 
-  _CreateSendTransaction(){
-       walletService.getWallets(widget.user.email).then((value) => wallets = value);
+  _CreateSendTransaction() {
+    walletService.getWallets(widget.user.email).then((value) => wallets = value);
   }
 
   @override
@@ -41,8 +41,7 @@ class _CreateSendTransaction extends State<CreateSendTransaction> with Automatic
             padding: const EdgeInsets.all(20),
             child: Row(
               children: <Widget>[
-                Image.asset('assets/icons/rbtc.png',
-                    height: 30),
+                Image.asset('assets/icons/rbtc.png', height: 30),
                 const SizedBox(
                   width: 5,
                 ),
@@ -73,24 +72,21 @@ class _CreateSendTransaction extends State<CreateSendTransaction> with Automatic
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                           Row(
+                          Row(
                             children: <Widget>[
                               const Icon(Icons.attach_money, color: Colors.black),
                               _showSaldo
                                   ? Text.rich(
-                                TextSpan(
-                                  text: currentBalance,
-                                ),
-                                textAlign: TextAlign.start,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 28,
-                                ),
-                              )
-                                  : Container(
-                                  height: 32,
-                                  width: 140,
-                                  color: Colors.grey[200]),
+                                      TextSpan(
+                                        text: currentBalance,
+                                      ),
+                                      textAlign: TextAlign.start,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 28,
+                                      ),
+                                    )
+                                  : Container(height: 32, width: 140, color: Colors.grey[200]),
                             ],
                           ),
                           GestureDetector(
@@ -98,7 +94,6 @@ class _CreateSendTransaction extends State<CreateSendTransaction> with Automatic
                               setState(() {
                                 _showSaldo = !_showSaldo;
                               });
-
                             },
                             child: SvgPicture.asset(
                               _showSaldo
@@ -111,8 +106,7 @@ class _CreateSendTransaction extends State<CreateSendTransaction> with Automatic
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(
-                          left: 20, top: 20, bottom: 20),
+                      padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20),
                       child: SizedBox(
                         width: double.infinity,
                         child: Column(
@@ -123,27 +117,23 @@ class _CreateSendTransaction extends State<CreateSendTransaction> with Automatic
                                 controller: _controller,
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 inputFormatters: <TextInputFormatter>[
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
                                   TextInputFormatter.withFunction(
-                                        (oldValue, newValue) => newValue.copyWith(
+                                    (oldValue, newValue) => newValue.copyWith(
                                       text: newValue.text.replaceAll('.', ','),
                                     ),
                                   ),
-
                                 ],
                                 decoration: const InputDecoration(
                                     labelText: "Amount to Send",
                                     hintText: "Amount to Send",
-                                    icon: Icon(Icons.attach_money)
-                                )
-                            ),
-
+                                    icon: Icon(Icons.attach_money))),
                           ],
                         ),
                       ),
                     ),
-                    SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.05),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                   ],
                 ),
               ),

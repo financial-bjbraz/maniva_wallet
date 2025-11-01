@@ -3,19 +3,23 @@ import 'dart:convert';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:ed25519_hd_key/ed25519_hd_key.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hex/hex.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:logging/logging.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/util/coingeck_resopnse.dart';
+import 'package:my_rootstock_wallet/util/transaction_type.dart';
 import 'package:my_rootstock_wallet/util/wei.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:web3dart/web3dart.dart' as web3;
-import '../entities/simple_transaction.dart';
-import '../entities/wallet_entity.dart';
+
+import '../entities/transaction_helper.dart';
+import '../entities/wallet_helper.dart';
+import '../util/bitcoin.dart';
+import '../util/network.dart';
 import '../util/util.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'create_transaction_service.dart';
 
 abstract class WalletAddressService {
   String generateMnemonic();
@@ -30,6 +34,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   static const walletName = "flutter_k2";
   static const publickey = "flutter_k3";
   static const wid = "flutter_k4";
+  final log = Logger("WalletServiceImpl");
+  CreateTransactionServiceImpl service = CreateTransactionServiceImpl();
 
   @override
   String generateMnemonic() {
@@ -59,101 +65,95 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
   Future<List<WalletEntity>> getWallets(final String ownerEmail) async {
     WidgetsFlutterBinding.ensureInitialized();
-    // Open the database and store the reference.
-    final database = openDatabase(
-      // Set the path to the database. Note: Using the `join` function from the
-      // `path` package is best practice to ensure the path is correctly
-      // constructed for each platform.
-      join(await getDatabasesPath(), databaseName),
-    );
-    // Get a reference to the database.
-    final db = await database;
-
-    // Query the table for all the wallets.
-    final List<Map<String, Object?>> walletMaps = await db.query(
-        'wallets', where: 'ownerEmail = ?', whereArgs: [ownerEmail]);
-
-    // Convert the list of each fields into a list of `Wallet` objects.
-    return [
-      for (final {
-      'privateKey': privateKey as String,
-      'walletName': walletName as String,
-      'walletId': walletId as String,
-      'publicKey': publicKey as String,
-      'ownerEmail': ownerEmail as String,
-      'amount': amountValue as double,
-      } in walletMaps)
-        WalletEntity(amountValue, privateKey: privateKey,
-            publicKey: publicKey,
-            walletId: walletId,
-            walletName: walletName,
-            ownerEmail: ownerEmail),
-    ];
+    WalletHelper walletHelper = WalletHelper();
+    return walletHelper.fetchItems(ownerEmail);
   }
 
   void persistNewWallet(WalletEntity wallet) async {
-    final database = openDatabase(
-      // Set the path to the database. Note: Using the `join` function from the
-      // `path` package is best practice to ensure the path is correctly
-      // constructed for each platform.
-      join(await getDatabasesPath(), databaseName),
-    );
-    // Get a reference to the database.
-    final db = await database;
+    WalletHelper helper = WalletHelper();
+    var inserted = await helper.insertItem(wallet);
 
-    await db.insert(
-      'wallets',
-      wallet.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    db.close();
+    if (inserted > 0) {
+      log.info("Wallet persisted successfully");
+    } else {
+      log.warning("Failed to persist wallet");
+      throw Exception("Failed to persist wallet");
+    }
   }
 
   void delete(WalletEntity wallet) async {
     final db = await openDataBase();
-    await db.delete(
-        "wallets", where: 'privateKey = ?', whereArgs: [wallet.privateKey]);
+    await db.delete("wallets", where: 'privateKey = ?', whereArgs: [wallet.privateKey]);
   }
 
-  Future<String> getBalance(WalletEntity wallet) async {
+  Future<String> getBalance(WalletDTO dto) async {
     const returnValue = "0.00";
     try {
-      final wei = await getBalanceInWei(wallet);
+      final wei = await getBalanceInWei(dto);
       return (wei.toRBTCTrimmedString());
     } catch (e) {
       return returnValue;
     }
   }
 
-  Future<Wei> getBalanceInWei(WalletEntity wallet) async {
-    var balance = web3.EtherAmount.zero();
+  Future<String> getBalanceBitcoin(WalletDTO dto) async {
+    const returnValue = "0.00";
     try {
-      final node = dotenv.env['ROOTSTOCK_NODE'];
-      final client = web3.Web3Client(node!, http.Client());
-      final credentials = web3.EthPrivateKey.fromHex(wallet.privateKey);
-      final address = credentials.address;
-      balance = await client.getBalance(address);
-    } catch (error) {
-      // error
+      final wei = await getBalanceInWei(dto);
+      return (wei.toRBTCTrimmedString());
+    } catch (e) {
+      return returnValue;
     }
-    return Wei(src: balance.getInWei, currency: "wei");
   }
 
-  Future<SimpleTransaction> sendRBTC(WalletEntity wallet, String destinationAddress,
-      BigInt amount) async {
-    var persistTransaction = SimpleTransaction(transactionId: '', amountInWeis: amount.toInt(), date: DateFormat("dd/MM/yyyy").format(DateTime.now()), walletId: wallet.walletId,
-        valueInUsdFormatted: '',
-        valueInWeiFormatted: '');
+  Future<Wei> getBalanceInWei(WalletDTO dto) async {
+    try {
+      if (!dto.updated) {
+        final node = dotenv.env['ROOTSTOCK_NODE'];
+        final client = web3.Web3Client(node!, http.Client());
+        final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
+        final address = credentials.address;
+        dto.lastBalanceReceivedInEtherAmount = await client.getBalance(address);
+        dto.lastBalanceReceivedInWei =
+            Wei(src: dto.lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
+        dto.updated = true;
+      }
+    } catch (error) {
+      log.severe("Error getting balance", error);
+    }
+    return dto.lastBalanceReceivedInWei;
+  }
+
+  Future<Wei> getBalanceInSatoshis(WalletDTO dto) async {
+    try {
+      if (!dto.updated) {
+        final node = dotenv.env['ROOTSTOCK_NODE'];
+        final client = web3.Web3Client(node!, http.Client());
+        final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
+        final address = credentials.address;
+        dto.lastBalanceReceivedInEtherAmount = await client.getBalance(address);
+        dto.lastBalanceReceivedInWei =
+            Wei(src: dto.lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
+        dto.updated = true;
+      }
+    } catch (error) {
+      log.severe("Error getting balance", error);
+    }
+    return dto.lastBalanceReceivedInWei;
+  }
+
+  // TODO(alexjavabraz): implement persistence of transaction sent
+  Future<SimpleTransaction> sendRBTC(
+      WalletDTO dto, String destinationAddress, BigInt amount) async {
+    var unit = web3.EtherAmount.fromUnitAndValue(web3.EtherUnit.wei, amount);
+    var transactionToPersist = await createTransactionInstance(dto, destinationAddress, amount);
     try {
       var node = dotenv.env['ROOTSTOCK_NODE'];
       var httpClient = http.Client();
       final client = web3.Web3Client(node.toString(), httpClient);
-      final credentials = web3.EthPrivateKey.fromHex(wallet.privateKey);
+      final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
       var chainId = await client.getChainId();
       web3.EtherAmount gasPrice = await client.getGasPrice();
-
-      var unit = web3.EtherAmount.fromUnitAndValue(web3.EtherUnit.wei, amount);
 
       var transaction = web3.Transaction(
         to: web3.EthereumAddress.fromHex(destinationAddress),
@@ -162,18 +162,21 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         value: unit,
       );
 
-      persistTransaction.transactionId = await client.sendTransaction(
-        credentials,
-        transaction,
-        chainId: chainId.toInt()
-      );
-      persistTransaction.transactionSent = true;
-
+      transactionToPersist.transactionId =
+          await client.sendTransaction(credentials, transaction, chainId: chainId.toInt());
+      transactionToPersist.transactionSent = true;
       await client.dispose();
     } catch (error) {
-      persistTransaction.transactionSent = false;
+      log.severe("Error sending transaction", error);
+      transactionToPersist.transactionSent = false;
     }
-    return persistTransaction;
+    try {
+      service.createOrUpdateTransaction(transactionToPersist);
+      transactionToPersist.transactionSent = true;
+    } catch (error) {
+      log.severe("Error persisting transaction", error);
+    }
+    return transactionToPersist;
   }
 
   // Tentar reutilizar isso em alguma classe para nao buscar toda hora do .env
@@ -182,26 +185,75 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return blockExplorer! + transactionId;
   }
 
-  Future<WalletDTO> createWalletToDisplay(WalletEntity wallet) async {
-    var walletDto = WalletDTO(wallet: wallet, transactions: null);
-    final wei = await getBalanceInWei(wallet);
-    final usdPrice = await getPrice();
-    final value = wei.getWei() * usdPrice;
-    final formatter = NumberFormat.simpleCurrency();
-    walletDto.amountInWeis = wei.getWei();
-    walletDto.amountInUsd = value;
-    walletDto.valueInWeiFormatted = (wei.toRBTCTrimmedStringPlaces(10));
-    walletDto.valueInUsdFormatted = formatter.format(value);
-
-    if (wei.src.compareTo(BigInt.from(wallet.amount)) != 0) {
-      wallet.amount = wei.src.toDouble();
-      persistNewWallet(wallet);
-    }
-
-    return walletDto;
+  Future<WalletDTO> convert(WalletEntity entity) async {
+    return WalletDTO(wallet: entity, transactions: null, btcTransactions: null);
   }
 
-  Future<int> getPrice() async {
+  Future<WalletDTO> createGenericWalletToDisplay(Network network, WalletDTO dto) async {
+    switch (network) {
+      case Network.BITCOIN_TESTNET:
+        dto = await setBitcoinWallet(dto);
+        break;
+      case Network.ROOTSTOCK_TESTNET:
+        dto = await setRootstockWallet(dto);
+        break;
+      case Network.BITCOIN_MAINNET:
+        throw UnimplementedError();
+      case Network.ROOTSTOCK_MAINNET:
+        throw UnimplementedError();
+    }
+    return dto;
+  }
+
+  Future<WalletDTO> setBitcoinWallet(WalletDTO dto) async {
+    try {
+      final usdPrice = await _getPrice();
+      final formatter = NumberFormat.simpleCurrency();
+      dto.amountInUsd = 0.00;
+      dto.valueInWeiFormatted = "0.00";
+      dto.balanceInUsd = "0";
+      dto.balance = "0";
+
+      return dto;
+    } catch (error) {
+      log.severe("Error creating wallet to display $error");
+      throw Exception("Error creating wallet to display");
+    }
+  }
+
+  Future<WalletDTO> setRootstockWallet(WalletDTO dto) async {
+    try {
+      final wei = await getBalanceInWei(dto);
+      final usdPrice = await _getPrice();
+      final value = wei.getWei() * usdPrice;
+      final formatter = NumberFormat.simpleCurrency();
+      dto.amountInWeis = wei.getWei();
+      dto.amountInUsd = value;
+      dto.valueInWeiFormatted = (wei.toRBTCTrimmedStringPlaces(10));
+      dto.valueInUsdFormatted = formatter.format(value);
+
+      // If last received value is != than stored value, udpate stored value
+      if (wei.src.compareTo(BigInt.from(dto.wallet.amount)) != 0) {
+        dto.wallet.amount = wei.src.toDouble();
+        persistNewWallet(dto.wallet);
+      }
+
+      dto.balance = dto.valueInWeiFormatted;
+      dto.balanceInUsd = dto.valueInUsdFormatted;
+
+      return dto;
+    } catch (error) {
+      log.severe("Error creating wallet to display $error");
+      throw Exception("Error creating wallet to display");
+    }
+  }
+
+  Future<int> _getPrice() async {
+    if (!await isTimeToQuery()) {
+      // setted to 4 hours
+      return getLastUsdPrice();
+    }
+
     final response = await http.get(Uri.parse(
         'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=100&page=1&sparkline=false'));
 
@@ -210,19 +262,60 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       List<CoinGeckoResponse> prices = body
           .map(
-            (dynamic item) =>
-            CoinGeckoResponse.fromJson2(item as Map<String, dynamic>),
-      ).toList();
-      var price = (prices
-          .elementAt(0)
-          .currentPrice);
-
+            (dynamic item) => CoinGeckoResponse.fromJson2(item as Map<String, dynamic>),
+          )
+          .toList();
+      var price = (prices.elementAt(0).currentPrice);
       setLastUsdPrice(price);
-
       return price;
     } else {
       return getLastUsdPrice();
     }
   }
 
+  Future<bool> isTimeToQuery() async {
+    final now = DateTime.now();
+    final lastQuery = await getLastUsdPriceTime();
+    final difference = now.difference(lastQuery);
+    return difference.inHours > 4; // 4 hours
+  }
+
+  Future<SimpleTransaction> createTransactionInstance(
+      WalletDTO dto, String destinationAddress, BigInt amount) async {
+    var wei = Wei(src: BigInt.zero, currency: 'wei');
+    var usdPrice = 0;
+    final formatter = NumberFormat.simpleCurrency();
+
+    try {
+      wei = Wei(src: amount, currency: 'wei');
+      usdPrice = await _getPrice();
+      final value = wei.getWei() * usdPrice;
+
+      final transactionToPersist = SimpleTransaction(
+          transactionId: '',
+          amountInWeis: amount.toString(),
+          ddateTime: DateFormat("dd/MM/yyyy").format(DateTime.now()),
+          walletId: dto.wallet.walletId,
+          valueInUsdFormatted: (formatter.format(value)),
+          valueInWeiFormatted: (wei.toRBTCTrimmedStringPlaces(10)),
+          type: TransactionType.REGULAR_OUTGOING.type,
+          destination: destinationAddress);
+      return transactionToPersist;
+    } catch (error) {
+      log.severe("error creating transaction to be persisted", error);
+    }
+    return SimpleTransaction(
+        transactionId: '',
+        amountInWeis: "0",
+        ddateTime: '',
+        walletId: '',
+        valueInUsdFormatted: '',
+        valueInWeiFormatted: '',
+        type: TransactionType.NONE.type,
+        destination: destinationAddress);
+  }
+
+  String getBtcAddressFromPrivateKey(final String privateKey) {
+    return BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
+  }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:my_rootstock_wallet/entities/simple_user.dart';
 import 'package:my_rootstock_wallet/pages/home_page.dart';
 import 'package:provider/provider.dart';
 
-import '../entities/wallet_entity.dart';
+import '../entities/user_helper.dart';
+import '../entities/wallet_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../services/create_user_service.dart';
 import '../services/wallet_service.dart';
 import '../util/util.dart';
@@ -30,7 +30,6 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
-
   @override
   void initState() {
     super.initState();
@@ -44,7 +43,7 @@ class _BodyState extends State<Body> {
   late String mensagemUserNotFound = AppLocalizations.of(context)!.mensagem_user_not_found;
   late String userCreatedSuccessfully = AppLocalizations.of(context)!.user_created_successfully;
 
-  late WalletServiceImpl walletService =  Provider.of<WalletServiceImpl>(context, listen: false);
+  late WalletServiceImpl walletService = Provider.of<WalletServiceImpl>(context, listen: false);
 
   Widget loginButton() {
     final String loginAnonimousText = AppLocalizations.of(context)!.alogin;
@@ -63,8 +62,7 @@ class _BodyState extends State<Body> {
             flex: 1,
             child: Container(
               padding: const EdgeInsets.all(33.0),
-              child: Image.asset('assets/images/maniva.png',
-                  height: 30),
+              child: Image.asset('assets/images/maniva.png', height: 30),
             ),
           ),
           Expanded(
@@ -81,7 +79,12 @@ class _BodyState extends State<Body> {
                         style: const TextStyle(color: Colors.white),
                         cursorColor: Colors.white,
                         controller: mailController,
-                        decoration: simmpleDecoration(AppLocalizations.of(context)!.emailField,  const Icon(Icons.person, color: Colors.white,)),
+                        decoration: simmpleDecoration(
+                            AppLocalizations.of(context)!.emailField,
+                            const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                            )),
                       ),
                     ),
                     Padding(
@@ -92,7 +95,12 @@ class _BodyState extends State<Body> {
                         cursorColor: Colors.white,
                         obscureText: true,
                         controller: passwordController,
-                        decoration: simmpleDecoration(AppLocalizations.of(context)!.passwordField,  const Icon(Icons.password, color: Colors.white,)),
+                        decoration: simmpleDecoration(
+                            AppLocalizations.of(context)!.passwordField,
+                            const Icon(
+                              Icons.password,
+                              color: Colors.white,
+                            )),
                       ),
                     ),
                     Row(
@@ -101,9 +109,9 @@ class _BodyState extends State<Body> {
                         ElevatedButton(
                           onPressed: () async {
                             var user = SimpleUser(
-                              name: mailController.text,
-                              email: mailController.text,
-                              password: passwordController.text);
+                                name: mailController.text,
+                                email: mailController.text,
+                                password: passwordController.text);
                             bool isValid = await validate(user, context);
                             if (isValid) {
                               goToHome(user);
@@ -114,7 +122,10 @@ class _BodyState extends State<Body> {
                             children: <Widget>[
                               Row(
                                 children: <Widget>[
-                                  const Icon(Icons.create, color: Colors.white,),
+                                  const Icon(
+                                    Icons.create,
+                                    color: Colors.white,
+                                  ),
                                   const SizedBox(
                                     width: 10,
                                   ),
@@ -153,7 +164,10 @@ class _BodyState extends State<Body> {
                             children: <Widget>[
                               Row(
                                 children: <Widget>[
-                                  const Icon(Icons.login_rounded, color: Colors.white,),
+                                  const Icon(
+                                    Icons.login_rounded,
+                                    color: Colors.white,
+                                  ),
                                   const SizedBox(
                                     width: 10,
                                   ),
@@ -206,9 +220,7 @@ class _BodyState extends State<Body> {
                               child: Text(
                                 loginAnonimousText,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 25,
-                                    color: Colors.white),
+                                    fontWeight: FontWeight.bold, fontSize: 25, color: Colors.white),
                               ),
                             ),
                           ]),
@@ -227,8 +239,9 @@ class _BodyState extends State<Body> {
     final anonimousUser = SimpleUser(
       name: AppLocalizations.of(context)!.anonimus,
       email:
-      "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
-      password: "",);
+          "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
+      password: "",
+    );
     goToHome(anonimousUser);
   }
 
@@ -255,7 +268,8 @@ class _BodyState extends State<Body> {
   }
 
   Future<bool> validate(SimpleUser user, BuildContext context) async {
-    final CreateUserServiceImpl createUserServiceImpl = Provider.of<CreateUserServiceImpl>(context, listen: false);
+    final CreateUserServiceImpl createUserServiceImpl =
+        Provider.of<CreateUserServiceImpl>(context, listen: false);
 
     var email = user.email;
     var password = user.password;
@@ -265,7 +279,7 @@ class _BodyState extends State<Body> {
       return false;
     }
 
-    if (password.isEmpty ||  password.length < 8) {
+    if (password.isEmpty || password.length < 8) {
       showMessage(mensagemInvalidPassword);
       return false;
     }
@@ -281,7 +295,8 @@ class _BodyState extends State<Body> {
   }
 
   Future<bool> validateCreateAccount(SimpleUser user, BuildContext context) async {
-    final CreateUserServiceImpl createUserServiceImpl = Provider.of<CreateUserServiceImpl>(context, listen: false);
+    final CreateUserServiceImpl createUserServiceImpl =
+        Provider.of<CreateUserServiceImpl>(context, listen: false);
 
     var email = mailController.text;
     var password = passwordController.text;
@@ -291,7 +306,7 @@ class _BodyState extends State<Body> {
       return false;
     }
 
-    if (password.isEmpty ||  password.length < 8) {
+    if (password.isEmpty || password.length < 8) {
       showMessage(mensagemInvalidPassword);
       return false;
     }
@@ -318,5 +333,4 @@ class _BodyState extends State<Body> {
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
-
 }
