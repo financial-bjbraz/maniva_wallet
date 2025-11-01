@@ -42,5 +42,15 @@
   "txSent": "Transaccion enviada",
   "txReceived": "Transaccion recibida",
   "amount": "Rellena el monto",
-  "destination": "Direccíon destino"
+  "destination": "Direccíon destino",
+  "copiedMessage": "Copiado",
+  "configureAccount": "Configurar cuenta",
+  "profile": "Perfil",
+  "help": "Ayuda",
+  "exit": "Salir",
+  "txSent": "Nueva tx enviada",
+  "txReceived": "Nueva tx recibida",
+  "createNewWallet": "Create New Wallet",
+  "restoreWallet": "Restore Wallet with Seed Phrase",
+  "restoreWalletWithPrivateKey": "Restore Wallet with Private Key"
 }

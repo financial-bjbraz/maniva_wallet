@@ -1,10 +1,11 @@
-import 'package:my_rootstock_wallet/entities/simple_transaction.dart';
-import 'package:my_rootstock_wallet/entities/wallet_entity.dart';
+import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
+import 'package:my_rootstock_wallet/entities/wallet_helper.dart';
+import 'package:my_rootstock_wallet/util/wei.dart';
+import 'package:web3dart/web3dart.dart';
 
 import '../util/util.dart';
 
 class WalletDTO {
-
   late String? publicKey;
   final WalletEntity wallet;
   late double amountInUsd;
@@ -12,8 +13,14 @@ class WalletDTO {
   late String valueInUsdFormatted;
   late String valueInWeiFormatted;
   Set<SimpleTransaction>? transactions;
+  Set<SimpleTransaction>? btcTransactions;
+  bool updated = false;
+  late Wei lastBalanceReceivedInWei;
+  late EtherAmount lastBalanceReceivedInEtherAmount;
+  late String balance;
+  late String balanceInUsd;
 
-  WalletDTO({required this.wallet, required this.transactions});
+  WalletDTO({required this.wallet, required this.transactions, required this.btcTransactions});
 
   String getName() {
     return "Wallet #${wallet.walletId}";
@@ -31,8 +38,7 @@ class WalletDTO {
     return wallet.publicKey;
   }
 
-  String getValueInUsd(){
+  String getValueInUsd() {
     return valueInUsdFormatted;
   }
-
 }

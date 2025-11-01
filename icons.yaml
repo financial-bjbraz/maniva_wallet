@@ -1,0 +1,18 @@
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/rbtc2.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/icons/rbtc2.png"
+    background_color: "0xffffff"
+    theme_color: "0x000000"
+  windows:
+    generate: true
+    image_path: "assets/icons/rbtc2.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/icons/rbtc2.png"
