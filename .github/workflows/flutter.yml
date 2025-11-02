@@ -1,89 +1,210 @@
-
 name: Flutter CI
-
-# This workflow is triggered on pushes to the repository.
 
 on:
   push:
     branches: ["main"]
-  #pull_request:
-    #branches: ["main"]
 
 jobs:
-  build:
-    # This job will run on ubuntu virtual machine
+  android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
-
-      # Setup Java environment in order to build the Android app.
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
         with:
           java-version: '22'
-
-      # Setup the flutter environment.
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.1' # you can also specify exact version of flutter
-          # channel: 'beta' # 'dev', 'alpha', default to: 'stable'
-          # flutter-version: '1.12.x' # you can also specify exact version of flutter
-
-      # Get flutter dependencies.
-      - run: flutter pub cache clean
-      - run: flutter channel stable
+          flutter-version: '3.27.1'
       - run: flutter pub get
-
+      - run: flutter analyze .
+      - run: flutter test
       - run: |
           touch .env
           echo ROOTSTOCK_NODE=${{ secrets.ROOTSTOCK_NODE }} >> .env
           echo BLOCK_EXPLORER_URL=${{ secrets.BLOCK_EXPLORER_URL }} >> .env
           cat .env
-
-      - name: Enable Windows desktop build
-        run: flutter config --enable-windows-desktop
-      - name: Enable macOS desktop build
-        run: flutter config --enable-macos-desktop
-      - name: Enable Linux desktop build
-        run: flutter config --enable-linux-desktop
-
-      # Statically analyze the Dart code for any errors.
-      - run: flutter analyze .
-
-      # Run widget tests for our flutter project.
-      - run: flutter test
-
-      # Build apk.
       - name: Build Android APK
-        run: flutter build apk
-      - name: Build Windows release
-        run: flutter build windows --release
-      - name: Build macOS release
-        run: flutter build macos --release
-      - name: Build Linux release
-        run: flutter build linux --release
-
-      # Upload generated apk to the artifacts.
-      - uses: actions/upload-artifact@v4
+        run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: apk
           path: build/app/outputs/apk/release/app-release.apk
 
-      - name: Package Release files
-        uses: thedoctor0/zip-release@master
+  windows:
+    name: Build Windows Desktop
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
         with:
-          type: 'zip'
-          filename: my_app-${{github.ref_name}}-windows.zip
-          path: build/windows/runner/Release/
+          flutter-version: '3.27.1'
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+      - run: flutter pub get
+      - name: Build Windows Release
+        run: flutter build windows --release
+      - name: Zip Windows build
+        shell: powershell
+        run: |
+          if (Test-Path -Path build\windows\runner\Release) {
+            Compress-Archive -Path 'build\windows\runner\Release\*' -DestinationPath windows-build.zip -Force
+          } else {
+            Write-Error 'Windows build output not found'
+            exit 1
+          }
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: windows-build.zip
 
-  release:
-    name: Release APK
-    needs: build
+  linux:
+    name: Build Linux Desktop
     runs-on: ubuntu-latest
     steps:
-      - name: Download APK from build
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+      - run: flutter pub get
+      - name: Build Linux Release
+        run: flutter build linux --release
+      - name: Zip Linux build
+        run: |
+          if [ -d "build/linux/x64/release/bundle" ]; then
+            zip -r linux-build.zip build/linux/x64/release/bundle
+          else
+            echo "Linux build output not found" >&2
+            exit 1
+          fi
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: linux-build.zip
+
+  macos:
+    name: Build macOS Desktop
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+      - run: flutter pub get
+      - name: Build macOS Release
+        run: flutter build macos --release
+      - name: Zip macOS build
+        run: |
+          if [ -d "build/macos/Build/Products/Release" ]; then
+            zip -r macos-build.zip build/macos/Build/Products/Release
+          else
+            echo "macOS build output not found" >&2
+            exit 1
+          fi
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: macos-build.zip
+
+  ios:
+    name: Build iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+      - name: Enable iOS
+        run: flutter config --enable-ios
+      - run: flutter pub get
+      - name: Build iOS (no codesign)
+        run: |
+          # Builds an IPA without signing when possible
+          if flutter --version >/dev/null 2>&1; then
+            flutter build ipa --no-codesign || flutter build ios --no-codesign
+          else
+            echo "Flutter not available" >&2
+            exit 1
+          fi
+      - name: Zip iOS build
+        run: |
+          if [ -d "build/ios/ipa" ]; then
+            zip -r ios-build.zip build/ios/ipa
+          elif [ -d "build/ios/iphoneos" ]; then
+            zip -r ios-build.zip build/ios/iphoneos
+          else
+            echo "iOS build output not found" >&2
+            exit 1
+          fi
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: ios-build.zip
+
+  web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.1'
+      - name: Build Web Release
+        run: |
+          flutter pub get
+          flutter build web --release
+      - name: Zip Web build
+        run: |
+          if [ -d "build/web" ]; then
+            zip -r web-build.zip build/web
+          else
+            echo "Web build output not found" >&2
+            exit 1
+          fi
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: web-build.zip
+
+  release:
+    name: Release artifacts
+    needs: [android, windows, linux, macos, ios, web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK
         uses: actions/download-artifact@v5
         with:
           name: apk
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: windows
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: linux
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: macos
+      - name: Download iOS artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: ios
+      - name: Download Web artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: web
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -92,13 +213,57 @@ jobs:
         with:
           tag_name: ${{ github.run_number }}
           release_name: ${{ github.event.repository.name }} v${{ github.run_number }}
-      - name: Upload Release APK
-        id: upload_release_asset
+      - name: Upload APK to Release
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./app-release.apk
+          asset_path: ./apk/app-release.apk
           asset_name: app-release.apk
+          asset_content_type: application/zip
+      - name: Upload Windows zip to Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./windows/windows-build.zip
+          asset_name: my_app-${{ github.ref_name }}-windows.zip
+          asset_content_type: application/zip
+      - name: Upload Linux zip to Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linux/linux-build.zip
+          asset_name: my_app-${{ github.ref_name }}-linux.zip
+          asset_content_type: application/zip
+      - name: Upload macOS zip to Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./macos/macos-build.zip
+          asset_name: my_app-${{ github.ref_name }}-macos.zip
+          asset_content_type: application/zip
+      - name: Upload iOS zip to Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ios/ios-build.zip
+          asset_name: my_app-${{ github.ref_name }}-ios.zip
+          asset_content_type: application/zip
+      - name: Upload Web zip to Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./web/web-build.zip
+          asset_name: my_app-${{ github.ref_name }}-web.zip
           asset_content_type: application/zip
