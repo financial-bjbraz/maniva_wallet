@@ -33,12 +33,18 @@ flutter pub run build_runner build
 ```
 
 
-## Building
+## Building IOS
 ```
 rm -rf ./ios/Podfile.lock   
-rm -rf .ios//Pods
+rm -rf ./ios/Pods
 flutter clean && flutter pub get && cd ios/ && pod install && cd ../
+```
 
+## Building MACOS
+```
+rm -rf ./macos/Podfile.lock   
+rm -rf ./macos/Pods
+flutter clean && flutter pub get && cd macos/ && pod install && cd ../
 ```
 
 ## Cleanning and generating dependencies

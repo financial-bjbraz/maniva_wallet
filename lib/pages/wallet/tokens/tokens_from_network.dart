@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_rootstock_wallet/pages/wallet/tokens/token_item.dart';
-import 'package:my_rootstock_wallet/services/tokken_service.dart';
 import 'package:web3dart/web3dart.dart' as _i1;
 
 import '../../../contracts/ERC20.g.dart';
+import '../../../entities/token_helper.dart';
 import '../../../entities/user_helper.dart';
 import '../../../entities/wallet_helper.dart';
 import '../../../util/network.dart';
@@ -22,7 +22,8 @@ class TokensFromNetwork extends StatefulWidget {
       required this.selectedNetwork,
       required this.isLoading,
       required this.loaded,
-      required this.currentAddress});
+      required this.currentAddress,
+      required this.dbTokens2});
 
   final WalletEntity wallet;
   final SimpleUser user;
@@ -30,6 +31,7 @@ class TokensFromNetwork extends StatefulWidget {
   final bool isLoading;
   final bool loaded;
   final String currentAddress;
+  final List<Token> dbTokens2;
 
   @override
   _TokensFromNetwork createState() => _TokensFromNetwork();
@@ -38,7 +40,6 @@ class TokensFromNetwork extends StatefulWidget {
 class _TokensFromNetwork extends State<TokensFromNetwork> {
   String accountBalance = "0";
   String tokenSymbol = "";
-  TokenServiceImpl service = TokenServiceImpl();
   List<Widget> tokens = [];
 
   @override
@@ -51,18 +52,20 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
     if (widget.loaded) {
       return;
     }
-    final dbTokens = await service.list(widget.selectedNetwork.networkId);
+    var dbTokens =
+        widget.dbTokens2; //await tokenServiceImpl.list(widget.selectedNetwork.networkId);
+    print(
+        "searchTokensForCurrentChainId: obtained ${dbTokens.length} tokens, using ${widget.selectedNetwork.networkId} network");
     final futures = dbTokens.map<Future<Widget>>((dbToken) async {
-      const String contractAddress = "0x369197080bAcFFf3147eC2F59076168F45f5b75d";
-      const String myAddress = "0x02E221A95224F090e492066Bc1B7a35B5Fd94542";
-
+      final String contractAddress = dbToken.address;
+      final String myAddress = widget.currentAddress;
       final balance = await callSmartContract(contractAddress, myAddress);
-
       return TokenItem(
         tokenName: dbToken.symbol2,
         tokenSymbol: dbToken.symbol,
         tokenAddress: dbToken.address,
         tokenBalance: balance,
+        networkId: dbToken.network,
       );
     });
 
@@ -76,7 +79,6 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
   }
 
   Future<String> callSmartContract(String tokenAddress, String myAddress) async {
-    print("Calling Token Balance");
     var accountBalance = "0.000";
     _i1.Web3Client? client;
     try {
@@ -87,16 +89,13 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
       }
       client = _i1.Web3Client(node!, http.Client());
       final credentials = _i1.EthPrivateKey.fromHex(widget.wallet.privateKey);
-      final address = credentials.address;
-      final ownAddress = await credentials.extractAddress();
 
       final _i1.EthereumAddress contractAddr = _i1.EthereumAddress.fromHex(tokenAddress);
       final _i1.EthereumAddress myAccount = _i1.EthereumAddress.fromHex(myAddress);
       ERC20 token = ERC20(address: contractAddr, client: client);
-
+      print("Fetching data from $contractAddr");
       final BigInt balanceObtained = await token.balanceOf((account: myAccount));
       final BigInt decimalsObtained = await token.decimals();
-      print("We have ${balanceObtained.toString()} MyTokens :) at address ${ownAddress.hex}");
       final int decimals = decimalsObtained.toInt();
 
       Decimal balanceDecimal = Decimal.parse(balanceObtained.toString());
@@ -105,7 +104,6 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
       accountBalance = formattedBalance.toString();
     } catch (e) {
       accountBalance = "0.000";
-      print("Error occured on call contract $e");
     } finally {
       client?.dispose();
     }
@@ -114,6 +112,7 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
 
   @override
   Widget build(BuildContext context) {
+    print("Shimming? ${!widget.loaded}");
     searchTokensForCurrentChainId();
     return ShimmerLoading(
       isLoading: !widget.loaded,

@@ -31,7 +31,7 @@ class _TableTransactions extends State<TableTransactions> {
   late CreateTransactionServiceImpl createTransactionServiceImpl = CreateTransactionServiceImpl();
   var transactions = <TableRow>{};
   final Map<String, int> txHashMap = HashMap();
-  bool _isLoading = true;
+  bool _isLoading = false;
   _TableTransactions();
 
   @override

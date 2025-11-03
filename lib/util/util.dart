@@ -14,7 +14,7 @@ import 'addresses.dart';
 import 'network.dart';
 
 const DATA_BASE_NAME = "rwallet.db";
-const DATA_BASE_VERSION = 2;
+const DATA_BASE_VERSION = 9;
 
 const RBTC_DECIMAL_PLACES = 1000000000000000000;
 const RBTC_DECIMAL_PLACES_COUNT = 18;

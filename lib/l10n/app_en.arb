@@ -51,5 +51,6 @@
   "txReceived": "New tranasction received",
   "createNewWallet": "Create New Wallet",
   "restoreWallet": "Restore Wallet with Seed Phrase",
-  "restoreWalletWithPrivateKey": "Restore Wallet with Private Key"
+  "restoreWalletWithPrivateKey": "Restore Wallet with Private Key",
+  "share": "Share"
 }

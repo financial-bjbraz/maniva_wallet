@@ -51,10 +51,10 @@ class EntityHelper {
       try {
         print("Creating tokens");
         db.execute(TokenHelper.scriptCreation());
-        print("Tokens created");
+        print("Table Tokens created");
       } catch (e) {}
 
-      final String rawJsonString = dotenv.env['NETWORKS'] ?? '';
+      final String rawJsonString = dotenv.env['TOKENS'] ?? '';
       if (rawJsonString.isNotEmpty) {
         List<dynamic> jsonMap = jsonDecode(rawJsonString) as List<dynamic>;
         for (int i = 0; i < jsonMap.length; i++) {
@@ -64,6 +64,7 @@ class EntityHelper {
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
+        print("${jsonMap.length} tokens added to database");
       }
 
       final String transactionsList = dotenv.env['TRANSACTIONS'] ?? '';

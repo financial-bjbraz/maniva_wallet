@@ -153,4 +153,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get restoreWalletWithPrivateKey =>
       'Restarurar uma carterira a partir de uma Chave Privada';
+
+  @override
+  String get share => 'Compartilhar';
 }

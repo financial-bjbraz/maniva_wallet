@@ -7,9 +7,11 @@ import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 
 import '../../../services/wallet_service.dart';
+import '../../entities/token_helper.dart';
 import '../../entities/user_helper.dart';
 import '../../entities/wallet_helper.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/tokken_service.dart';
 import '../../util/network.dart';
 import '../../util/shimmer_loading.dart';
 import '../../util/util.dart';
@@ -43,6 +45,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   bool loaded = false;
   bool receiveScreenOpened = false;
 
+  List<Token> dbTokens2 = [];
+  TokenServiceImpl tokenServiceImpl = TokenServiceImpl();
+
   TextEditingController addressController = TextEditingController();
   TextEditingController amountController = TextEditingController();
 
@@ -63,7 +68,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
     if (loaded) {
       return;
     }
-
     int seconds = loaded ? 30 : 1;
     await Future.delayed(Duration(seconds: seconds), () {
       walletService
@@ -168,6 +172,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       tabs: const [
         HuxTabItem(label: 'Bitcoin', content: Text(''), icon: Icons.currency_bitcoin),
         HuxTabItem(label: 'Rootstock', content: Text(''), icon: Icons.account_balance),
+        HuxTabItem(label: 'Transactions', content: Text(''), icon: Icons.list),
       ],
       onTabChanged: (index) {
         setState(() {
@@ -255,6 +260,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   @override
   void initState() {
     super.initState();
+    tokenServiceImpl.list(selectedNetwork.networkId).then((values) {
+      dbTokens2 = values;
+    });
   }
 
   @override
@@ -283,12 +291,14 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
               _buildFirstLine(),
               _createMainScreen(),
               TokensFromNetwork(
-                  wallet: widget.wallet,
-                  user: widget.user,
-                  selectedNetwork: selectedNetwork,
-                  isLoading: _isLoading,
-                  loaded: loaded,
-                  currentAddress: currentAddress),
+                wallet: widget.wallet,
+                user: widget.user,
+                selectedNetwork: selectedNetwork,
+                isLoading: _isLoading,
+                loaded: loaded,
+                currentAddress: currentAddress,
+                dbTokens2: dbTokens2,
+              ),
               const SizedBox(height: 16),
               _lastTransactions(),
             ],
