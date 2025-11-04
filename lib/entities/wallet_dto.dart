@@ -17,8 +17,8 @@ class WalletDTO {
   bool updated = false;
   late Wei lastBalanceReceivedInWei;
   late EtherAmount lastBalanceReceivedInEtherAmount;
-  late String balance;
-  late String balanceInUsd;
+  late String balance = "0.000";
+  late String balanceInUsd = "0.000";
 
   WalletDTO({required this.wallet, required this.transactions, required this.btcTransactions});
 

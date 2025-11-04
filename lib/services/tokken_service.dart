@@ -17,6 +17,7 @@ class TokenServiceImpl extends ChangeNotifier implements TokenService {
 
   @override
   Future<List<Token>> list(int chainId) async {
+    print("Searching tokens for chainId: $chainId");
     WidgetsFlutterBinding.ensureInitialized();
     var list = await helper.fetchItems(chainId);
     return list;

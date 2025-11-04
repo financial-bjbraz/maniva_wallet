@@ -1,6 +1,3 @@
-import 'dart:math';
-
-import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -15,22 +12,20 @@ import '../../../util/network.dart';
 import '../../../util/shimmer_loading.dart';
 
 class TokensFromNetwork extends StatefulWidget {
-  const TokensFromNetwork(
+  TokensFromNetwork(
       {super.key,
       required this.wallet,
       required this.user,
       required this.selectedNetwork,
       required this.isLoading,
       required this.loaded,
-      required this.currentAddress,
       required this.dbTokens2});
 
   final WalletEntity wallet;
   final SimpleUser user;
   final Network selectedNetwork;
-  final bool isLoading;
-  final bool loaded;
-  final String currentAddress;
+  bool isLoading;
+  bool loaded;
   final List<Token> dbTokens2;
 
   @override
@@ -52,14 +47,12 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
     if (widget.loaded) {
       return;
     }
-    var dbTokens =
-        widget.dbTokens2; //await tokenServiceImpl.list(widget.selectedNetwork.networkId);
-    print(
-        "searchTokensForCurrentChainId: obtained ${dbTokens.length} tokens, using ${widget.selectedNetwork.networkId} network");
+    var dbTokens = widget.dbTokens2; //;
     final futures = dbTokens.map<Future<Widget>>((dbToken) async {
       final String contractAddress = dbToken.address;
-      final String myAddress = widget.currentAddress;
+      final String myAddress = widget.wallet.publicKey;
       final balance = await callSmartContract(contractAddress, myAddress);
+
       return TokenItem(
         tokenName: dbToken.symbol2,
         tokenSymbol: dbToken.symbol,
@@ -70,10 +63,17 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
     });
 
     final listTokens = await Future.wait(futures);
+    listTokens.sort((a, b) {
+      final double aBal = double.tryParse((a as TokenItem).tokenBalance) ?? 0.0;
+      final double bBal = double.tryParse((b as TokenItem).tokenBalance) ?? 0.0;
+      return bBal.compareTo(aBal);
+    });
 
     if (mounted) {
       setState(() {
         tokens = listTokens;
+        widget.isLoading = false;
+        widget.loaded = true;
       });
     }
   }
@@ -93,15 +93,22 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
       final _i1.EthereumAddress contractAddr = _i1.EthereumAddress.fromHex(tokenAddress);
       final _i1.EthereumAddress myAccount = _i1.EthereumAddress.fromHex(myAddress);
       ERC20 token = ERC20(address: contractAddr, client: client);
-      print("Fetching data from $contractAddr");
       final BigInt balanceObtained = await token.balanceOf((account: myAccount));
-      final BigInt decimalsObtained = await token.decimals();
-      final int decimals = decimalsObtained.toInt();
+      print(
+          "Raw balance obtained from $contractAddr, and the balance is $balanceObtained from account $myAccount");
+      // final BigInt decimalsObtained = await token.decimals();
+      // final int decimals = decimalsObtained.toInt();
 
-      Decimal balanceDecimal = Decimal.parse(balanceObtained.toString());
-      Decimal divisor = Decimal.parse(pow(10, decimals).toString());
-      final Decimal formattedBalance = Decimal.parse((balanceDecimal / divisor).toString());
-      accountBalance = formattedBalance.toString();
+      if (balanceObtained == BigInt.zero) {
+        return "0.000";
+      }
+
+      // Decimal balanceDecimal = Decimal.parse(balanceObtained.toString());
+      // Decimal divisor = Decimal.parse(pow(10, decimals).toString());
+      // final Decimal formattedBalance = balanceDecimal == Decimal.zero
+      //     ? Decimal.zero
+      //     : Decimal.parse((balanceDecimal / divisor).toString());
+      accountBalance = balanceObtained.toString();
     } catch (e) {
       accountBalance = "0.000";
     } finally {
@@ -112,7 +119,6 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
 
   @override
   Widget build(BuildContext context) {
-    print("Shimming? ${!widget.loaded}");
     searchTokensForCurrentChainId();
     return ShimmerLoading(
       isLoading: !widget.loaded,

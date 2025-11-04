@@ -156,4 +156,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get share => 'Compartilhar';
+
+  @override
+  String get paste => 'Colar';
 }

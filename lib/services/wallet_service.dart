@@ -19,6 +19,7 @@ import '../entities/wallet_helper.dart';
 import '../util/bitcoin.dart';
 import '../util/network.dart';
 import '../util/util.dart';
+import 'bitcoin_service.dart';
 import 'create_transaction_service.dart';
 
 abstract class WalletAddressService {
@@ -207,15 +208,38 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
   Future<WalletDTO> setBitcoinWallet(WalletDTO dto) async {
     try {
-      final usdPrice = await _getPrice();
+      final node = dotenv.env['BITCOIN_NODE'];
+      if (node == null || node.isEmpty) {
+        print("BITCOIN_NODE environment variable not set.");
+        dto.amountInUsd = 0.00;
+        dto.valueInWeiFormatted = "0.00";
+        dto.balanceInUsd = "0";
+        dto.balance = "0";
+        return dto;
+      }
+      final client = BitcoinNodeClient(
+        rpcUrl: node,
+        rpcUser: '',
+        rpcPassword: '',
+      );
+
+      final balance = await client.getBalanceForAddress(dto.wallet.btcAddress);
+      print('Balance: $balance BTC');
       final formatter = NumberFormat.simpleCurrency();
-      dto.amountInUsd = 0.00;
-      dto.valueInWeiFormatted = "0.00";
-      dto.balanceInUsd = "0";
-      dto.balance = "0";
+
+      if (balance > 0) {
+        final usdPrice = await _getPrice();
+        final value = balance * usdPrice;
+        dto.amountInUsd = value;
+        dto.balanceInUsd = formatter.format(value);
+        dto.balance = balance.toString();
+      }
 
       return dto;
     } catch (error) {
+      dto.amountInUsd = 0.00;
+      dto.balanceInUsd = "0";
+      dto.balance = "0";
       log.severe("Error creating wallet to display $error");
       throw Exception("Error creating wallet to display");
     }

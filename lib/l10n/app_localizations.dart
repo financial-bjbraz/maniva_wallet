@@ -387,6 +387,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share'**
   String get share;
+
+  /// No description provided for @paste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get paste;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
