@@ -116,7 +116,9 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
                                         var btcAddress =
                                             walletService.getBtcAddressFromPrivateKey(privateKey);
                                         var walletId = await getIndex();
-                                        WalletEntity wallet = WalletEntity(BigInt.zero.toDouble(),
+                                        WalletEntity wallet = WalletEntity(
+                                            amount: BigInt.zero.toDouble(),
+                                            btcAmount: BigInt.zero.toDouble(),
                                             privateKey: privateKey,
                                             publicKey: publicKey,
                                             btcAddress: btcAddress,

@@ -42,12 +42,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   late String currentAddress =
       Network.generateFormattedAddress(Network.BITCOIN_TESTNET, widget.wallet);
-  late NetworkDto selectedNetwork = NetworkDto(network: Network.BITCOIN_TESTNET, tokens: []);
+  late NetworkDto selectedNetwork;
 
-  final availableNetworks = [
-    NetworkDto(network: Network.BITCOIN_TESTNET),
-    NetworkDto(network: Network.ROOTSTOCK_TESTNET),
-  ];
+  late List<NetworkDto> availableNetworks;
 
   int operation = 0;
   static const int BITCOIN_INDEX = 0;
@@ -115,17 +112,14 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
           _isLoading = true;
         });
 
-        await Future.delayed(const Duration(seconds: 30), () {
-          print("Waiting...");
-          if (mounted) {
-            for (int safeIndex = 0; safeIndex < availableNetworks.length; safeIndex++) {
-              balance = "9.999";
-              balanceInUsd = "9.999";
-            }
-            loaded = true;
-            //_isLoading = false;
+        print("Waiting...");
+        if (mounted) {
+          for (int safeIndex = 0; safeIndex < availableNetworks.length; safeIndex++) {
+            availableNetworks[safeIndex].fetchDateFromBlockchain();
           }
-        });
+          loaded = true;
+          //_isLoading = false;
+        }
 
         setState(() {
           loaded = true;
@@ -138,7 +132,15 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   }
 
   _callData(int index) async {
+    availableNetworks = [
+      NetworkDto(
+          network: Network.BITCOIN_TESTNET, tokens: [], wallet: widget.wallet, user: widget.user),
+      NetworkDto(
+          network: Network.ROOTSTOCK_TESTNET, tokens: [], wallet: widget.wallet, user: widget.user),
+    ];
     selectedNetwork = availableNetworks[index];
+    selectedNetwork.fetchDataFromDataBase();
+
     if (!availableNetworks[index].tokensLoaded) {
       availableNetworks[index].tokens =
           await tokenServiceImpl.list(availableNetworks[index].network.networkId);
