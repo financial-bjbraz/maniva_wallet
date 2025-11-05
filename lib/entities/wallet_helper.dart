@@ -118,8 +118,8 @@ class WalletHelper extends EntityHelper {
 }
 
 class WalletEntity {
-  late final double amount;
-  late final double btcAmount;
+  late double amount;
+  late double btcAmount;
   final String privateKey;
   final String walletName;
   final String walletId;

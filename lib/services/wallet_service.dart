@@ -281,7 +281,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       dto.balanceInUsd = "0";
       dto.balance = "0";
       log.severe("Error creating wallet to display $error");
-      throw Exception("Error creating wallet to display");
+      throw Exception("Error creating wallet to display $error");
     }
   }
 
