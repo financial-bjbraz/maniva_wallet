@@ -15,21 +15,13 @@ class NetworkDto {
   late WalletDTO walletDTO;
   late WalletServiceImpl walletService = WalletServiceImpl();
 
-  NetworkDto({required this.network, required this.wallet, required this.user, List<Token>? tokens})
-      : tokens = tokens ?? [];
+  NetworkDto(
+      {required this.network, required this.wallet, required this.user, List<Token>? tokens}) {
+    this.tokens = tokens ?? [];
+    walletDTO = WalletDTO(wallet: wallet, transactions: null, btcTransactions: null);
+  }
 
   setTokens(List<Token> tokenList) {
     tokens = tokenList;
-  }
-
-  void fetchDataFromDataBase() async {
-    walletDTO = await walletService.getBalanceFromDataBase(network, wallet.privateKey);
-  }
-
-  void fetchDateFromBlockchain() async {
-    walletDTO = await walletService.getBalanceFromBlockchain(network, walletDTO);
-    wallet.btcAmount = walletDTO.btcBalanceInDouble;
-    wallet.amount = walletDTO.balanceInDouble;
-    await walletService.updateBalance(wallet);
   }
 }

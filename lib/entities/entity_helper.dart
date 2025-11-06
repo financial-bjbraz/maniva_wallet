@@ -31,6 +31,8 @@ class EntityHelper {
   Future<Database> _initDatabase() async {
     var dbKey = dotenv.env['PRIVATE_KEY'];
     String path = join(await getDatabasesPath(), "$DATA_BASE_VERSION+$DATA_BASE_NAME");
+    print("Database persisted at ${path}");
+
     return openDatabase(path, password: dbKey, version: DATA_BASE_VERSION,
         onCreate: (db, int version) {
       try {

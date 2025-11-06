@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -24,8 +26,8 @@ class TokensFromNetwork extends StatefulWidget {
   final WalletEntity wallet;
   final SimpleUser user;
   final Network selectedNetwork;
-  bool isLoading;
-  bool loaded;
+  final bool isLoading;
+  final bool loaded;
   final List<Token> dbTokens2;
 
   @override
@@ -36,6 +38,7 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
   String accountBalance = "0";
   String tokenSymbol = "";
   List<Widget> tokens = [];
+  Timer? _periodicTimer;
 
   @override
   void initState() {
@@ -44,38 +47,38 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
   }
 
   searchTokensForCurrentChainId() async {
-    if (widget.loaded) {
-      return;
-    }
-    var dbTokens = widget.dbTokens2; //;
-    final futures = dbTokens.map<Future<Widget>>((dbToken) async {
-      final String contractAddress = dbToken.address;
-      final String myAddress = widget.wallet.publicKey;
-      final balance = await callSmartContract(contractAddress, myAddress);
+    _periodicTimer?.cancel();
+    _periodicTimer = Timer.periodic(const Duration(seconds: 240), (timer) async {
+      if (!mounted) return;
 
-      return TokenItem(
-        tokenName: dbToken.symbol2,
-        tokenSymbol: dbToken.symbol,
-        tokenAddress: dbToken.address,
-        tokenBalance: balance,
-        networkId: dbToken.network,
-      );
-    });
+      var dbTokens = widget.dbTokens2; //;
+      final futures = dbTokens.map<Future<Widget>>((dbToken) async {
+        final String contractAddress = dbToken.address;
+        final String myAddress = widget.wallet.publicKey;
+        final balance = await callSmartContract(contractAddress, myAddress);
 
-    final listTokens = await Future.wait(futures);
-    listTokens.sort((a, b) {
-      final double aBal = double.tryParse((a as TokenItem).tokenBalance) ?? 0.0;
-      final double bBal = double.tryParse((b as TokenItem).tokenBalance) ?? 0.0;
-      return bBal.compareTo(aBal);
-    });
-
-    if (mounted) {
-      setState(() {
-        tokens = listTokens;
-        widget.isLoading = false;
-        widget.loaded = true;
+        return TokenItem(
+          tokenName: dbToken.symbol2,
+          tokenSymbol: dbToken.symbol,
+          tokenAddress: dbToken.address,
+          tokenBalance: balance,
+          networkId: dbToken.network,
+        );
       });
-    }
+
+      final listTokens = await Future.wait(futures);
+      listTokens.sort((a, b) {
+        final double aBal = double.tryParse((a as TokenItem).tokenBalance) ?? 0.0;
+        final double bBal = double.tryParse((b as TokenItem).tokenBalance) ?? 0.0;
+        return bBal.compareTo(aBal);
+      });
+
+      if (mounted) {
+        setState(() {
+          tokens = listTokens;
+        });
+      }
+    });
   }
 
   Future<String> callSmartContract(String tokenAddress, String myAddress) async {

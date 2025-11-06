@@ -186,66 +186,62 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return transactionToPersist;
   }
 
-  // Tentar reutilizar isso em alguma classe para nao buscar toda hora do .env
   String getExplorerUrl(String transactionId) {
     final blockExplorer = dotenv.env['BLOCK_EXPLORER_URL'];
     return blockExplorer! + transactionId;
   }
 
-  Future<WalletDTO> getBalanceFromDataBase(Network network, String privateKey) async {
+  Future<WalletDTO> getBalanceFromDataBase(String privateKey) async {
     WalletHelper helper = WalletHelper();
     final wallet = await helper.getWalletByPrivateKey(privateKey);
     WalletDTO dto = WalletDTO(wallet: wallet, transactions: null, btcTransactions: null);
     try {
-      print('Balance: ${wallet.btcAmount} BTC');
       final formatter = NumberFormat.simpleCurrency();
       var balance = wallet.btcAmount;
       if (balance > 0) {
+        print('Balance obtained on DataBase: $balance BTC');
         final usdPrice = await _getPrice();
         final value = balance * usdPrice;
-        dto.amountInUsd = value;
         dto.btcBalanceInUsd = formatter.format(value);
         dto.btcBalance = balance.toString();
       }
 
-      balance = wallet.amount;
-      if (balance > 0) {
+      final balanceRsk = wallet.amount;
+      if (balanceRsk > 0) {
+        print('Balance obtained on DataBase: $balanceRsk RSK');
         final usdPrice = await _getPrice();
-        final value = balance * usdPrice;
-        dto.amountInUsd = value;
-        dto.btcBalanceInUsd = formatter.format(value);
-        dto.btcBalance = balance.toString();
+        final value = balanceRsk * usdPrice;
+        dto.balanceInUsd = formatter.format(value);
+        dto.balance = balanceRsk.toString();
       }
     } catch (error) {
-      dto.amountInUsd = 0.00;
-      dto.balanceInUsd = "0";
-      dto.balance = "0";
-      dto.amountInUsd = 0.00;
-      dto.btcBalanceInUsd = "0";
-      dto.btcBalance = "0";
       log.severe("Error creating wallet to display $error");
       throw Exception("Error creating wallet to display");
     }
     return dto;
   }
 
-  Future<WalletDTO> getBalanceFromBlockchain(Network network, WalletDTO dto) async {
-    switch (network) {
-      case Network.BITCOIN_TESTNET:
-        dto = await setBitcoinWallet(dto);
-        break;
-      case Network.ROOTSTOCK_TESTNET:
-        dto = await setRootstockWallet(dto);
-        break;
-      case Network.BITCOIN_MAINNET:
-        throw UnimplementedError();
-      case Network.ROOTSTOCK_MAINNET:
-        throw UnimplementedError();
-    }
+  Future<WalletDTO> getDataFromBlockchain(WalletEntity wallet) async {
+    var dto = await _callEachBlockchain(wallet);
+    wallet.btcAmount = dto.btcBalanceInDouble;
+    wallet.amount = dto.balanceInDouble;
+    await updateBalance(wallet);
     return dto;
   }
 
-  Future<WalletDTO> setBitcoinWallet(WalletDTO dto) async {
+  Future<WalletDTO> _callEachBlockchain(WalletEntity wallet) async {
+    final results = await Future.wait([
+      _setBitcoinWallet(wallet),
+      _setRootstockWallet(wallet),
+    ]);
+    final btc = results[0];
+    final rootstock = results[1];
+    btc.balanceInDouble = rootstock.balanceInDouble;
+    return btc;
+  }
+
+  Future<WalletDTO> _setBitcoinWallet(WalletEntity wallet) async {
+    WalletDTO dto = WalletDTO(wallet: wallet, transactions: null, btcTransactions: null);
     try {
       final node = dotenv.env['BITCOIN_NODE'];
       if (node == null || node.isEmpty) {
@@ -263,7 +259,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       );
 
       final balance = await client.getBalanceForAddress(dto.wallet.btcAddress);
-      print('Balance: $balance BTC');
+      print('Balance obtained on Blockchain: $balance BTC');
       final formatter = NumberFormat.simpleCurrency();
 
       if (balance > 0) {
@@ -277,15 +273,13 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       return dto;
     } catch (error) {
-      dto.amountInUsd = 0.00;
-      dto.balanceInUsd = "0";
-      dto.balance = "0";
       log.severe("Error creating wallet to display $error");
       throw Exception("Error creating wallet to display $error");
     }
   }
 
-  Future<WalletDTO> setRootstockWallet(WalletDTO dto) async {
+  Future<WalletDTO> _setRootstockWallet(WalletEntity wallet) async {
+    WalletDTO dto = WalletDTO(wallet: wallet, transactions: null, btcTransactions: null);
     try {
       final wei = await getBalanceInWei(dto);
       final usdPrice = await _getPrice();
@@ -298,6 +292,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       dto.wallet.amount = wei.src.toDouble();
       dto.balanceInDouble = wei.getWei();
       dto.balance = dto.valueInWeiFormatted;
+      print('Balance obtained on Blockchain: ${dto.balance} Rootstock');
+
       dto.balanceInUsd = dto.valueInUsdFormatted;
       return dto;
     } catch (error) {

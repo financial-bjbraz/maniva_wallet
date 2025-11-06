@@ -43,7 +43,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   late String currentAddress =
       Network.generateFormattedAddress(Network.BITCOIN_TESTNET, widget.wallet);
   late NetworkDto selectedNetwork;
-
   late List<NetworkDto> availableNetworks;
 
   int operation = 0;
@@ -54,11 +53,14 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   bool loaded = false;
   bool receiveScreenOpened = false;
   bool openListTransactions = false;
+  bool searchedFirstTime = false;
 
   TokenServiceImpl tokenServiceImpl = TokenServiceImpl();
 
   TextEditingController addressController = TextEditingController();
   TextEditingController amountController = TextEditingController();
+
+  WalletServiceImpl walletServiceImpl = WalletServiceImpl();
 
   Image rootstockSelected = Image.asset(
     "assets/icons/rbtc2.png",
@@ -73,14 +75,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   _ViewWalletApp();
 
-  loadWalletData() async {
-    if (loaded) {
-      return;
-    }
-    _isLoading = false;
-    loaded = true;
-  }
-
   Widget _buildSegmentButton() {
     return HuxTabs(
       size: HuxTabSize.large,
@@ -91,65 +85,70 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         HuxTabItem(label: 'Transactions', content: Text(''), icon: Icons.list),
       ],
       onTabChanged: (index) async {
-        if (index < TRANSACTIONS_INDEX) {
-          await _callData(index);
-        }
-
         setState(() {
+          selectedNetwork = availableNetworks[index];
           openListTransactions = index == TRANSACTIONS_INDEX;
         });
       },
     );
   }
 
-  void startPeriodicRefresh() {
-    _periodicTimer?.cancel();
-    _periodicTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (!mounted) return;
-      try {
-        setState(() {
-          loaded = false;
-          _isLoading = true;
-        });
-
-        print("Waiting...");
-        if (mounted) {
-          for (int safeIndex = 0; safeIndex < availableNetworks.length; safeIndex++) {
-            availableNetworks[safeIndex].fetchDateFromBlockchain();
-          }
-          loaded = true;
-          //_isLoading = false;
+  _loadBalanceFromBlockchain() {
+    try {
+      setState(() {
+        loaded = false;
+        _isLoading = true;
+      });
+      print("Refreshing data from blockchain...");
+      walletServiceImpl.getDataFromBlockchain(widget.wallet).then((dto) {
+        print("Updating...");
+        List<NetworkDto> newListOfNetworks = availableNetworks;
+        for (int i = 0; i < newListOfNetworks.length; i++) {
+          var networkDto = newListOfNetworks[i];
+          networkDto.walletDTO = dto;
         }
-
         setState(() {
-          loaded = true;
-          _isLoading = false;
+          availableNetworks = newListOfNetworks;
         });
-      } catch (_) {
-        // ignore or handle errors
+      });
+    } catch (_) {
+      print("Error refreshing data: $_");
+    } finally {
+      setState(() {
+        loaded = true;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void startPeriodicRefresh() async {
+    _periodicTimer?.cancel();
+    _periodicTimer = Timer.periodic(Duration(seconds: !searchedFirstTime ? 5 : 360), (timer) async {
+      if (!mounted) return;
+      if (searchedFirstTime) {
+        await _loadBalanceFromBlockchain();
+      } else {
+        await _loadBalanceFromDatabaseAndTokens();
       }
+      searchedFirstTime = true;
     });
   }
 
-  _callData(int index) async {
-    availableNetworks = [
-      NetworkDto(
-          network: Network.BITCOIN_TESTNET, tokens: [], wallet: widget.wallet, user: widget.user),
-      NetworkDto(
-          network: Network.ROOTSTOCK_TESTNET, tokens: [], wallet: widget.wallet, user: widget.user),
-    ];
-    selectedNetwork = availableNetworks[index];
-    selectedNetwork.fetchDataFromDataBase();
+  _loadBalanceFromDatabaseAndTokens() async {
+    List<NetworkDto> newListOfNetworks = availableNetworks;
 
-    if (!availableNetworks[index].tokensLoaded) {
-      availableNetworks[index].tokens =
-          await tokenServiceImpl.list(availableNetworks[index].network.networkId);
-      availableNetworks[index].tokensLoaded = true;
+    for (int i = 0; i < newListOfNetworks.length; i++) {
+      var networkDto = newListOfNetworks[i];
+      networkDto.tokens = await tokenServiceImpl.list(newListOfNetworks[i].network.networkId);
+      networkDto.tokensLoaded = true;
     }
-    selectedNetwork = availableNetworks[index];
-    loaded = false;
-    _isLoading = false;
-    currentAddress = Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
+    setState(() {
+      availableNetworks = newListOfNetworks;
+      currentAddress = Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
+
+      loaded = false;
+      _isLoading = false;
+    });
   }
 
   Widget _createMainScreen() {
@@ -184,10 +183,19 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                 child: ListTile(
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
-                    child: Image.asset(
-                      "assets/icons/btc.png",
-                      fit: BoxFit.cover,
-                    ),
+                    child: selectedNetwork.network == Network.BITCOIN_TESTNET
+                        ? Image.asset(
+                            "assets/icons/btc.png",
+                            fit: BoxFit.cover,
+                            width: 40,
+                            height: 40,
+                          )
+                        : Image.asset(
+                            "assets/icons/rbtc2.png",
+                            fit: BoxFit.cover,
+                            width: 40,
+                            height: 40,
+                          ),
                   ), // Icon on the left
                   title: Text(
                     currentAddress,
@@ -198,7 +206,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   ), // Main text
                   subtitle: _showSaldo
                       ? Text(
-                          "${balance} ~ ${balanceInUsd}",
+                          selectedNetwork.network == Network.BITCOIN_TESTNET
+                              ? "${selectedNetwork.walletDTO.btcBalance} ~ ${selectedNetwork.walletDTO.btcBalanceInUsd}"
+                              : "${selectedNetwork.walletDTO.balance} ~ ${selectedNetwork.walletDTO.balanceInUsd}",
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -229,9 +239,34 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   @override
   void initState() {
     super.initState();
-    _callData(BITCOIN_INDEX);
-    loadWalletData();
-    startPeriodicRefresh();
+
+    var bitCoin = NetworkDto(
+      network: Network.BITCOIN_TESTNET,
+      tokens: [],
+      wallet: widget.wallet,
+      user: widget.user,
+    );
+    var rootstock = NetworkDto(
+      network: Network.ROOTSTOCK_TESTNET,
+      tokens: [],
+      wallet: widget.wallet,
+      user: widget.user,
+    );
+    availableNetworks = [bitCoin, rootstock];
+    selectedNetwork = availableNetworks[BITCOIN_INDEX];
+
+    if (!mounted) return;
+
+    _loadBalanceFromDatabaseAndTokens().then((_) {
+      setState(() {
+        loaded = true;
+        _isLoading = false;
+      });
+      startPeriodicRefresh();
+    });
+
+    loaded = true;
+    _isLoading = false;
   }
 
   @override
