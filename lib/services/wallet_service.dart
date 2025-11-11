@@ -96,7 +96,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   Future<String> getBalance(WalletDTO dto) async {
     const returnValue = "0.00";
     try {
-      final wei = await getBalanceInWei(dto);
+      final wei = await getBalanceInWei(dto.publicKey!);
       return (wei.toRBTCTrimmedString());
     } catch (e) {
       return returnValue;
@@ -106,47 +106,42 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   Future<String> getBalanceBitcoin(WalletDTO dto) async {
     const returnValue = "0.00";
     try {
-      final wei = await getBalanceInWei(dto);
+      final wei = await getBalanceInSatoshis(dto.publicKey!);
       return (wei.toRBTCTrimmedString());
     } catch (e) {
       return returnValue;
     }
   }
 
-  Future<Wei> getBalanceInWei(WalletDTO dto) async {
+  Future<Wei> getBalanceInWei(String address) async {
+    Wei lastBalanceReceivedInWei = Wei(src: BigInt.zero, currency: "wei");
     try {
-      if (!dto.updated) {
-        final node = dotenv.env['ROOTSTOCK_NODE'];
-        final client = web3.Web3Client(node!, http.Client());
-        final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
-        final address = credentials.address;
-        dto.lastBalanceReceivedInEtherAmount = await client.getBalance(address);
-        dto.lastBalanceReceivedInWei =
-            Wei(src: dto.lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
-        dto.updated = true;
-      }
+      final node = dotenv.env['ROOTSTOCK_NODE'];
+      final client = web3.Web3Client(node!, http.Client());
+      final lastBalanceReceivedInEtherAmount =
+          await client.getBalance(web3.EthereumAddress.fromHex(address));
+      lastBalanceReceivedInWei =
+          Wei(src: lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
     } catch (error) {
       log.severe("Error getting balance", error);
     }
-    return dto.lastBalanceReceivedInWei;
+    return lastBalanceReceivedInWei;
   }
 
-  Future<Wei> getBalanceInSatoshis(WalletDTO dto) async {
+  Future<Wei> getBalanceInSatoshis(String privateKey) async {
+    Wei lastBalanceReceivedInWei = Wei(src: BigInt.zero, currency: "wei");
     try {
-      if (!dto.updated) {
-        final node = dotenv.env['ROOTSTOCK_NODE'];
-        final client = web3.Web3Client(node!, http.Client());
-        final credentials = web3.EthPrivateKey.fromHex(dto.wallet.privateKey);
-        final address = credentials.address;
-        dto.lastBalanceReceivedInEtherAmount = await client.getBalance(address);
-        dto.lastBalanceReceivedInWei =
-            Wei(src: dto.lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
-        dto.updated = true;
-      }
+      final node = dotenv.env['ROOTSTOCK_NODE'];
+      final client = web3.Web3Client(node!, http.Client());
+      final credentials = web3.EthPrivateKey.fromHex(privateKey);
+      final address = credentials.address;
+      final lastBalanceReceivedInEtherAmount = await client.getBalance(address);
+      lastBalanceReceivedInWei =
+          Wei(src: lastBalanceReceivedInEtherAmount.getInWei, currency: "wei");
     } catch (error) {
       log.severe("Error getting balance", error);
     }
-    return dto.lastBalanceReceivedInWei;
+    return lastBalanceReceivedInWei;
   }
 
   // TODO(alexjavabraz): implement persistence of transaction sent
@@ -221,12 +216,11 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return dto;
   }
 
-  Future<WalletDTO> getDataFromBlockchain(WalletEntity wallet) async {
+  Future<void> getDataFromBlockchain(WalletEntity wallet) async {
     var dto = await _callEachBlockchain(wallet);
     wallet.btcAmount = dto.btcBalanceInDouble;
     wallet.amount = dto.balanceInDouble;
     await updateBalance(wallet);
-    return dto;
   }
 
   Future<WalletDTO> _callEachBlockchain(WalletEntity wallet) async {
@@ -281,7 +275,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   Future<WalletDTO> _setRootstockWallet(WalletEntity wallet) async {
     WalletDTO dto = WalletDTO(wallet: wallet, transactions: null, btcTransactions: null);
     try {
-      final wei = await getBalanceInWei(dto);
+      final wei = await getBalanceInWei(dto.wallet.publicKey);
       final usdPrice = await _getPrice();
       final value = wei.getWei() * usdPrice;
       final formatter = NumberFormat.simpleCurrency();

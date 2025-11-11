@@ -36,8 +36,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   bool _isLoading = true;
   final double iconSize = 48;
   final double fontSize = 20;
-  late String balance = formatBalance("0");
-  late String balanceInUsd = formatUsd("0");
   Timer? _periodicTimer;
 
   late String currentAddress =
@@ -88,6 +86,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         setState(() {
           selectedNetwork = availableNetworks[index];
           openListTransactions = index == TRANSACTIONS_INDEX;
+          currentAddress = Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
         });
       },
     );
@@ -100,16 +99,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         _isLoading = true;
       });
       print("Refreshing data from blockchain...");
-      walletServiceImpl.getDataFromBlockchain(widget.wallet).then((dto) {
+      walletServiceImpl.getDataFromBlockchain(widget.wallet).then((_) {
         print("Updating...");
-        List<NetworkDto> newListOfNetworks = availableNetworks;
-        for (int i = 0; i < newListOfNetworks.length; i++) {
-          var networkDto = newListOfNetworks[i];
-          networkDto.walletDTO = dto;
-        }
-        setState(() {
-          availableNetworks = newListOfNetworks;
-        });
       });
     } catch (_) {
       print("Error refreshing data: $_");
@@ -123,28 +114,32 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   void startPeriodicRefresh() async {
     _periodicTimer?.cancel();
-    _periodicTimer = Timer.periodic(Duration(seconds: !searchedFirstTime ? 5 : 360), (timer) async {
+    _periodicTimer =
+        Timer.periodic(Duration(seconds: !searchedFirstTime ? 180 : 360), (timer) async {
       if (!mounted) return;
-      if (searchedFirstTime) {
-        await _loadBalanceFromBlockchain();
-      } else {
-        await _loadBalanceFromDatabaseAndTokens();
-      }
+      await _loadBalanceFromBlockchain();
       searchedFirstTime = true;
     });
   }
 
   _loadBalanceFromDatabaseAndTokens() async {
-    List<NetworkDto> newListOfNetworks = availableNetworks;
+    final WalletDTO dto = await walletService.getBalanceFromDataBase(widget.wallet.privateKey);
 
-    for (int i = 0; i < newListOfNetworks.length; i++) {
-      var networkDto = newListOfNetworks[i];
-      networkDto.tokens = await tokenServiceImpl.list(newListOfNetworks[i].network.networkId);
-      networkDto.tokensLoaded = true;
-    }
     setState(() {
-      availableNetworks = newListOfNetworks;
-      currentAddress = Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
+      selectedNetwork.walletDTO.btcBalance = dto.btcBalance;
+      selectedNetwork.walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
+      selectedNetwork.walletDTO.balance = dto.balance;
+      selectedNetwork.walletDTO.balanceInUsd = dto.balanceInUsd;
+
+      availableNetworks[0].walletDTO.btcBalance = dto.btcBalance;
+      availableNetworks[0].walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
+      availableNetworks[0].walletDTO.balance = dto.balance;
+      availableNetworks[0].walletDTO.balanceInUsd = dto.balanceInUsd;
+
+      availableNetworks[1].walletDTO.btcBalance = dto.btcBalance;
+      availableNetworks[1].walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
+      availableNetworks[1].walletDTO.balance = dto.balance;
+      availableNetworks[1].walletDTO.balanceInUsd = dto.balanceInUsd;
 
       loaded = false;
       _isLoading = false;
@@ -256,15 +251,10 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
     selectedNetwork = availableNetworks[BITCOIN_INDEX];
 
     if (!mounted) return;
-
     _loadBalanceFromDatabaseAndTokens().then((_) {
-      setState(() {
-        loaded = true;
-        _isLoading = false;
-      });
-      startPeriodicRefresh();
+      print("loaded from database");
     });
-
+    startPeriodicRefresh();
     loaded = true;
     _isLoading = false;
   }
