@@ -84,9 +84,13 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       ],
       onTabChanged: (index) async {
         setState(() {
-          selectedNetwork = availableNetworks[index];
           openListTransactions = index == TRANSACTIONS_INDEX;
-          currentAddress = Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
+
+          if (!openListTransactions) {
+            selectedNetwork = availableNetworks[index];
+            currentAddress =
+                Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
+          }
         });
       },
     );
@@ -287,9 +291,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                       wallet: widget.wallet,
                       user: widget.user,
                       selectedNetwork: selectedNetwork.network,
-                      isLoading: _isLoading,
-                      loaded: loaded,
-                      dbTokens2: selectedNetwork.tokens,
+                      currentAddress: currentAddress,
                     )
                   : const SizedBox(height: 0),
               openListTransactions ? _lastTransactions() : const SizedBox(height: 0),

@@ -14,21 +14,18 @@ import '../../../util/network.dart';
 import '../../../util/shimmer_loading.dart';
 
 class TokensFromNetwork extends StatefulWidget {
-  TokensFromNetwork(
+  const TokensFromNetwork(
       {super.key,
       required this.wallet,
       required this.user,
       required this.selectedNetwork,
-      required this.isLoading,
-      required this.loaded,
-      required this.dbTokens2});
+      required this.currentAddress});
 
   final WalletEntity wallet;
   final SimpleUser user;
   final Network selectedNetwork;
-  final bool isLoading;
-  final bool loaded;
-  final List<Token> dbTokens2;
+
+  final String currentAddress;
 
   @override
   _TokensFromNetwork createState() => _TokensFromNetwork();
@@ -37,8 +34,12 @@ class TokensFromNetwork extends StatefulWidget {
 class _TokensFromNetwork extends State<TokensFromNetwork> {
   String accountBalance = "0";
   String tokenSymbol = "";
+  final List<Token> dbTokens = [];
+  final TokenHelper service = TokenHelper();
   List<Widget> tokens = [];
   Timer? _periodicTimer;
+  bool isLoading = true;
+  bool loaded = false;
 
   @override
   void initState() {
@@ -48,10 +49,16 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
 
   searchTokensForCurrentChainId() async {
     _periodicTimer?.cancel();
-    _periodicTimer = Timer.periodic(const Duration(seconds: 240), (timer) async {
+    int secs = (tokens.isNotEmpty ? 250 : 5);
+    _periodicTimer = Timer.periodic(Duration(seconds: secs), (timer) async {
       if (!mounted) return;
 
-      var dbTokens = widget.dbTokens2; //;
+      setState(() {
+        isLoading = true;
+        loaded = false;
+      });
+
+      var dbTokens = await service.fetchItems(widget.selectedNetwork.networkId); //;
       final futures = dbTokens.map<Future<Widget>>((dbToken) async {
         final String contractAddress = dbToken.address;
         final String myAddress = widget.wallet.publicKey;
@@ -76,6 +83,8 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
       if (mounted) {
         setState(() {
           tokens = listTokens;
+          isLoading = false;
+          loaded = true;
         });
       }
     });
@@ -122,9 +131,8 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
 
   @override
   Widget build(BuildContext context) {
-    searchTokensForCurrentChainId();
     return ShimmerLoading(
-      isLoading: !widget.loaded,
+      isLoading: isLoading,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
