@@ -60,8 +60,8 @@ jobs:
           mkdir -p build/artifacts
           BUNDLE_DIR="build/web"
           if [ -d "$BUNDLE_DIR" ]; then
-            tar -czf build/artifacts/web-app.tar.gz -C "$BUNDLE_DIR" .
-            echo "Packaged $BUNDLE_DIR -> build/artifacts/web-app.tar.gz"
+            tar -czf build/artifacts/${{ github.run_number }}-maniva-web-app.tar.gz -C "$BUNDLE_DIR" .
+            echo "Packaged $BUNDLE_DIR -> build/artifacts/${{ github.run_number }}-maniva-web-app.tar.gz"
           else
             echo "Warning: $BUNDLE_DIR not found"
             exit 1
@@ -71,4 +71,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: web-bundle
-          path: build/artifacts/web-app.tar.gz
+          path: build/artifacts/${{ github.run_number }}-maniva-web-app.tar.gz

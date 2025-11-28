@@ -64,8 +64,8 @@ jobs:
           mkdir -p build/artifacts
           BUNDLE_DIR="build/linux/x64/release/bundle"
           if [ -d "$BUNDLE_DIR" ]; then
-            tar -czf build/artifacts/linux-app.tar.gz -C "$BUNDLE_DIR" .
-            echo "Packaged $BUNDLE_DIR -> build/artifacts/linux-app.tar.gz"
+            tar -czf build/artifacts/${{ github.run_number }}-maniva-app.tar.gz -C "$BUNDLE_DIR" .
+            echo "Packaged $BUNDLE_DIR -> build/artifacts/${{ github.run_number }}-maniva-app.tar.gz"
           else
             echo "Warning: $BUNDLE_DIR not found"
             exit 1
@@ -75,4 +75,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-bundle
-          path: build/artifacts/linux-app.tar.gz
+          path: build/artifacts/${{ github.run_number }}-maniva-app.tar.gz
