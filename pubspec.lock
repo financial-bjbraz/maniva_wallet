@@ -493,14 +493,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  freezed_annotation:
-    dependency: transitive
-    description:
-      name: freezed_annotation
-      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -697,10 +689,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.17.0"
   mime:
     dependency: transitive
     description:
@@ -1094,26 +1086,26 @@ packages:
     dependency: "direct main"
     description:
       name: stac
-      sha256: b36af504df414cacc53a04f1e0be1d8f536f220f87f9c75ef65cbc339308eb20
+      sha256: "7a20796d3b021f4a03132a205f7cee5649b0cd54a97d0e0fc2955f4e6ab8b5f2"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.1.2"
   stac_core:
     dependency: transitive
     description:
       name: stac_core
-      sha256: "1c8d0cc42566b75d7584eb926eb8caaf7aaac5f4e056e5aae3e68d651105a537"
+      sha256: "167660082c9bc9c579c2151bfdbcdffae64b12d3e2977d45eccc6821ece39811"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.1.0"
   stac_framework:
     dependency: transitive
     description:
       name: stac_framework
-      sha256: "0cfa8ccc20f32b4e614ba522d88564ac802cc15a8efa6329c9c17af2c568bc48"
+      sha256: e75d1a1b2fd46c65acbc6ce174c7272aef4eb4020722f09c35fce2b3dadf858e
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "1.0.0"
   stac_logger:
     dependency: transitive
     description:
@@ -1174,10 +1166,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "522f00f556e73044315fa4585ec3270f1808a4b186c936e612cab0b565ff1e00"
+      sha256: ab2726c1a94d3176a45960b6234466ec367179b87dd74f1611adb1f3b5fb9d55
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6"
+    version: "0.7.7"
   timing:
     dependency: transitive
     description:
