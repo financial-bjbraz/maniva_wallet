@@ -21,26 +21,38 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev clang cmake libgl1-mesa-dev libglu1-mesa-dev
 
-      - name: Flutter pub get
-        run: flutter pub get
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          flutter-version: '3.35.0' # you can also specify exact version of flutter
+      # Get flutter dependencies.
+      - run: flutter pub cache clean
+      - run: flutter channel stable
+      - run: flutter pub get
 
-      - name: Flutter analyze
-        run: flutter analyze
+      - run: |
+          touch .env
+          echo ROOTSTOCK_NODE=${{ secrets.ROOTSTOCK_NODE }} >> .env
+          echo BLOCK_EXPLORER_URL=${{ secrets.BLOCK_EXPLORER_URL }} >> .env
+          echo MOCK_TRANSACTIONS=true >> .env
+          echo TOKENS='[{"tokenId":"1", "network":"31", "networkName":"Rootstock Testnet", "symbol":"tRif", "symbol2":"tRif", "address":"0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE", "nodeUrl":"https://go.getblock.io/1eced638ecbd41e797744989aac22a23" }, { "tokenId":"2", "network":"31", "networkName":"Rootstock Testnet", "symbol":"tUSDRif", "symbol2":"tUSDRif", "address":"0x8dbf326e12a9fF37ED6DDF75adA548C2640A6482", "nodeUrl":"https://go.getblock.io/1eced638ecbd41e797744989aac22a23" }, { "tokenId":"3", "network":"31", "networkName":"Rootstock Testnet", "symbol":"tDOC", "symbol2":"tDOC", "address":"0xCB46c0ddc60D18eFEB0E586C17Af6ea36452Dae0", "nodeUrl":"https://go.getblock.io/1eced638ecbd41e797744989aac22a23" }, { "tokenId":"4", "network":"31", "networkName":"Rootstock Testnet", "symbol":"tRIFPRO", "symbol2":"tRIFPRO", "address":"0x23A1aA7b11e68beBE560a36beC04D1f79357f28d", "nodeUrl":"https://go.getblock.io/1eced638ecbd41e797744989aac22a23"},{"tokenId":"5", "network":"31", "networkName":"Rootstock Testnet", "symbol":"tBRZ", "symbol2":"tBRZ", "address":"0x369197080bAcFFf3147eC2F59076168F45f5b75d", "nodeUrl":"https://go.getblock.io/1eced638ecbd41e797744989aac22a23"}]' >> .env
+          echo TRANSACTIONS='[ { "transactionId": "1", "amountInWeis": "1000", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "1.000", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "2", "amountInWeis": "1050", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "315,55", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "2", "amountInWeis": "1000", "ddateTime": "01/05/1984", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "0", "amountInWeis": 100000000000000, "ddateTime": "01/05/1985", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "3", "amountInWeis": "1000000", "ddateTime": "01/05/1986", "walletId": "1", "valueInUsdFormatted": "500,00", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "4", "amountInWeis": "1000", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "1.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "5", "amountInWeis": "1000", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "5", "amountInWeis": "10020", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "7", "amountInWeis": "10030", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "8", "amountInWeis": "10040", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "9", "amountInWeis": "10050", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "10", "amountInWeis": "10060", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" }, { "transactionId": "11", "amountInWeis": "105", "ddateTime": "01/05/1983", "walletId": "1", "valueInUsdFormatted": "0.005", "valueInWeiFormatted": "100000000000000", "status": "STATUS", "type": 0, "destination": "DESTINATION" } ]' >> .env
+          echo TRIF="0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE" >> .env
+          echo USDRIF="0x8dbf326e12a9fF37ED6DDF75adA548C2640A6482" >> .env
+          echo DOC="0xCB46c0ddc60D18eFEB0E586C17Af6ea36452Dae0" >> .env
+          echo RIFPRO="0x23A1aA7b11e68beBE560a36beC04D1f79357f28d" >> .env
+          echo LANCEN="0x9afc95c5c1A3d79cCf4c9af2e291f0134Aa403Df" >> .env
+          cat .env
 
-      - name: Flutter test
-        run: flutter test --no-pub
-
+      - run: flutter analyze .
+      - run: flutter test
       - name: Build Linux app (release)
         run: flutter build linux --release
 
