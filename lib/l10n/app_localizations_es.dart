@@ -152,4 +152,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get restoreWalletWithPrivateKey => 'Restore Wallet with Private Key';
+
+  @override
+  String get share => 'Compartir';
+
+  @override
+  String get paste => 'Colar';
 }

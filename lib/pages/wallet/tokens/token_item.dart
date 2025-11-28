@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:hux/hux.dart';
 
@@ -7,27 +9,53 @@ class TokenItem extends StatelessWidget {
   final String tokenSymbol;
   final String tokenAddress;
   final String tokenBalance;
+  final String networkId;
 
   const TokenItem(
       {super.key,
       required this.tokenName,
       required this.tokenSymbol,
       required this.tokenAddress,
-      required this.tokenBalance});
+      required this.tokenBalance,
+      required this.networkId});
+
+  static Future<bool> _assetExists(String path) async {
+    try {
+      await rootBundle.load(path);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    var tokenIcon = "assets/icons/${networkId}.png";
+    _assetExists(tokenIcon).then((iconeExiste) {
+      if (!iconeExiste) {
+        tokenIcon = "assets/contracts/${tokenSymbol}.png";
+      }
+    });
+
     return HuxContextMenu(
       menuItems: [
         HuxContextMenuItem(
-          text: 'Copy',
-          icon: FeatherIcons.copy,
-          onTap: () => print('Copy action'),
-        ),
+            text: 'Copy',
+            icon: FeatherIcons.copy,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: tokenAddress));
+              if (kDebugMode) {
+                print('Token address copied to clipboard: $tokenAddress');
+              }
+            }),
         HuxContextMenuItem(
           text: 'Paste',
           icon: FeatherIcons.clipboard,
-          onTap: () => print('Paste action'),
+          onTap: () {
+            if (kDebugMode) {
+              print('Paste action triggered');
+            }
+          },
         ),
       ],
       child: Card(
@@ -40,7 +68,7 @@ class TokenItem extends StatelessWidget {
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
             child: Image.asset(
-              "assets/images/rif.png",
+              tokenIcon,
               fit: BoxFit.cover,
             ),
           ), // Icon on the left
@@ -60,7 +88,9 @@ class TokenItem extends StatelessWidget {
           ), // Secondary text
           onTap: () {
             // Handle tap event on the card
-            print('Card tapped!');
+            if (kDebugMode) {
+              print('Card tapped!');
+            }
           },
         ),
       ),

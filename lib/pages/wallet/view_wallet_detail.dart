@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -7,9 +9,11 @@ import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 
 import '../../../services/wallet_service.dart';
+import '../../entities/network_dto.dart';
 import '../../entities/user_helper.dart';
 import '../../entities/wallet_helper.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/tokken_service.dart';
 import '../../util/network.dart';
 import '../../util/shimmer_loading.dart';
 import '../../util/util.dart';
@@ -32,19 +36,29 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   bool _isLoading = true;
   final double iconSize = 48;
   final double fontSize = 20;
-  late String balance = formatBalance("0");
-  late String balanceInUsd = formatUsd("0");
+  Timer? _periodicTimer;
 
   late String currentAddress =
-      Network.generateFormattedAddress(Network.ROOTSTOCK_TESTNET, widget.wallet);
-  late Network selectedNetwork = Network.ROOTSTOCK_TESTNET;
+      Network.generateFormattedAddress(Network.BITCOIN_TESTNET, widget.wallet);
+  late NetworkDto selectedNetwork;
+  late List<NetworkDto> availableNetworks;
 
   int operation = 0;
+  static const int BITCOIN_INDEX = 0;
+  static const int ROOTSTOCK_INDEX = 1;
+  static const int TRANSACTIONS_INDEX = 2;
+
   bool loaded = false;
   bool receiveScreenOpened = false;
+  bool openListTransactions = false;
+  bool searchedFirstTime = false;
+
+  TokenServiceImpl tokenServiceImpl = TokenServiceImpl();
 
   TextEditingController addressController = TextEditingController();
   TextEditingController amountController = TextEditingController();
+
+  WalletServiceImpl walletServiceImpl = WalletServiceImpl();
 
   Image rootstockSelected = Image.asset(
     "assets/icons/rbtc2.png",
@@ -59,108 +73,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   _ViewWalletApp();
 
-  loadWalletData() async {
-    if (loaded) {
-      return;
-    }
-
-    int seconds = loaded ? 30 : 1;
-    await Future.delayed(Duration(seconds: seconds), () {
-      walletService
-          .convert(widget.wallet)
-          .then((value) => walletService.createGenericWalletToDisplay(selectedNetwork, value).then(
-                  (dto) => {
-                        if (mounted)
-                          {
-                            setState(() {
-                              if (dto.balance != balance || dto.balanceInUsd != balanceInUsd) {
-                                walletDto = dto;
-                                balance = formatBalance(dto.balance);
-                                balanceInUsd = formatUsd(dto.balanceInUsd);
-                              }
-                              _isLoading = false;
-                            })
-                          }
-                      }, onError: (err) {
-                if (mounted) {
-                  setState(() {
-                    _isLoading = false;
-                    balance = formatBalance("0");
-                    balanceInUsd = formatUsd("0");
-                    loaded = false;
-                  });
-                }
-              }))
-          .whenComplete(() => loaded = true);
-    });
-  }
-
-  Widget _buildFirstLine() {
-    loadWalletData();
-
-    return ShimmerLoading(
-        isLoading: _isLoading,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            HuxContextMenu(
-              menuItems: [
-                HuxContextMenuItem(
-                  text: 'Copy',
-                  icon: FeatherIcons.copy,
-                  onTap: () => print('Copy action'),
-                ),
-                HuxContextMenuItem(
-                  text: 'Share',
-                  icon: FeatherIcons.clipboard,
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(
-                        text: Network.generateAddress(selectedNetwork, widget.wallet)));
-                    showMessage(AppLocalizations.of(context)!.copiedMessage, context);
-                  },
-                ),
-              ],
-              child: Card(
-                elevation: 5, // Adds a shadow to the card
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10), // Rounded corners
-                ),
-                margin: const EdgeInsets.all(16), // Margin around the card
-                child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
-                    child: Icon(
-                      Icons.wallet_rounded,
-                      color: lightBlue(),
-                      size: iconSize,
-                    ),
-                  ), // Icon on the left
-                  title: Text(
-                    currentAddress,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ), // Main text
-                  subtitle: Text(
-                    "${balance} ~ ${balanceInUsd}",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ), // Secondary text
-                  onTap: () {
-                    // Handle tap event on the card
-                    print('Card tapped!');
-                  },
-                ),
-              ),
-            ),
-          ],
-        ));
-  }
-
   Widget _buildSegmentButton() {
     return HuxTabs(
       size: HuxTabSize.large,
@@ -168,17 +80,74 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       tabs: const [
         HuxTabItem(label: 'Bitcoin', content: Text(''), icon: Icons.currency_bitcoin),
         HuxTabItem(label: 'Rootstock', content: Text(''), icon: Icons.account_balance),
+        HuxTabItem(label: 'Transactions', content: Text(''), icon: Icons.list),
       ],
-      onTabChanged: (index) {
+      onTabChanged: (index) async {
         setState(() {
-          selectedNetwork = index == 0 ? Network.BITCOIN_TESTNET : Network.ROOTSTOCK_TESTNET;
-          loaded = false;
-          _isLoading = false;
-          currentAddress = Network.generateFormattedAddress(selectedNetwork, widget.wallet);
-          loadWalletData();
+          openListTransactions = index == TRANSACTIONS_INDEX;
+
+          if (!openListTransactions) {
+            selectedNetwork = availableNetworks[index];
+            currentAddress =
+                Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
+          }
         });
       },
     );
+  }
+
+  _loadBalanceFromBlockchain() {
+    try {
+      setState(() {
+        loaded = false;
+        _isLoading = true;
+      });
+      print("Refreshing data from blockchain...");
+      walletServiceImpl.getDataFromBlockchain(widget.wallet).then((_) {
+        print("Updating...");
+      });
+    } catch (_) {
+      print("Error refreshing data: $_");
+    } finally {
+      setState(() {
+        loaded = true;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void startPeriodicRefresh() async {
+    _periodicTimer?.cancel();
+    _periodicTimer =
+        Timer.periodic(Duration(seconds: !searchedFirstTime ? 180 : 360), (timer) async {
+      if (!mounted) return;
+      await _loadBalanceFromBlockchain();
+      searchedFirstTime = true;
+    });
+  }
+
+  _loadBalanceFromDatabaseAndTokens() async {
+    final WalletDTO dto = await walletService.getBalanceFromDataBase(widget.wallet.privateKey);
+
+    setState(() {
+      selectedNetwork.walletDTO.btcBalance = dto.btcBalance;
+      selectedNetwork.walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
+      selectedNetwork.walletDTO.balance = dto.balance;
+      selectedNetwork.walletDTO.balanceInUsd = dto.balanceInUsd;
+
+      availableNetworks[0].walletDTO.btcBalance = dto.btcBalance;
+      availableNetworks[0].walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
+      availableNetworks[0].walletDTO.balance = dto.balance;
+      availableNetworks[0].walletDTO.balanceInUsd = dto.balanceInUsd;
+
+      availableNetworks[1].walletDTO.btcBalance = dto.btcBalance;
+      availableNetworks[1].walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
+      availableNetworks[1].walletDTO.balance = dto.balance;
+      availableNetworks[1].walletDTO.balanceInUsd = dto.balanceInUsd;
+
+      loaded = false;
+      _isLoading = false;
+    });
   }
 
   Widget _createMainScreen() {
@@ -191,14 +160,17 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
             HuxContextMenu(
               menuItems: [
                 HuxContextMenuItem(
-                  text: 'Copy',
+                  text: AppLocalizations.of(context)!.copiar,
                   icon: FeatherIcons.copy,
-                  onTap: () => print('Copy action'),
-                ),
-                HuxContextMenuItem(
-                  text: 'Paste',
-                  icon: FeatherIcons.clipboard,
-                  onTap: () => print('Paste action'),
+                  onTap: () async {
+                    String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
+                            selectedNetwork.network == Network.BITCOIN_MAINNET
+                        ? widget.wallet.btcAddress
+                        : widget.wallet.publicKey;
+                    await Clipboard.setData(ClipboardData(text: address));
+                    showMessage(
+                        "${AppLocalizations.of(context)!.copiedMessage}: $address", context);
+                  },
                 ),
               ],
               child: Card(
@@ -210,13 +182,22 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                 child: ListTile(
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
-                    child: Image.asset(
-                      "assets/icons/btc.png",
-                      fit: BoxFit.cover,
-                    ),
+                    child: selectedNetwork.network == Network.BITCOIN_TESTNET
+                        ? Image.asset(
+                            "assets/icons/btc.png",
+                            fit: BoxFit.cover,
+                            width: 40,
+                            height: 40,
+                          )
+                        : Image.asset(
+                            "assets/icons/rbtc2.png",
+                            fit: BoxFit.cover,
+                            width: 40,
+                            height: 40,
+                          ),
                   ), // Icon on the left
                   title: Text(
-                    selectedNetwork.name,
+                    currentAddress,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -224,7 +205,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                   ), // Main text
                   subtitle: _showSaldo
                       ? Text(
-                          "${balance} ~ ${balanceInUsd}",
+                          selectedNetwork.network == Network.BITCOIN_TESTNET
+                              ? "${selectedNetwork.walletDTO.btcBalance} ~ ${selectedNetwork.walletDTO.btcBalanceInUsd}"
+                              : "${selectedNetwork.walletDTO.balance} ~ ${selectedNetwork.walletDTO.balanceInUsd}",
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -255,18 +238,40 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   @override
   void initState() {
     super.initState();
+
+    var bitCoin = NetworkDto(
+      network: Network.BITCOIN_TESTNET,
+      tokens: [],
+      wallet: widget.wallet,
+      user: widget.user,
+    );
+    var rootstock = NetworkDto(
+      network: Network.ROOTSTOCK_TESTNET,
+      tokens: [],
+      wallet: widget.wallet,
+      user: widget.user,
+    );
+    availableNetworks = [bitCoin, rootstock];
+    selectedNetwork = availableNetworks[BITCOIN_INDEX];
+
+    if (!mounted) return;
+    _loadBalanceFromDatabaseAndTokens().then((_) {
+      print("loaded from database");
+    });
+    startPeriodicRefresh();
+    loaded = true;
+    _isLoading = false;
   }
 
   @override
   void dispose() {
+    _periodicTimer?.cancel();
     _isLoading = false;
-    loadWalletData();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    loadWalletData();
     return Scaffold(
       backgroundColor: Colors.black,
       body: Shimmer(
@@ -280,17 +285,16 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
             physics: _isLoading ? const NeverScrollableScrollPhysics() : null,
             children: [
               _buildSegmentButton(),
-              _buildFirstLine(),
-              _createMainScreen(),
-              TokensFromNetwork(
-                  wallet: widget.wallet,
-                  user: widget.user,
-                  selectedNetwork: selectedNetwork,
-                  isLoading: _isLoading,
-                  loaded: loaded,
-                  currentAddress: currentAddress),
-              const SizedBox(height: 16),
-              _lastTransactions(),
+              !openListTransactions ? _createMainScreen() : Container(),
+              !openListTransactions
+                  ? TokensFromNetwork(
+                      wallet: widget.wallet,
+                      user: widget.user,
+                      selectedNetwork: selectedNetwork.network,
+                      currentAddress: currentAddress,
+                    )
+                  : const SizedBox(height: 0),
+              openListTransactions ? _lastTransactions() : const SizedBox(height: 0),
             ],
           ),
         ),

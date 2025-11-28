@@ -36,14 +36,6 @@ class MenuApp extends StatelessWidget {
     final String help = AppLocalizations.of(context)!.help;
     final String lblExit = AppLocalizations.of(context)!.exit;
 
-    final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-      minimumSize: const Size(88, 36),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(2)),
-      ),
-    );
-
     return Positioned(
       top: top,
       left: 0,

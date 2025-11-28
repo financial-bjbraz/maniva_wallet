@@ -1,0 +1,62 @@
+# yaml
+name: macOS Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'macOS' && '~/.pub-cache' || '~/.pub-cache' }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter test
+        run: flutter test --no-pub
+
+      - name: Build macOS app (release)
+        run: flutter build macos --release
+
+      - name: Show build output (debug)
+        run: ls -la build/macos/Build/Products/Release || true
+
+      - name: Archive Runner.app
+        run: |
+          mkdir -p build/artifacts
+          APP_PATH="build/macos/Build/Products/Release/Runner.app"
+          if [ -d "$APP_PATH" ]; then
+            ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/artifacts/Runner.zip
+            echo "Packaged $APP_PATH -> build/artifacts/Runner.zip"
+          else
+            echo "Warning: $APP_PATH not found"
+            exit 1
+          fi
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-runner
+          path: build/artifacts/Runner.zip

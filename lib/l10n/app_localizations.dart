@@ -381,6 +381,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore Wallet with Private Key'**
   String get restoreWalletWithPrivateKey;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @paste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get paste;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

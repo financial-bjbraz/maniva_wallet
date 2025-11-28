@@ -8,17 +8,22 @@ import '../util/util.dart';
 class WalletDTO {
   late String? publicKey;
   final WalletEntity wallet;
-  late double amountInUsd;
+  late double amountInUsd = 0.00;
   late double amountInWeis;
-  late String valueInUsdFormatted;
-  late String valueInWeiFormatted;
+  late String valueInUsdFormatted = "0.00";
+  late String valueInWeiFormatted = "0.00";
   Set<SimpleTransaction>? transactions;
   Set<SimpleTransaction>? btcTransactions;
   bool updated = false;
   late Wei lastBalanceReceivedInWei;
   late EtherAmount lastBalanceReceivedInEtherAmount;
-  late String balance;
-  late String balanceInUsd;
+  late String balance = "0.000";
+  double balanceInDouble = 0.000;
+  late String balanceInUsd = "0.000";
+
+  late String btcBalance = "0.000";
+  double btcBalanceInDouble = 0.000;
+  late String btcBalanceInUsd = "0.000";
 
   WalletDTO({required this.wallet, required this.transactions, required this.btcTransactions});
 
