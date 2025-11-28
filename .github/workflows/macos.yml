@@ -60,8 +60,8 @@ jobs:
           mkdir -p build/artifacts
           APP_PATH="build/macos/Build/Products/Release/Runner.app"
           if [ -d "$APP_PATH" ]; then
-            ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/artifacts/Runner.zip
-            echo "Packaged $APP_PATH -> build/artifacts/Runner.zip"
+            ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/artifacts/${{ github.run_number }}-maniva-app.zip
+            echo "Packaged $APP_PATH -> build/artifacts/${{ github.run_number }}-maniva-app.zip"
           else
             echo "Warning: $APP_PATH not found"
             exit 1
@@ -71,4 +71,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-runner
-          path: build/artifacts/Runner.zip
+          path: build/artifacts/${{ github.run_number }}-maniva-app.zip
