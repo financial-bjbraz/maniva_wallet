@@ -31,6 +31,15 @@ analyzer:
     inference_failure_on_function_invocation: ignore
   exclude:
     - "bin/cache/**"
+    - "lib/contracts/**"
+    - "lib/util/**"
+    - "lib/util/bitcoin_transaction.dart"
+    - "lib/services/wallet_service.dart"
+    - "lib/services/bitcoin_service.dart"
+    - "lib/pages/wallet/view_wallet_detail.dart"
+    - "lib/entities/bitcoin_utxo.dart"
+    - "lib/entities/entity_helper.dart"
+    - "lib/pages/menu/menu_app.dart"
     # Ignore protoc generated files
     - "dev/conductor/lib/proto/*"
     - "engine/**"

@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_rootstock_wallet/pages/wallet/tokens/token_item.dart';
-import 'package:web3dart/web3dart.dart' as _i1;
+import 'package:web3dart/web3dart.dart' as i1;
 
 import '../../../contracts/ERC20.g.dart';
 import '../../../entities/token_helper.dart';
@@ -51,7 +52,9 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
     _periodicTimer?.cancel();
     int secs = (tokens.isNotEmpty ? 250 : 5);
     _periodicTimer = Timer.periodic(Duration(seconds: secs), (timer) async {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         isLoading = true;
@@ -92,23 +95,26 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
 
   Future<String> callSmartContract(String tokenAddress, String myAddress) async {
     var accountBalance = "0.000";
-    _i1.Web3Client? client;
+    i1.Web3Client? client;
     try {
       final node = dotenv.env['ROOTSTOCK_NODE'];
       if (node == null || node.isEmpty) {
-        print("ROOTSTOCK_NODE environment variable not set.");
+        if (kDebugMode) {
+          print("ROOTSTOCK_NODE environment variable not set.");
+        }
         return "0.00";
       }
-      client = _i1.Web3Client(node!, http.Client());
-      final credentials = _i1.EthPrivateKey.fromHex(widget.wallet.privateKey);
+      client = i1.Web3Client(node, http.Client());
+      // final credentials = i1.EthPrivateKey.fromHex(widget.wallet.privateKey);
 
-      final _i1.EthereumAddress contractAddr = _i1.EthereumAddress.fromHex(tokenAddress);
-      final _i1.EthereumAddress myAccount = _i1.EthereumAddress.fromHex(myAddress);
+      final i1.EthereumAddress contractAddr = i1.EthereumAddress.fromHex(tokenAddress);
+      final i1.EthereumAddress myAccount = i1.EthereumAddress.fromHex(myAddress);
       ERC20 token = ERC20(address: contractAddr, client: client);
       final BigInt balanceObtained = await token.balanceOf((account: myAccount));
-      print(
-          "Raw balance obtained from $contractAddr, and the balance is $balanceObtained from account $myAccount");
-      // final BigInt decimalsObtained = await token.decimals();
+      if (kDebugMode) {
+        print(
+            "Raw balance obtained from $contractAddr, and the balance is $balanceObtained from account $myAccount");
+      } // final BigInt decimalsObtained = await token.decimals();
       // final int decimals = decimalsObtained.toInt();
 
       if (balanceObtained == BigInt.zero) {

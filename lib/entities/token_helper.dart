@@ -62,7 +62,7 @@ class TokenHelper extends EntityHelper {
               'nodeUrl': nodeUrl as String,
             } in walletMaps)
           Token(
-            tokenId: tokenId ?? "",
+            tokenId: tokenId,
             network: network,
             networkName: networkName,
             symbol: symbol,

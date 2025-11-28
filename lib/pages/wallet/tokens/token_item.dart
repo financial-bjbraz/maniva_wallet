@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -39,14 +40,22 @@ class TokenItem extends StatelessWidget {
     return HuxContextMenu(
       menuItems: [
         HuxContextMenuItem(
-          text: 'Copy',
-          icon: FeatherIcons.copy,
-          onTap: () => print(''),
-        ),
+            text: 'Copy',
+            icon: FeatherIcons.copy,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: tokenAddress));
+              if (kDebugMode) {
+                print('Token address copied to clipboard: $tokenAddress');
+              }
+            }),
         HuxContextMenuItem(
           text: 'Paste',
           icon: FeatherIcons.clipboard,
-          onTap: () => print('Paste action'),
+          onTap: () {
+            if (kDebugMode) {
+              print('Paste action triggered');
+            }
+          },
         ),
       ],
       child: Card(
@@ -79,7 +88,9 @@ class TokenItem extends StatelessWidget {
           ), // Secondary text
           onTap: () {
             // Handle tap event on the card
-            print('Card tapped!');
+            if (kDebugMode) {
+              print('Card tapped!');
+            }
           },
         ),
       ),

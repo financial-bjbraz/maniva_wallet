@@ -20,7 +20,6 @@ class _SplashPageState extends State<Splash> {
 
   delay() async {
     verifyAndCreateDataBase().then((created) {
-      print("Database created: $created");
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(

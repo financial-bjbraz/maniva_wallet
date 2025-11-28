@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logging/logging.dart';
 import 'package:my_rootstock_wallet/entities/token_helper.dart';
 import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
 import 'package:my_rootstock_wallet/entities/user_helper.dart';
@@ -12,6 +14,7 @@ import '../util/util.dart';
 
 class EntityHelper {
   static Database? _database;
+  final log = Logger("EntityHelper");
 
   Future<Database> get database async {
     if (_database != null && _database!.isOpen) {
@@ -23,37 +26,55 @@ class EntityHelper {
 
   Future setUp() async {
     database;
-    final db = _database;
-    // _database = null;
-    // return db?.close();
+    _database;
   }
 
   Future<Database> _initDatabase() async {
     var dbKey = dotenv.env['PRIVATE_KEY'];
     String path = join(await getDatabasesPath(), "$DATA_BASE_VERSION+$DATA_BASE_NAME");
-    print("Database persisted at ${path}");
+    if (kDebugMode) {
+      print("Database persisted at ${path}");
+    }
 
     return openDatabase(path, password: dbKey, version: DATA_BASE_VERSION,
         onCreate: (db, int version) {
       try {
-        print("Creating transactions");
+        if (kDebugMode) {
+          print("Creating transactions");
+        }
         db.execute(TransactionHelper.scriptCreation());
-        print("Transactions created");
-      } catch (e) {}
+        if (kDebugMode) {
+          print("Transactions created");
+        }
+      } catch (e) {
+        log.severe("Error creating transactions table: $e");
+      }
       try {
-        print("Creating wallets");
+        if (kDebugMode) {
+          print("Creating wallets");
+        }
         db.execute(WalletHelper.scriptCreation());
-        print("Wallets created");
+        if (kDebugMode) {
+          print("Wallets created");
+        }
       } catch (e) {}
       try {
-        print("Creating users");
+        if (kDebugMode) {
+          print("Creating users");
+        }
         db.execute(UserHelper.scriptCreation());
-        print("Users created");
+        if (kDebugMode) {
+          print("Users created");
+        }
       } catch (e) {}
       try {
-        print("Creating tokens");
+        if (kDebugMode) {
+          print("Creating tokens");
+        }
         db.execute(TokenHelper.scriptCreation());
-        print("Table Tokens created");
+        if (kDebugMode) {
+          print("Table Tokens created");
+        }
       } catch (e) {}
 
       final String rawJsonString = dotenv.env['TOKENS'] ?? '';
@@ -66,7 +87,9 @@ class EntityHelper {
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
-        print("${jsonMap.length} tokens added to database");
+        if (kDebugMode) {
+          print("${jsonMap.length} tokens added to database");
+        }
       }
 
       final String transactionsList = dotenv.env['TRANSACTIONS'] ?? '';
@@ -80,7 +103,9 @@ class EntityHelper {
           );
         }
       }
-      print("Initial available data inserted");
+      if (kDebugMode) {
+        print("Initial available data inserted");
+      }
     });
   }
 }
