@@ -1,0 +1,61 @@
+name: Web Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter test
+        run: flutter test --no-pub
+
+      - name: Build web (release)
+        run: flutter build web --release
+
+      - name: Show build output (debug)
+        run: ls -la build/web || true
+
+      - name: Archive web bundle
+        run: |
+          mkdir -p build/artifacts
+          BUNDLE_DIR="build/web"
+          if [ -d "$BUNDLE_DIR" ]; then
+            tar -czf build/artifacts/web-app.tar.gz -C "$BUNDLE_DIR" .
+            echo "Packaged $BUNDLE_DIR -> build/artifacts/web-app.tar.gz"
+          else
+            echo "Warning: $BUNDLE_DIR not found"
+            exit 1
+          fi
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle
+          path: build/artifacts/web-app.tar.gz
