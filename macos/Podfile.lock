@@ -65,14 +65,14 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   FMDB: 728731dd336af3936ce00f91d9d8495f5718a0e6
-  mobile_scanner: 0e365ed56cad24f28c0fd858ca04edefb40dfac3
-  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
-  share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
-  sqflite_sqlcipher: a4c2f17db76d2f86dfe044937d3a851d8880cbb9
+  mobile_scanner: 07710d6b9b2c220ae899de2d7ecf5d77ffa56333
+  path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
+  share_plus: 1fa619de8392a4398bfaf176d441853922614e89
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
+  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  sqflite_sqlcipher: cf9f9d9b621b480396f558b06494327aea2aade4
   SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
-  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
+  url_launcher_macos: 175a54c831f4375a6cf895875f716ee5af3888ce
 
 PODFILE CHECKSUM: 73d0feaa9ca8c9b13bc5b5e21fbe09c71472f86f
 

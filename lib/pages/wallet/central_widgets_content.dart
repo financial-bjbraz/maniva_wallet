@@ -92,7 +92,7 @@ class _PageViewAppState extends State<CentralWidgetsContent> {
             left: value,
             right: value * -1,
             top: widget.top,
-            height: MediaQuery.of(context).size.height * .65,
+            height: MediaQuery.of(context).size.height * .69,
             child: PageView(
               onPageChanged: widget.onChanged,
               physics: widget.showMenu

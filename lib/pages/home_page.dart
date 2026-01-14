@@ -6,6 +6,7 @@ import 'package:my_rootstock_wallet/util/util.dart';
 
 import '../entities/user_helper.dart';
 import '../entities/wallet_helper.dart';
+import 'details/create_send_transaction.dart';
 import 'menu/menu_app.dart';
 import 'menu/my_app_bar.dart';
 
@@ -49,8 +50,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     loadWallets();
     double heightScreen = MediaQuery.of(context).size.height;
-    double distanciaParaTopo = .16;
-    double distanciaParaTopoComMenuExpandido = .45;
+    double distanciaParaTopo = .15;
+    double distanciaParaTopoComMenuExpandido = .55;
 
     if (_yPosition == 0) {
       _yPosition = heightScreen * distanciaParaTopo;
@@ -73,7 +74,7 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           MenuApp(
-            top: heightScreen * .205,
+            top: heightScreen * .200,
             showMenu: _showMenu,
           ),
           CentralWidgetsContent(
@@ -159,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () => {
                       Navigator.of(context).push(PageRouteBuilder(
                         pageBuilder: (context, animation, secondaryAnimation) =>
-                            HomePage(user: widget.user, wallets: widget.wallets),
+                            CreateSendTransaction(user: widget.user),
                         transitionsBuilder: (context, animation, secondaryAnimation, child) {
                           var begin = const Offset(0.0, 1.0);
                           var end = Offset.zero;

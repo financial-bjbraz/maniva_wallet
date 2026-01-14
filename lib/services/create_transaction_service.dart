@@ -1,13 +1,12 @@
-import 'package:flutter/cupertino.dart';
-
 import '../entities/transaction_helper.dart';
 
 abstract class CreateTransactionService {
   void createOrUpdateTransaction(SimpleTransaction transaction);
+
   void listTransactionsOnDataBase(String walletId);
 }
 
-class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTransactionService {
+class CreateTransactionServiceImpl implements CreateTransactionService {
   TransactionHelper helper = TransactionHelper();
 
   @override
@@ -18,7 +17,6 @@ class CreateTransactionServiceImpl extends ChangeNotifier implements CreateTrans
 
   @override
   Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId) async {
-    WidgetsFlutterBinding.ensureInitialized();
     var list = await helper.fetchItems(walletId);
     return list;
   }

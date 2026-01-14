@@ -1,12 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:my_rootstock_wallet/entities/token_helper.dart';
+
+import '../entities/token_helper.dart';
 
 abstract class TokenService {
   void createOrUpdate(Token token);
+
   void list(int chainId);
 }
 
-class TokenServiceImpl extends ChangeNotifier implements TokenService {
+class TokenServiceImpl implements TokenService {
   TokenHelper helper = TokenHelper();
 
   @override
@@ -17,7 +19,6 @@ class TokenServiceImpl extends ChangeNotifier implements TokenService {
 
   @override
   Future<List<Token>> list(int chainId) async {
-    WidgetsFlutterBinding.ensureInitialized();
     var list = await helper.fetchItems(chainId);
     return list;
   }

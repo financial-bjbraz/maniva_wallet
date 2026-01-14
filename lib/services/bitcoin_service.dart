@@ -77,6 +77,41 @@ class BitcoinNodeClient {
     }
   }
 
+  /// Returns a list of UTXOs for the given address by calling RPC `listunspent`.
+  /// Each item is a `Map<String, dynamic>` with normalized fields (for example
+  /// `amount` is converted to `double`).
+  Future<List<Map<String, dynamic>>> listUtxos(
+    String address, {
+    int minConf = 0,
+    int maxConf = 9999999,
+  }) async {
+    final result = await _callRpc('listunspent', [
+      minConf,
+      maxConf,
+      [address]
+    ]);
+
+    if (result is! List) return <Map<String, dynamic>>[];
+
+    final List<Map<String, dynamic>> utxos = [];
+    for (final item in result) {
+      if (item is Map<String, dynamic>) {
+        // Normalize amount to double if possible
+        final rawAmount = item['amount'];
+        final double amount = rawAmount is num
+            ? rawAmount.toDouble()
+            : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
+
+        final normalized = Map<String, dynamic>.from(item);
+        normalized['amount'] = amount;
+
+        utxos.add(normalized);
+      }
+    }
+
+    return utxos;
+  }
+
   Future<String> sendToAddress(String address, double amount) async {
     final result = await _callRpc('sendtoaddress', [address, amount]);
 

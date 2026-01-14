@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
-import 'package:my_rootstock_wallet/entities/user_helper.dart';
+
+import '../entities/user_helper.dart';
 
 abstract class CreateUserService {
   Future<SimpleUser?> getUser(SimpleUser user);
+
   void createUser(SimpleUser user);
+
   void changePassword(String password);
 }
 
