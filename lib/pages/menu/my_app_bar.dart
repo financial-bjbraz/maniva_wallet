@@ -7,11 +7,7 @@ class MyAppBar extends StatelessWidget {
   final VoidCallback onTap;
   final String userName;
 
-  const MyAppBar(
-      {super.key,
-      required this.showMenu,
-      required this.onTap,
-      required this.userName});
+  const MyAppBar({super.key, required this.showMenu, required this.onTap, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +20,11 @@ class MyAppBar extends StatelessWidget {
           onTap: onTap,
           child: Container(
             decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.black,
-                ),
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
-                color: orange(),
+              border: Border.all(
+                color: Colors.black,
+              ),
+              borderRadius: const BorderRadius.all(Radius.circular(20)),
+              color: orange(),
             ),
             //color: orange(),
             height: MediaQuery.of(context).size.height * .15,
@@ -38,8 +34,7 @@ class MyAppBar extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset('assets/images/maniva_logo_white.png',
-                        height: 70),
+                    Image.asset('assets/images/maniva_logo_white.png', height: 50),
                     // const SizedBox(
                     //   width: 10,
                     // ),
@@ -53,7 +48,10 @@ class MyAppBar extends StatelessWidget {
                     // ),
                   ],
                 ),
-                Icon(showMenu ? Icons.expand_less : Icons.expand_more, color: Colors.white,),
+                Icon(
+                  showMenu ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.white,
+                ),
               ],
             ),
           ),

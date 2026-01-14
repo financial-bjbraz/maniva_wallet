@@ -12,6 +12,7 @@ import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/util/coingeck_resopnse.dart';
 import 'package:my_rootstock_wallet/util/transaction_type.dart';
 import 'package:my_rootstock_wallet/util/wei.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:web3dart/web3dart.dart' as web3;
 
 import '../entities/transaction_helper.dart';
@@ -181,9 +182,38 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return transactionToPersist;
   }
 
-  String getExplorerUrl(String transactionId) {
-    final blockExplorer = dotenv.env['BLOCK_EXPLORER_URL'];
-    return blockExplorer! + transactionId;
+  String getExplorerUrl(Network network) {
+    if (network == Network.ROOTSTOCK_MAINNET) {
+      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+    }
+    if (network == Network.ROOTSTOCK_TESTNET) {
+      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+    }
+    if (network == Network.ROOTSTOCK_MAINNET) {
+      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+    }
+    if (network == Network.ROOTSTOCK_MAINNET) {
+      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+    }
+    return "";
+  }
+
+  openBlockExplorerForTransaction(String transactionId, Network network) async {
+    final Uri url =
+        Uri.parse("${getExplorerUrl(network)}/tx/${transactionId}"); // Replace with your URL
+
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
+  openBlockExplorerForAddress(String address, Network network) async {
+    final Uri url =
+        Uri.parse("${getExplorerUrl(network)}/address/${address}"); // Replace with your URL
+
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
   }
 
   Future<WalletDTO> getBalanceFromDataBase(String privateKey) async {
