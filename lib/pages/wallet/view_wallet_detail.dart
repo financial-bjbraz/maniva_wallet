@@ -8,6 +8,8 @@ import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
+import 'package:my_rootstock_wallet/pages/wallet/view_wallet_detail_btc.dart';
+import 'package:my_rootstock_wallet/pages/wallet/view_wallet_detail_rootstock.dart';
 
 import '../../../services/wallet_service.dart';
 import '../../entities/network_dto.dart';
@@ -156,190 +158,190 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
       _isLoading = false;
     });
   }
-
-  Widget _createMainScreen() {
-    return ShimmerLoading(
-        isLoading: _isLoading,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            HuxContextMenu(
-              menuItems: [],
-              child: Card(
-                elevation: 5, // Adds a shadow to the card
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10), // Rounded corners
-                ),
-                margin: const EdgeInsets.all(16), // Margin around the card
-                child: ListTile(
-                  leading: selectedNetwork.network == Network.BITCOIN_TESTNET
-                      ? Image.asset(
-                          "assets/icons/btc.png",
-                          fit: BoxFit.cover,
-                          width: 40,
-                          height: 40,
-                        )
-                      : Image.asset(
-                          "assets/icons/rbtc2.png",
-                          fit: BoxFit.cover,
-                          width: 40,
-                          height: 40,
-                        ),
-                  trailing: PopupMenuButton<int>(
-                    onSelected: (int value) {
-                      switch (value) {
-                        case SEND:
-                          print("Send");
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) =>
-                                  Send(user: widget.user, walletDto: selectedNetwork.walletDTO),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                var begin = const Offset(0.0, 1.0);
-                                var end = Offset.zero;
-                                var curve = Curves.ease;
-
-                                var tween =
-                                    Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                                return SlideTransition(
-                                  position: animation.drive(tween),
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                          break;
-                        case RECEIVE:
-                          String completeAddress =
-                              selectedNetwork.network == Network.BITCOIN_TESTNET ||
-                                      selectedNetwork.network == Network.BITCOIN_MAINNET
-                                  ? widget.wallet.btcAddress
-                                  : widget.wallet.publicKey;
-
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => Receive(
-                                  user: widget.user,
-                                  walletDto: selectedNetwork.walletDTO,
-                                  network: selectedNetwork.network,
-                                  address: completeAddress),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                var begin = const Offset(0.0, 1.0);
-                                var end = Offset.zero;
-                                var curve = Curves.ease;
-
-                                var tween =
-                                    Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                                return SlideTransition(
-                                  position: animation.drive(tween),
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                          break;
-                        case VIEW:
-                          String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
-                                  selectedNetwork.network == Network.BITCOIN_MAINNET
-                              ? widget.wallet.btcAddress
-                              : widget.wallet.publicKey;
-                          walletService.openBlockExplorerForAddress(
-                              address, selectedNetwork.network);
-                          break;
-                        case COPY:
-                          print("Copy");
-                          String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
-                                  selectedNetwork.network == Network.BITCOIN_MAINNET
-                              ? widget.wallet.btcAddress
-                              : widget.wallet.publicKey;
-                          Clipboard.setData(ClipboardData(text: address)).then((value) {
-                            showMessage("${AppLocalizations.of(context)!.copiedMessage}: $address",
-                                context);
-                          });
-                          break;
-                        case REFRESH:
-                          print("Send");
-                      }
-                      setState(() {});
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
-                      const PopupMenuItem<int>(
-                        value: SEND,
-                        child: ListTile(
-                          leading: Icon(Icons.call_made),
-                          title: Text('Send'),
-                        ),
-                      ),
-                      const PopupMenuItem<int>(
-                        value: RECEIVE,
-                        child: ListTile(
-                          leading: Icon(Icons.call_received),
-                          title: Text('Receive'),
-                        ),
-                      ),
-                      const PopupMenuItem<int>(
-                        value: VIEW,
-                        child: ListTile(
-                          leading: Icon(Icons.open_in_new),
-                          title: Text('View on explorer'),
-                        ),
-                      ),
-                      const PopupMenuItem<int>(
-                        value: COPY,
-                        child: ListTile(
-                          leading: Icon(Icons.copy),
-                          title: Text('Copy'),
-                        ),
-                      ),
-                      const PopupMenuItem<int>(
-                        value: REFRESH,
-                        child: ListTile(
-                          leading: Icon(Icons.refresh),
-                          title: Text('Refresh'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  titleAlignment: titleAlignment,
-                  title: Text(
-                    currentAddress,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  // Main text
-                  subtitle: _showSaldo
-                      ? Text(
-                          selectedNetwork.network == Network.BITCOIN_TESTNET
-                              ? "${selectedNetwork.walletDTO.btcBalance} ~ ${selectedNetwork.walletDTO.btcBalanceInUsd}"
-                              : "${selectedNetwork.walletDTO.balance} ~ ${selectedNetwork.walletDTO.balanceInUsd}",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        )
-                      : const Text(
-                          "- ~ -",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                  // Secondary text
-                  onTap: () {
-                    // Handle tap event on the card
-                    print('Card tapped!');
-                  },
-                ),
-              ),
-            ),
-          ],
-        ));
-  }
+  //
+  // Widget _createMainScreen() {
+  //   return ShimmerLoading(
+  //       isLoading: _isLoading,
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: <Widget>[
+  //           HuxContextMenu(
+  //             menuItems: [],
+  //             child: Card(
+  //               elevation: 5, // Adds a shadow to the card
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(10), // Rounded corners
+  //               ),
+  //               margin: const EdgeInsets.all(16), // Margin around the card
+  //               child: ListTile(
+  //                 leading: selectedNetwork.network == Network.BITCOIN_TESTNET
+  //                     ? Image.asset(
+  //                         "assets/icons/btc.png",
+  //                         fit: BoxFit.cover,
+  //                         width: 40,
+  //                         height: 40,
+  //                       )
+  //                     : Image.asset(
+  //                         "assets/icons/rbtc2.png",
+  //                         fit: BoxFit.cover,
+  //                         width: 40,
+  //                         height: 40,
+  //                       ),
+  //                 trailing: PopupMenuButton<int>(
+  //                   onSelected: (int value) {
+  //                     switch (value) {
+  //                       case SEND:
+  //                         print("Send");
+  //                         Navigator.of(context).push(
+  //                           PageRouteBuilder(
+  //                             pageBuilder: (context, animation, secondaryAnimation) =>
+  //                                 Send(user: widget.user, selectedNetwork: selectedNetwork),
+  //                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //                               var begin = const Offset(0.0, 1.0);
+  //                               var end = Offset.zero;
+  //                               var curve = Curves.ease;
+  //
+  //                               var tween =
+  //                                   Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+  //
+  //                               return SlideTransition(
+  //                                 position: animation.drive(tween),
+  //                                 child: child,
+  //                               );
+  //                             },
+  //                           ),
+  //                         );
+  //                         break;
+  //                       case RECEIVE:
+  //                         String completeAddress =
+  //                             selectedNetwork.network == Network.BITCOIN_TESTNET ||
+  //                                     selectedNetwork.network == Network.BITCOIN_MAINNET
+  //                                 ? widget.wallet.btcAddress
+  //                                 : widget.wallet.publicKey;
+  //
+  //                         Navigator.of(context).push(
+  //                           PageRouteBuilder(
+  //                             pageBuilder: (context, animation, secondaryAnimation) => Receive(
+  //                                 user: widget.user,
+  //                                 walletDto: selectedNetwork.walletDTO,
+  //                                 network: selectedNetwork.network,
+  //                                 address: completeAddress),
+  //                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //                               var begin = const Offset(0.0, 1.0);
+  //                               var end = Offset.zero;
+  //                               var curve = Curves.ease;
+  //
+  //                               var tween =
+  //                                   Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+  //
+  //                               return SlideTransition(
+  //                                 position: animation.drive(tween),
+  //                                 child: child,
+  //                               );
+  //                             },
+  //                           ),
+  //                         );
+  //                         break;
+  //                       case VIEW:
+  //                         String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
+  //                                 selectedNetwork.network == Network.BITCOIN_MAINNET
+  //                             ? widget.wallet.btcAddress
+  //                             : widget.wallet.publicKey;
+  //                         walletService.openBlockExplorerForAddress(
+  //                             address, selectedNetwork.network);
+  //                         break;
+  //                       case COPY:
+  //                         print("Copy");
+  //                         String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
+  //                                 selectedNetwork.network == Network.BITCOIN_MAINNET
+  //                             ? widget.wallet.btcAddress
+  //                             : widget.wallet.publicKey;
+  //                         Clipboard.setData(ClipboardData(text: address)).then((value) {
+  //                           showMessage("${AppLocalizations.of(context)!.copiedMessage}: $address",
+  //                               context);
+  //                         });
+  //                         break;
+  //                       case REFRESH:
+  //                         print("Send");
+  //                     }
+  //                     setState(() {});
+  //                   },
+  //                   itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
+  //                     const PopupMenuItem<int>(
+  //                       value: SEND,
+  //                       child: ListTile(
+  //                         leading: Icon(Icons.call_made),
+  //                         title: Text('Send'),
+  //                       ),
+  //                     ),
+  //                     const PopupMenuItem<int>(
+  //                       value: RECEIVE,
+  //                       child: ListTile(
+  //                         leading: Icon(Icons.call_received),
+  //                         title: Text('Receive'),
+  //                       ),
+  //                     ),
+  //                     const PopupMenuItem<int>(
+  //                       value: VIEW,
+  //                       child: ListTile(
+  //                         leading: Icon(Icons.open_in_new),
+  //                         title: Text('View on explorer'),
+  //                       ),
+  //                     ),
+  //                     const PopupMenuItem<int>(
+  //                       value: COPY,
+  //                       child: ListTile(
+  //                         leading: Icon(Icons.copy),
+  //                         title: Text('Copy'),
+  //                       ),
+  //                     ),
+  //                     const PopupMenuItem<int>(
+  //                       value: REFRESH,
+  //                       child: ListTile(
+  //                         leading: Icon(Icons.refresh),
+  //                         title: Text('Refresh'),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 titleAlignment: titleAlignment,
+  //                 title: Text(
+  //                   currentAddress,
+  //                   style: const TextStyle(
+  //                     fontSize: 20,
+  //                     fontWeight: FontWeight.bold,
+  //                   ),
+  //                 ),
+  //                 // Main text
+  //                 subtitle: _showSaldo
+  //                     ? Text(
+  //                         selectedNetwork.network == Network.BITCOIN_TESTNET
+  //                             ? "${selectedNetwork.walletDTO.btcBalance} ~ ${selectedNetwork.walletDTO.btcBalanceInUsd}"
+  //                             : "${selectedNetwork.walletDTO.balance} ~ ${selectedNetwork.walletDTO.balanceInUsd}",
+  //                         style: const TextStyle(
+  //                           fontSize: 14,
+  //                           color: Colors.grey,
+  //                         ),
+  //                       )
+  //                     : const Text(
+  //                         "- ~ -",
+  //                         style: TextStyle(
+  //                           fontSize: 14,
+  //                           color: Colors.grey,
+  //                         ),
+  //                       ),
+  //                 // Secondary text
+  //                 onTap: () {
+  //                   // Handle tap event on the card
+  //                   print('Card tapped!');
+  //                 },
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ));
+  // }
 
   Widget _lastTransactions() {
     return TableTransactions(wallet: widget.wallet, user: widget.user);
@@ -348,27 +350,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   @override
   void initState() {
     super.initState();
-
-    var bitCoin = NetworkDto(
-      network: Network.BITCOIN_TESTNET,
-      tokens: [],
-      wallet: widget.wallet,
-      user: widget.user,
-    );
-    var rootstock = NetworkDto(
-      network: Network.ROOTSTOCK_TESTNET,
-      tokens: [],
-      wallet: widget.wallet,
-      user: widget.user,
-    );
-    availableNetworks = [bitCoin, rootstock];
-    selectedNetwork = availableNetworks[BITCOIN_INDEX];
-
     if (!mounted) return;
-    _loadBalanceFromDatabaseAndTokens().then((_) {
-      print("loaded from database");
-    });
-    startPeriodicRefresh();
     loaded = true;
     _isLoading = false;
   }
@@ -382,33 +364,74 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Shimmer(
-        linearGradient: shimmerGradient,
-        child: Container(
-          decoration: BoxDecoration(
+
+    return Container(
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                border: Border.all(color: Colors.white)),
+      child: DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: Colors.white,
-              border: Border.all(color: Colors.white)),
-          child: ListView(
-            physics: _isLoading ? const NeverScrollableScrollPhysics() : null,
-            children: [
-              _buildSegmentButton(),
-              !openListTransactions ? _createMainScreen() : Container(),
-              !openListTransactions
-                  ? TokensFromNetwork(
-                      wallet: widget.wallet,
-                      user: widget.user,
-                      selectedNetwork: selectedNetwork.network,
-                      currentAddress: currentAddress,
-                    )
-                  : const SizedBox(height: 0),
-              openListTransactions ? _lastTransactions() : const SizedBox(height: 0),
+            ),
+          ),
+          toolbarHeight: 20,
+          backgroundColor: Colors.transparent,
+          elevation: 0.0,
+          centerTitle: true,
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.directions_car)),
+              Tab(icon: Icon(Icons.directions_transit)),
+              Tab(icon: Icon(Icons.directions_bike)),
             ],
           ),
+          title: const Text('Account #1'),
+        ),
+        body: TabBarView(
+          children: [
+            ViewBitcoinAccount(wallet: widget.wallet, user:widget.user),
+            const Icon(Icons.directions_bike), //ViewRootstockAccount(wallet: widget.wallet, user:widget.user),
+            const Icon(Icons.directions_bike),
+          ],
         ),
       ),
-    );
+    ),);
+    //
+    // return Scaffold(
+    //     backgroundColor: Colors.black,
+    //     body: Shimmer(
+    //       linearGradient: shimmerGradient,
+    //       child: Container(
+    //         decoration: BoxDecoration(
+    //             borderRadius: BorderRadius.circular(20),
+    //             color: Colors.white,
+    //             border: Border.all(color: Colors.white)),
+    //         child: ListView(
+    //           physics: _isLoading ? const NeverScrollableScrollPhysics() : null,
+    //           children: [
+    //             _buildSegmentButton(),
+    //             !openListTransactions ? _createMainScreen() : Container(),
+    //             !openListTransactions
+    //                 ? TokensFromNetwork(
+    //                     wallet: widget.wallet,
+    //                     user: widget.user,
+    //                     selectedNetwork: selectedNetwork.network,
+    //                     currentAddress: currentAddress,
+    //                   )
+    //                 : const SizedBox(height: 0),
+    //             openListTransactions ? _lastTransactions() : const SizedBox(height: 0),
+    //           ],
+    //         ),
+    //       ),
+    //     ),
+    //   );
+
   }
 }

@@ -1,25 +1,32 @@
 import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hux/hux.dart';
+import 'package:my_rootstock_wallet/entities/network_dto.dart';
+import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
+import 'package:my_rootstock_wallet/util/wei.dart';
 
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/network.dart';
 import '../../../util/util.dart';
 
 class Send extends StatefulWidget {
-  const Send({super.key, required this.user, required this.walletDto});
+  const Send({super.key, required this.user, required this.selectedNetwork});
 
   final SimpleUser user;
-  final WalletDTO walletDto;
+  final NetworkDto selectedNetwork;
 
   @override
   _Send createState() {
     return _Send();
   }
 }
+
+enum SingingCharacter { tip, notip }
 
 class _Send extends State<Send> {
   _Send();
@@ -32,13 +39,21 @@ class _Send extends State<Send> {
   List<String> splittedMnemonic = List<String>.filled(1, '');
   final valueController = TextEditingController();
   String balance = '0';
-  String balanceInUsd = '0';
+  String balanceInUsd = 'USD 0.00';
+  String amount = '0';
+  String amountInUsd = 'USD 0.00';
   final TextEditingController addressController = TextEditingController();
   bool sendingTransaction = false;
   bool success = false;
   final amountController = TextEditingController();
   final destinationAddressController = TextEditingController();
   String transactionFeeEstimation = "0.00";
+  String transactionFeeEstimationUsd = "USD 0.00";
+  final FocusNode _myFocusNode = FocusNode();
+  final FocusNode _amountFocusNode = FocusNode();
+  SingingCharacter? _character = SingingCharacter.tip;
+  final double tipAmount = 0.000009;
+  String tipAmountUsd = "USD 0.00";
 
   Icon fullIcon = const Icon(
     Icons.account_balance_wallet,
@@ -54,14 +69,57 @@ class _Send extends State<Send> {
   void initState() {
     super.initState();
     walletService = WalletServiceImpl();
+
+    address = widget.selectedNetwork.network == Network.BITCOIN_TESTNET ||
+            widget.selectedNetwork.network == Network.BITCOIN_MAINNET
+        ? widget.selectedNetwork.walletDTO.wallet.btcAddress
+        : widget.selectedNetwork.walletDTO.wallet.publicKey;
+
+    _myFocusNode.addListener(_handleFocusChange);
+    _amountFocusNode.addListener(_handleAmountFocusChange);
+    balance = widget.selectedNetwork.walletDTO.valueInWeiFormatted;
+    balanceInUsd = widget.selectedNetwork.walletDTO.valueInUsdFormatted;
+
+    calculateTip();
+  }
+
+  void _handleFocusChange() {
+    if (!_myFocusNode.hasFocus) {
+      // Focus is lost (on blur event)
+      setState(() {
+        print("Focus lost!");
+      });
+      // You can add your custom logic here, like validation or saving data
+      print("TextFormField lost focus. Performing action...");
+    } else {
+      calculateFee();
+
+    }
+  }
+
+  void _handleAmountFocusChange() {
+    if (!_amountFocusNode.hasFocus) {
+      // Focus is lost (on blur event)
+      setState(() {
+        calculateAmount();
+      });
+    }else{
+       calculateFee();
+    }
   }
 
   @override
   void dispose() {
     if (address.isEmpty) {
-      address = widget.walletDto.getAddress();
+      address = widget.selectedNetwork.walletDTO.getAddress();
     }
     valueController.dispose();
+    _myFocusNode.removeListener(_handleFocusChange);
+    _myFocusNode.dispose();
+
+    _amountFocusNode.removeListener(_handleFocusChange);
+    _amountFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -81,11 +139,57 @@ class _Send extends State<Send> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
+  calculateFee() async {
+    var fee =
+        await walletService.calculateRbtcFee(from: address, to: destinationAddressController.text);
+    var feeUsd = await walletService.calculateInUsd(fee.getWei());
+    setState(() {
+      transactionFeeEstimation = fee.toRBTCString();
+      transactionFeeEstimationUsd = feeUsd;
+    });
+  }
+
+  calculateTip() async {
+    var feeUsd = await walletService.calculateInUsd(tipAmount);
+    setState(() {
+      tipAmountUsd = feeUsd;
+    });
+  }
+
+  Big prepareAmountValue() {
+    var pointedText = amountController.text;
+    pointedText = pointedText.replaceAll(",", ".");
+    var bp = Big(pointedText);
+
+    if (!destinationAddressController.text.trim().startsWith("0x")) {
+      throw const FormatException("Invalid address");
+    }
+
+    if (bp.toNumber() == 0) {
+      throw const FormatException("Invalid value");
+    }
+    return bp;
+  }
+
+  calculateAmount() async {
+    try {
+      var bp = prepareAmountValue();
+      var usdAmount = await walletService.calculateInUsd(bp.toNumber());
+      setState(() {
+        amountInUsd = usdAmount;
+      });
+    } catch (e) {
+      displaySnackBar("Error sending transaction, review and try again");
+      success = false;
+      sucessIcon = const Icon(
+        Icons.dangerous_outlined,
+        color: Colors.red,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    balance = widget.walletDto.valueInWeiFormatted;
-    balanceInUsd = widget.walletDto.valueInUsdFormatted;
-
     final String sendTransaction = AppLocalizations.of(context)!.sendTransaction;
 
     return Scaffold(
@@ -187,33 +291,20 @@ class _Send extends State<Send> {
               ),
               Expanded(
                 child: TextFormField(
+                    focusNode: _amountFocusNode,
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: <TextInputFormatter>[
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9]+[,.]{0,1}[0-9]*')),
                       TextInputFormatter.withFunction(
                         (oldValue, newValue) => newValue.copyWith(
-                          text: newValue.text.replaceAll('.', ','),
+                          text: newValue.text.replaceAll(',', '.'),
                         ),
                       ),
                     ],
                     decoration: const InputDecoration(
                       labelText: "Amount to Send",
                     )),
-
-                // TextField(
-                //   style: const TextStyle(
-                //     color: Colors.white,
-                //     backgroundColor: Color.fromRGBO(7, 255, 208, 1),
-                //     fontSize: 20,
-                //   ),
-                //   decoration: const InputDecoration(labelText: "Enter amount"),
-                //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                //   inputFormatters: [
-                //     DecimalTextInputFormatter(decimalRange: RBTC_DECIMAL_PLACES_COUNT)
-                //   ],
-                //   controller: amountController, // Only numbers can be entered
-                // ),
               ),
               ElevatedButton(
                 style: blackWhiteButton,
@@ -257,7 +348,7 @@ class _Send extends State<Send> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Text(
-                  'Max available: ${balance}',
+                  amountInUsd,
                   style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 13,
@@ -266,42 +357,97 @@ class _Send extends State<Send> {
               ),
             ],
           ),
-          Expanded(
-              child: Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _currentSliderValue,
-                  max: 10,
-                  divisions: 2,
-                  label: _currentSliderValue.round().toString(),
-                  onChanged: (double value) async {
-                    var fee = await walletService.calculateRbtcFee(
-                        from: address, to: destinationAddressController.text);
-
-                    setState(() {
-                      _currentSliderValue = value;
-                      transactionFeeEstimation = fee.toRBTCStringFixed2();
-                      print(transactionFeeEstimation);
-                    });
-                  },
+          RadioGroup<SingingCharacter>(
+            groupValue: _character,
+            onChanged: (SingingCharacter? value) {
+              setState(() {
+                _character = value;
+              });
+            },
+            child: Column(
+              children: <Widget>[
+                ListTile(
+                  title: Text('Buy me a coffe ${tipAmountUsd}'),
+                  leading: const Radio<SingingCharacter>(value: SingingCharacter.tip),
                 ),
-              )
-            ],
-          )),
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Text(
-                  "Select fee level ${transactionFeeEstimation}",
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 13,
+                const ListTile(
+                  title: Text('My tip is: ‘Do your best'),
+                  leading: Radio<SingingCharacter>(value: SingingCharacter.notip),
+                ),
+              ],
+            ),
+          ),
+          Center(
+            child: Card(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ListTile(
+                    leading: const Icon(Icons.monetization_on),
+                    title: const Text('Transaction fees to complete your transaction'),
+                    subtitle: Text(' ${transactionFeeEstimation} - ${transactionFeeEstimationUsd}'),
                   ),
-                ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      TextButton(
+                        child: const Text('SEND TRANSACTION'),
+                        onPressed: () async {
+                          setState(() {
+                            sendingTransaction = true;
+                          });
+                          await Future.delayed(const Duration(seconds: 1));
+                          var sucesso = false;
+                          try {
+                            var transactionPersist = await validateAndPerformTransaction();
+                            validateAndPerformTipTransaction();
+                            sucesso = transactionPersist.transactionSent!;
+                          } catch (e) {
+                            displaySnackBar("Error sending transaction, review and try again");
+                            sucesso = false;
+                            sucessIcon = const Icon(
+                              Icons.dangerous_outlined,
+                              color: Colors.red,
+                            );
+                          }
+
+                          setState(() {
+                            success = sucesso;
+                            if (!success) {
+                              sucessIcon = const Icon(
+                                Icons.dangerous_outlined,
+                                color: Colors.red,
+                              );
+                            } else {
+                              sucessIcon = const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                              );
+                            }
+                          });
+                          await Future.delayed(const Duration(milliseconds: 500));
+                          if (success) {
+                            Navigator.pop(context);
+                          }
+
+                          setState(() {
+                            sendingTransaction = false;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        child: const Text('CANCEL'),
+                        onPressed: () {
+                          /* ... */
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           Expanded(
               flex: 3,
@@ -312,150 +458,8 @@ class _Send extends State<Send> {
                   ),
                   Expanded(
                       child: !sendingTransaction
-                          ?
-                          // ElevatedButton(
-                          //         style: greenButton,
-                          //         onPressed: () async {
-                          //           setState(() {
-                          //             sendingTransaction = true;
-                          //           });
-                          //           await Future.delayed(const Duration(seconds: 1));
-                          //           var sucesso = false;
-                          //           try {
-                          //             var pointedText = amountController.text;
-                          //             pointedText = pointedText.replaceAll(",", ".");
-                          //             var bp = Big(pointedText);
-                          //
-                          //             if (!destinationAddressController.text.trim().startsWith("0x")) {
-                          //               throw const FormatException("Invalid address");
-                          //             }
-                          //
-                          //             if (bp.toNumber() == 0) {
-                          //               throw const FormatException("Invalid value");
-                          //             }
-                          //
-                          //             var transactionPersist = await walletService.sendRBTC(
-                          //                 widget.walletDto,
-                          //                 destinationAddressController.text,
-                          //                 BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
-                          //             sucesso = transactionPersist.transactionSent!;
-                          //           } catch (e) {
-                          //             displaySnackBar(
-                          //                 "Error sending transaction, review and try again");
-                          //             success = false;
-                          //             sucessIcon = const Icon(
-                          //               Icons.dangerous_outlined,
-                          //               color: Colors.red,
-                          //             );
-                          //           }
-                          //
-                          //           setState(() {
-                          //             success = sucesso;
-                          //             if (!success) {
-                          //               //displaySnackBar(
-                          //               //   "Verify your balance, review and try again");
-                          //               sucessIcon = const Icon(
-                          //                 Icons.dangerous_outlined,
-                          //                 color: Colors.red,
-                          //               );
-                          //             } else {
-                          //               sucessIcon = const Icon(
-                          //                 Icons.check,
-                          //                 color: Colors.green,
-                          //               );
-                          //             }
-                          //           });
-                          //           await Future.delayed(const Duration(milliseconds: 500));
-                          //           if (success) {
-                          //             Navigator.pop(context);
-                          //           }
-                          //
-                          //           setState(() {
-                          //             sendingTransaction = false;
-                          //           });
-                          //         },
-                          //         child: const Row(
-                          //           children: <Widget>[
-                          //             Row(
-                          //               children: <Widget>[
-                          //                 Icon(Icons.send),
-                          //                 SizedBox(
-                          //                   width: 10,
-                          //                 ),
-                          //                 Text(
-                          //                   "Send Transaction",
-                          //                   style: blackText,
-                          //                 ),
-                          //               ],
-                          //             ),
-                          //           ],
-                          //         ),
-                          //       )
-
-                          HuxButton(
-                              onPressed: () async {
-                                setState(() {
-                                  sendingTransaction = true;
-                                });
-
-                                await Future.delayed(const Duration(seconds: 1));
-                                var sucesso = false;
-                                try {
-                                  var pointedText = amountController.text;
-                                  pointedText = pointedText.replaceAll(",", ".");
-                                  var bp = Big(pointedText);
-
-                                  if (!destinationAddressController.text.trim().startsWith("0x")) {
-                                    throw const FormatException("Invalid address");
-                                  }
-
-                                  if (bp.toNumber() == 0) {
-                                    throw const FormatException("Invalid value");
-                                  }
-
-                                  var transactionPersist = await walletService.sendRBTC(
-                                      widget.walletDto,
-                                      destinationAddressController.text,
-                                      BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
-                                  sucesso = transactionPersist.transactionSent!;
-                                } catch (e) {
-                                  displaySnackBar(
-                                      "Error sending transaction, review and try again");
-                                  success = false;
-                                  sucessIcon = const Icon(
-                                    Icons.dangerous_outlined,
-                                    color: Colors.red,
-                                  );
-                                }
-
-                                setState(() {
-                                  success = sucesso;
-                                  if (!success) {
-                                    //displaySnackBar(
-                                    //   "Verify your balance, review and try again");
-                                    sucessIcon = const Icon(
-                                      Icons.dangerous_outlined,
-                                      color: Colors.red,
-                                    );
-                                  } else {
-                                    sucessIcon = const Icon(
-                                      Icons.check,
-                                      color: Colors.green,
-                                    );
-                                  }
-                                });
-                                await Future.delayed(const Duration(milliseconds: 500));
-                                if (success) {
-                                  Navigator.pop(context);
-                                }
-
-                                setState(() {
-                                  sendingTransaction = false;
-                                });
-                              },
-                              icon: Icons.send_rounded,
-                              primaryColor: purple(),
-                              child: Text("Send Transaction"),
+                          ? const SizedBox(
+                              width: 10,
                             )
                           : sendingTransaction
                               ? const LinearProgressIndicator()
@@ -469,4 +473,28 @@ class _Send extends State<Send> {
       ),
     );
   }
+
+  void validateAndPerformTipTransaction() async {
+    if (_character == SingingCharacter.tip) {
+      final tipAccount = dotenv.env['RSK_ADDRESS_TIP'];
+      if (tipAccount != null || tipAccount!.isNotEmpty) {
+        await walletService.sendRBTC(
+            widget.selectedNetwork.walletDTO,
+            destinationAddressController.text,
+            BigInt.from(tipAmount)
+        );
+      }
+    }
+  }
+
+  Future<SimpleTransaction> validateAndPerformTransaction() async {
+    Big bp = prepareAmountValue();
+
+    var transactionPersist = await walletService.sendRBTC(
+        widget.selectedNetwork.walletDTO,
+        destinationAddressController.text,
+        BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
+    return transactionPersist;
+  }
+
 }

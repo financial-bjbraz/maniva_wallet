@@ -152,7 +152,9 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     BigInt? value,
     int fallbackGasLimit = 54000,
   }) async {
-    print("calculating");
+    from = from.trim();
+    to = to.trim();
+    print("calculating ${from} and ${to}");
     Wei fee = Wei(src: BigInt.zero, currency: 'wei');
     try {
       final node = dotenv.env['ROOTSTOCK_NODE'];
@@ -170,7 +172,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       // get current gas price from node
       final gasPrice = await client.getGasPrice();
-      print("here 2");
+      print("gasPrice is ${gasPrice} ");
 
       // try to estimate gas; fall back to provided default if it fails
       int gasLimit;
@@ -180,24 +182,26 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
           to: web3.EthereumAddress.fromHex(to),
           value: unit,
         );
-        print("----------------------");
+        print("estimated is ${estimated}");
         print(estimated);
         gasLimit = estimated is BigInt ? estimated.toInt() : (estimated as int);
-      } catch (_) {
+        print("gaslimit is ${gasLimit} ");
+      } catch (e) {
         gasLimit = fallbackGasLimit;
-        print("errorrrrrr");
+        print("errorrrrrr ${e}");
       }
 
       final feeWei = gasPrice.getInWei * BigInt.from(gasLimit);
       fee = Wei(src: feeWei, currency: 'wei');
-      print("xxxxxxxxx");
-      print(fee.toRBTCStringFixed2());
+      print("fee calculated is ${fee}");
 
       await client.dispose();
     } catch (error) {
       log.severe("Error estimating RBTC fee", error);
       print("error ${error} ");
     }
+
+    print("returning the fee of ${fee}");
     return fee;
   }
 
@@ -300,6 +304,17 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       throw Exception("Error creating wallet to display");
     }
     return dto;
+  }
+
+  Future<String> calculateInUsd(double rootstockAmount) async {
+    if(rootstockAmount == 0) {
+      return "USD 0.00";
+    }
+
+    final formatter = NumberFormat.simpleCurrency();
+    final usdPrice = await _getPrice();
+    final value = rootstockAmount * usdPrice;
+    return "USD ${formatter.format(value)}";
   }
 
   Future<void> getDataFromBlockchain(WalletEntity wallet) async {
@@ -433,6 +448,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
           valueInUsdFormatted: (formatter.format(value)),
           valueInWeiFormatted: (wei.toRBTCTrimmedStringPlaces(10)),
           type: TransactionType.REGULAR_OUTGOING.type,
+          status: "Sent",
           destination: destinationAddress);
       return transactionToPersist;
     } catch (error) {
