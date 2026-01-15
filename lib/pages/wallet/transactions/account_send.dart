@@ -1,3 +1,4 @@
+import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hux/hux.dart';
@@ -37,6 +38,7 @@ class _Send extends State<Send> {
   bool success = false;
   final amountController = TextEditingController();
   final destinationAddressController = TextEditingController();
+  String transactionFeeEstimation = "0.00";
 
   Icon fullIcon = const Icon(
     Icons.account_balance_wallet,
@@ -81,10 +83,6 @@ class _Send extends State<Send> {
 
   @override
   Widget build(BuildContext context) {
-    if (address.isEmpty) {
-      address = widget.walletDto.getAddress();
-    }
-
     balance = widget.walletDto.valueInWeiFormatted;
     balanceInUsd = widget.walletDto.valueInUsdFormatted;
 
@@ -277,22 +275,27 @@ class _Send extends State<Send> {
                   max: 10,
                   divisions: 2,
                   label: _currentSliderValue.round().toString(),
-                  onChanged: (double value) {
+                  onChanged: (double value) async {
+                    var fee = await walletService.calculateRbtcFee(
+                        from: address, to: destinationAddressController.text);
+
                     setState(() {
                       _currentSliderValue = value;
+                      transactionFeeEstimation = fee.toRBTCStringFixed2();
+                      print(transactionFeeEstimation);
                     });
                   },
                 ),
               )
             ],
           )),
-          const Row(
+          Row(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Text(
-                  "Select fee level",
-                  style: TextStyle(
+                  "Select fee level ${transactionFeeEstimation}",
+                  style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 13,
                   ),
@@ -393,6 +396,61 @@ class _Send extends State<Send> {
                               onPressed: () async {
                                 setState(() {
                                   sendingTransaction = true;
+                                });
+
+                                await Future.delayed(const Duration(seconds: 1));
+                                var sucesso = false;
+                                try {
+                                  var pointedText = amountController.text;
+                                  pointedText = pointedText.replaceAll(",", ".");
+                                  var bp = Big(pointedText);
+
+                                  if (!destinationAddressController.text.trim().startsWith("0x")) {
+                                    throw const FormatException("Invalid address");
+                                  }
+
+                                  if (bp.toNumber() == 0) {
+                                    throw const FormatException("Invalid value");
+                                  }
+
+                                  var transactionPersist = await walletService.sendRBTC(
+                                      widget.walletDto,
+                                      destinationAddressController.text,
+                                      BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
+                                  sucesso = transactionPersist.transactionSent!;
+                                } catch (e) {
+                                  displaySnackBar(
+                                      "Error sending transaction, review and try again");
+                                  success = false;
+                                  sucessIcon = const Icon(
+                                    Icons.dangerous_outlined,
+                                    color: Colors.red,
+                                  );
+                                }
+
+                                setState(() {
+                                  success = sucesso;
+                                  if (!success) {
+                                    //displaySnackBar(
+                                    //   "Verify your balance, review and try again");
+                                    sucessIcon = const Icon(
+                                      Icons.dangerous_outlined,
+                                      color: Colors.red,
+                                    );
+                                  } else {
+                                    sucessIcon = const Icon(
+                                      Icons.check,
+                                      color: Colors.green,
+                                    );
+                                  }
+                                });
+                                await Future.delayed(const Duration(milliseconds: 500));
+                                if (success) {
+                                  Navigator.pop(context);
+                                }
+
+                                setState(() {
+                                  sendingTransaction = false;
                                 });
                               },
                               icon: Icons.send_rounded,
