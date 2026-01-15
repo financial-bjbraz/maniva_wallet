@@ -8,7 +8,7 @@ class Wei {
   Wei({required this.src, required this.currency});
 
   String toRBTCString() {
-    var valueMul2 =  src / conversor;
+    var valueMul2 = src / conversor;
     return valueMul2.toStringAsFixed(18);
   }
 
@@ -26,4 +26,23 @@ class Wei {
     return valueMul.toStringAsFixed(places);
   }
 
+  String toRBTCStringFixed2() {
+    try {
+      final amount = getWei(); // existing Wei method returning a double
+      if (amount.isNaN || amount.isInfinite) return "0.00";
+      return amount.toStringAsFixed(2);
+    } catch (_) {
+      return "0.00";
+    }
+  }
+
+  String toRBTCStringFixed4() {
+    try {
+      final amount = getWei(); // existing Wei method returning a double
+      if (amount.isNaN || amount.isInfinite) return "0.00";
+      return amount.toStringAsFixed(4);
+    } catch (_) {
+      return "0.00";
+    }
+  }
 }

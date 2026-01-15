@@ -145,6 +145,62 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return lastBalanceReceivedInWei;
   }
 
+// dart
+  Future<Wei> calculateRbtcFee({
+    required String from,
+    required String to,
+    BigInt? value,
+    int fallbackGasLimit = 54000,
+  }) async {
+    print("calculating");
+    Wei fee = Wei(src: BigInt.zero, currency: 'wei');
+    try {
+      final node = dotenv.env['ROOTSTOCK_NODE'];
+      print("node is");
+      print(node);
+      if (node == null || node.isEmpty) return fee;
+
+      final client = web3.Web3Client(node, http.Client());
+
+      final unit = web3.EtherAmount.fromUnitAndValue(
+        web3.EtherUnit.wei,
+        value ?? BigInt.zero,
+      );
+      print("here 1");
+
+      // get current gas price from node
+      final gasPrice = await client.getGasPrice();
+      print("here 2");
+
+      // try to estimate gas; fall back to provided default if it fails
+      int gasLimit;
+      try {
+        final estimated = await client.estimateGas(
+          sender: web3.EthereumAddress.fromHex(from),
+          to: web3.EthereumAddress.fromHex(to),
+          value: unit,
+        );
+        print("----------------------");
+        print(estimated);
+        gasLimit = estimated is BigInt ? estimated.toInt() : (estimated as int);
+      } catch (_) {
+        gasLimit = fallbackGasLimit;
+        print("errorrrrrr");
+      }
+
+      final feeWei = gasPrice.getInWei * BigInt.from(gasLimit);
+      fee = Wei(src: feeWei, currency: 'wei');
+      print("xxxxxxxxx");
+      print(fee.toRBTCStringFixed2());
+
+      await client.dispose();
+    } catch (error) {
+      log.severe("Error estimating RBTC fee", error);
+      print("error ${error} ");
+    }
+    return fee;
+  }
+
   // TODO(alexjavabraz): implement persistence of transaction sent
   Future<SimpleTransaction> sendRBTC(
       WalletDTO dto, String destinationAddress, BigInt amount) async {
