@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hux/hux.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
+import 'package:my_rootstock_wallet/util/network.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -13,7 +15,15 @@ import '../../../util/util.dart';
 class Receive extends StatefulWidget {
   final SimpleUser user;
   final WalletDTO walletDto;
-  const Receive({super.key, required this.user, required this.walletDto});
+  final Network network;
+  final String address;
+
+  const Receive(
+      {super.key,
+      required this.user,
+      required this.walletDto,
+      required this.network,
+      required this.address});
 
   @override
   _Receive createState() {
@@ -22,9 +32,9 @@ class Receive extends StatefulWidget {
 }
 
 class _Receive extends State<Receive> {
+  ListTileTitleAlignment? titleAlignment;
+
   bool processing = false;
-  String address = "";
-  String completeAddress = "";
   late WalletServiceImpl walletService;
   List<String> splittedMnemonic = List<String>.filled(1, "");
   final valueController = TextEditingController();
@@ -40,60 +50,38 @@ class _Receive extends State<Receive> {
 
   @override
   void dispose() {
-    processAddress();
     valueController.dispose();
     super.dispose();
   }
 
-  processAddress() {
-    if (address.isEmpty) {
-      address = widget.walletDto.getAddress();
-      completeAddress = widget.walletDto.getCompleteAddress();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    processAddress();
-
-    return Container(
-      margin: const EdgeInsets.only(top: 5, left: 15, right: 15),
-      height: 175,
-      color: Colors.black,
-      child: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 175,
-              decoration: const BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.all(Radius.circular(15)),
-                  boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black, spreadRadius: 5)]),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: ShowQrCode(completeAddress: completeAddress),
-                  ),
-                  const VerticalDivider(),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ShareButton(
-                          completeAddress: completeAddress,
-                        ),
-                        CopyButton(
-                          completeAddress: completeAddress,
-                        )
-                      ],
-                    ),
-                  )
-                ],
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Padding(
+          padding: EdgeInsets.all(20),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.add_circle, color: Colors.white),
+              SizedBox(
+                width: 5,
               ),
-            )
-          ]),
+              Text(
+                "Receive",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color.fromRGBO(158, 118, 255, 1),
+      ),
+      body: Center(
+          child:
+              HuxCard(child: ShowQrCode(completeAddress: widget.address, network: widget.network))),
     );
   }
 }
@@ -101,6 +89,7 @@ class _Receive extends State<Receive> {
 class ShareAndCopy extends StatelessWidget {
   final String completeAddress;
   final ethereum = "ethereum:";
+
   const ShareAndCopy({super.key, required this.completeAddress});
 
   @override
@@ -126,7 +115,9 @@ class ShareAndCopy extends StatelessWidget {
 class ShowQrCode extends StatelessWidget {
   final String completeAddress;
   final ethereum = "ethereum:";
-  const ShowQrCode({super.key, required this.completeAddress});
+  Network network;
+
+  ShowQrCode({super.key, required this.completeAddress, required this.network});
 
   @override
   Widget build(BuildContext context) {
@@ -134,14 +125,17 @@ class ShowQrCode extends StatelessWidget {
       data: ethereum + completeAddress,
       version: QrVersions.auto,
       backgroundColor: Colors.white,
-      embeddedImage: Image.asset("assets/icons/rbtc2.png").image,
-      size: 175.0,
+      embeddedImage: (network == Network.ROOTSTOCK_TESTNET || network == Network.ROOTSTOCK_MAINNET)
+          ? Image.asset("assets/icons/rbtc2.png").image
+          : Image.asset("assets/icons/btc.png").image,
+      size: 200.0,
     );
   }
 }
 
 class ShareButton extends StatefulWidget {
   final String completeAddress;
+
   const ShareButton({super.key, required this.completeAddress});
 
   @override
@@ -210,6 +204,7 @@ class _ShareButton extends State<ShareButton> {
 
 class CopyButton extends StatefulWidget {
   final String completeAddress;
+
   const CopyButton({super.key, required this.completeAddress});
 
   @override

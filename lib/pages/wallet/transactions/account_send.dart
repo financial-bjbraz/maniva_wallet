@@ -10,6 +10,7 @@ import '../../../util/util.dart';
 
 class Send extends StatefulWidget {
   const Send({super.key, required this.user, required this.walletDto});
+
   final SimpleUser user;
   final WalletDTO walletDto;
 
@@ -21,6 +22,7 @@ class Send extends StatefulWidget {
 
 class _Send extends State<Send> {
   _Send();
+
   bool processing = false;
   bool full = true;
   double _currentSliderValue = 5;

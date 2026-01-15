@@ -37,7 +37,7 @@ analyzer:
     - "lib/util/bitcoin_transaction.dart"
     #    - "lib/services/bitcoin_service.dart"
     #    - "lib/services/wallet_service.dart"
-    - "lib/pages/wallet/view_wallet_detail.dart"
+    #    - "lib/pages/wallet/view_wallet_detail.dart"
     - "lib/entities/bitcoin_utxo.dart"
     - "lib/entities/entity_helper.dart"
     - "lib/pages/menu/menu_app.dart"

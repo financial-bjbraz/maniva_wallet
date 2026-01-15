@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hux/hux.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
 import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart';
+import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 
@@ -211,7 +212,34 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
                           );
                           break;
                         case RECEIVE:
-                          print("View on explorer");
+                          String completeAddress =
+                              selectedNetwork.network == Network.BITCOIN_TESTNET ||
+                                      selectedNetwork.network == Network.BITCOIN_MAINNET
+                                  ? widget.wallet.btcAddress
+                                  : widget.wallet.publicKey;
+
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => Receive(
+                                  user: widget.user,
+                                  walletDto: selectedNetwork.walletDTO,
+                                  network: selectedNetwork.network,
+                                  address: completeAddress),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                var begin = const Offset(0.0, 1.0);
+                                var end = Offset.zero;
+                                var curve = Curves.ease;
+
+                                var tween =
+                                    Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                                return SlideTransition(
+                                  position: animation.drive(tween),
+                                  child: child,
+                                );
+                              },
+                            ),
+                          );
                           break;
                         case VIEW:
                           String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
