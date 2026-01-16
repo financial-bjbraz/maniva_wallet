@@ -135,218 +135,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
     });
   }
 
-  _loadBalanceFromDatabaseAndTokens() async {
-    final WalletDTO dto = await walletService.getBalanceFromDataBase(widget.wallet.privateKey);
-
-    setState(() {
-      selectedNetwork.walletDTO.btcBalance = dto.btcBalance;
-      selectedNetwork.walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
-      selectedNetwork.walletDTO.balance = dto.balance;
-      selectedNetwork.walletDTO.balanceInUsd = dto.balanceInUsd;
-
-      availableNetworks[0].walletDTO.btcBalance = dto.btcBalance;
-      availableNetworks[0].walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
-      availableNetworks[0].walletDTO.balance = dto.balance;
-      availableNetworks[0].walletDTO.balanceInUsd = dto.balanceInUsd;
-
-      availableNetworks[1].walletDTO.btcBalance = dto.btcBalance;
-      availableNetworks[1].walletDTO.btcBalanceInUsd = dto.btcBalanceInUsd;
-      availableNetworks[1].walletDTO.balance = dto.balance;
-      availableNetworks[1].walletDTO.balanceInUsd = dto.balanceInUsd;
-
-      loaded = false;
-      _isLoading = false;
-    });
-  }
-  //
-  // Widget _createMainScreen() {
-  //   return ShimmerLoading(
-  //       isLoading: _isLoading,
-  //       child: Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: <Widget>[
-  //           HuxContextMenu(
-  //             menuItems: [],
-  //             child: Card(
-  //               elevation: 5, // Adds a shadow to the card
-  //               shape: RoundedRectangleBorder(
-  //                 borderRadius: BorderRadius.circular(10), // Rounded corners
-  //               ),
-  //               margin: const EdgeInsets.all(16), // Margin around the card
-  //               child: ListTile(
-  //                 leading: selectedNetwork.network == Network.BITCOIN_TESTNET
-  //                     ? Image.asset(
-  //                         "assets/icons/btc.png",
-  //                         fit: BoxFit.cover,
-  //                         width: 40,
-  //                         height: 40,
-  //                       )
-  //                     : Image.asset(
-  //                         "assets/icons/rbtc2.png",
-  //                         fit: BoxFit.cover,
-  //                         width: 40,
-  //                         height: 40,
-  //                       ),
-  //                 trailing: PopupMenuButton<int>(
-  //                   onSelected: (int value) {
-  //                     switch (value) {
-  //                       case SEND:
-  //                         print("Send");
-  //                         Navigator.of(context).push(
-  //                           PageRouteBuilder(
-  //                             pageBuilder: (context, animation, secondaryAnimation) =>
-  //                                 Send(user: widget.user, selectedNetwork: selectedNetwork),
-  //                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //                               var begin = const Offset(0.0, 1.0);
-  //                               var end = Offset.zero;
-  //                               var curve = Curves.ease;
-  //
-  //                               var tween =
-  //                                   Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-  //
-  //                               return SlideTransition(
-  //                                 position: animation.drive(tween),
-  //                                 child: child,
-  //                               );
-  //                             },
-  //                           ),
-  //                         );
-  //                         break;
-  //                       case RECEIVE:
-  //                         String completeAddress =
-  //                             selectedNetwork.network == Network.BITCOIN_TESTNET ||
-  //                                     selectedNetwork.network == Network.BITCOIN_MAINNET
-  //                                 ? widget.wallet.btcAddress
-  //                                 : widget.wallet.publicKey;
-  //
-  //                         Navigator.of(context).push(
-  //                           PageRouteBuilder(
-  //                             pageBuilder: (context, animation, secondaryAnimation) => Receive(
-  //                                 user: widget.user,
-  //                                 walletDto: selectedNetwork.walletDTO,
-  //                                 network: selectedNetwork.network,
-  //                                 address: completeAddress),
-  //                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //                               var begin = const Offset(0.0, 1.0);
-  //                               var end = Offset.zero;
-  //                               var curve = Curves.ease;
-  //
-  //                               var tween =
-  //                                   Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-  //
-  //                               return SlideTransition(
-  //                                 position: animation.drive(tween),
-  //                                 child: child,
-  //                               );
-  //                             },
-  //                           ),
-  //                         );
-  //                         break;
-  //                       case VIEW:
-  //                         String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
-  //                                 selectedNetwork.network == Network.BITCOIN_MAINNET
-  //                             ? widget.wallet.btcAddress
-  //                             : widget.wallet.publicKey;
-  //                         walletService.openBlockExplorerForAddress(
-  //                             address, selectedNetwork.network);
-  //                         break;
-  //                       case COPY:
-  //                         print("Copy");
-  //                         String address = selectedNetwork.network == Network.BITCOIN_TESTNET ||
-  //                                 selectedNetwork.network == Network.BITCOIN_MAINNET
-  //                             ? widget.wallet.btcAddress
-  //                             : widget.wallet.publicKey;
-  //                         Clipboard.setData(ClipboardData(text: address)).then((value) {
-  //                           showMessage("${AppLocalizations.of(context)!.copiedMessage}: $address",
-  //                               context);
-  //                         });
-  //                         break;
-  //                       case REFRESH:
-  //                         print("Send");
-  //                     }
-  //                     setState(() {});
-  //                   },
-  //                   itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
-  //                     const PopupMenuItem<int>(
-  //                       value: SEND,
-  //                       child: ListTile(
-  //                         leading: Icon(Icons.call_made),
-  //                         title: Text('Send'),
-  //                       ),
-  //                     ),
-  //                     const PopupMenuItem<int>(
-  //                       value: RECEIVE,
-  //                       child: ListTile(
-  //                         leading: Icon(Icons.call_received),
-  //                         title: Text('Receive'),
-  //                       ),
-  //                     ),
-  //                     const PopupMenuItem<int>(
-  //                       value: VIEW,
-  //                       child: ListTile(
-  //                         leading: Icon(Icons.open_in_new),
-  //                         title: Text('View on explorer'),
-  //                       ),
-  //                     ),
-  //                     const PopupMenuItem<int>(
-  //                       value: COPY,
-  //                       child: ListTile(
-  //                         leading: Icon(Icons.copy),
-  //                         title: Text('Copy'),
-  //                       ),
-  //                     ),
-  //                     const PopupMenuItem<int>(
-  //                       value: REFRESH,
-  //                       child: ListTile(
-  //                         leading: Icon(Icons.refresh),
-  //                         title: Text('Refresh'),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 titleAlignment: titleAlignment,
-  //                 title: Text(
-  //                   currentAddress,
-  //                   style: const TextStyle(
-  //                     fontSize: 20,
-  //                     fontWeight: FontWeight.bold,
-  //                   ),
-  //                 ),
-  //                 // Main text
-  //                 subtitle: _showSaldo
-  //                     ? Text(
-  //                         selectedNetwork.network == Network.BITCOIN_TESTNET
-  //                             ? "${selectedNetwork.walletDTO.btcBalance} ~ ${selectedNetwork.walletDTO.btcBalanceInUsd}"
-  //                             : "${selectedNetwork.walletDTO.balance} ~ ${selectedNetwork.walletDTO.balanceInUsd}",
-  //                         style: const TextStyle(
-  //                           fontSize: 14,
-  //                           color: Colors.grey,
-  //                         ),
-  //                       )
-  //                     : const Text(
-  //                         "- ~ -",
-  //                         style: TextStyle(
-  //                           fontSize: 14,
-  //                           color: Colors.grey,
-  //                         ),
-  //                       ),
-  //                 // Secondary text
-  //                 onTap: () {
-  //                   // Handle tap event on the card
-  //                   print('Card tapped!');
-  //                 },
-  //               ),
-  //             ),
-  //           ),
-  //         ],
-  //       ));
-  // }
-
-  Widget _lastTransactions() {
-    return TableTransactions(wallet: widget.wallet, user: widget.user);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -387,8 +175,8 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
           centerTitle: true,
           bottom: const TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.directions_car)),
-              Tab(icon: Icon(Icons.directions_transit)),
+              Tab(icon: Icon(Icons.currency_bitcoin)),
+              Tab(icon: Icon(Icons.currency_yuan)),
               Tab(icon: Icon(Icons.directions_bike)),
             ],
           ),
@@ -397,7 +185,7 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
         body: TabBarView(
           children: [
             ViewBitcoinAccount(wallet: widget.wallet, user:widget.user),
-            const Icon(Icons.directions_bike), //ViewRootstockAccount(wallet: widget.wallet, user:widget.user),
+            ViewRootstockAccount(wallet: widget.wallet, user:widget.user),
             const Icon(Icons.directions_bike),
           ],
         ),

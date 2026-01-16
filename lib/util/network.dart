@@ -63,20 +63,6 @@ enum Network {
     }
   }
 
-  static Future<String> getBalance(WalletDTO dto, Network network) async {
-    WalletServiceImpl walletService = WalletServiceImpl();
-    switch (network) {
-      case Network.BITCOIN_TESTNET:
-        return walletService.getBalanceBitcoin(dto);
-      case Network.BITCOIN_MAINNET:
-        return walletService.getBalanceBitcoin(dto);
-      case Network.ROOTSTOCK_MAINNET:
-        return walletService.getBalance(dto);
-      case Network.ROOTSTOCK_TESTNET:
-        return walletService.getBalance(dto);
-    }
-  }
-
   static Image getIcon(Network n) {
     switch (n) {
       case Network.BITCOIN_TESTNET:

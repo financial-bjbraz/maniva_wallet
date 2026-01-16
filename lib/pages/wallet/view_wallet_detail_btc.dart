@@ -36,8 +36,10 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
   late NetworkDto selectedNetwork;
   late WalletServiceImpl walletService = WalletServiceImpl();
   ListTileTitleAlignment? titleAlignment;
-  late String currentAddress =
+  late String formattedAddress =
   Network.generateFormattedAddress(Network.BITCOIN_TESTNET, widget.wallet);
+  late String completeAddress =
+  Network.generateAddress(Network.BITCOIN_TESTNET, widget.wallet);
   bool _showSaldo = true;
 
   @override
@@ -49,8 +51,9 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
   }
 
   fetchDataBaseData() async {
-    var walletDto = await walletService.getBalanceFromDataBase(widget.wallet.privateKey);
     if(mounted){
+      var walletDto = await walletService.getBalanceBitcoin(selectedNetwork.walletDTO);
+
       setState(() {
         selectedNetwork.walletDTO = walletDto;
         _isLoading = false;
@@ -128,7 +131,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                               user: widget.user,
                                               walletDto: selectedNetwork.walletDTO,
                                               network: selectedNetwork.network,
-                                              address: currentAddress),
+                                              address: completeAddress),
                                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                             var begin = const Offset(0.0, 1.0);
                                             var end = Offset.zero;
@@ -148,13 +151,13 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                     case VIEW:
 
                                       walletService.openBlockExplorerForAddress(
-                                          currentAddress, selectedNetwork.network);
+                                          completeAddress, selectedNetwork.network);
                                       break;
                                     case COPY:
                                       print("Copy");
-                                      String address = widget.wallet.publicKey;
-                                      Clipboard.setData(ClipboardData(text: address)).then((value) {
-                                        showMessage("${AppLocalizations.of(context)!.copiedMessage}: $address",
+
+                                      Clipboard.setData(ClipboardData(text: completeAddress)).then((value) {
+                                        showMessage("${AppLocalizations.of(context)!.copiedMessage}: $completeAddress",
                                             context);
                                       });
                                       break;
@@ -203,7 +206,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                               ),
                               titleAlignment: titleAlignment,
                               title: Text(
-                                currentAddress,
+                                formattedAddress,
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,

@@ -49,6 +49,10 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
   }
 
   searchTokensForCurrentChainId() async {
+    if(!mounted) {
+      return;
+    }
+
     _periodicTimer?.cancel();
     int secs = (tokens.isNotEmpty ? 250 : 5);
     _periodicTimer = Timer.periodic(Duration(seconds: secs), (timer) async {

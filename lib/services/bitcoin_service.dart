@@ -2,13 +2,18 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 import '../entities/bitcoin_utxo.dart';
+import '../entities/wallet_dto.dart';
+import '../entities/wallet_helper.dart';
+import 'package:logging/logging.dart';
 
 class BitcoinNodeClient {
   final Uri rpcUri;
   final String rpcUser;
   final String rpcPassword;
+  final log = Logger("WalletServiceImpl");
 
   BitcoinNodeClient({
     required String rpcUrl,
