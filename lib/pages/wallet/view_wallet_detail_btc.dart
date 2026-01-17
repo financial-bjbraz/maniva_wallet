@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hux/hux.dart';
-import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
+import 'package:my_rootstock_wallet/pages/wallet/transactions/bitcoin_account_send.dart';
 
 import '../../entities/network_dto.dart';
 import '../../entities/user_helper.dart';
@@ -46,18 +45,36 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
   void initState() {
     _isLoading = true;
     selectedNetwork = NetworkDto(network: Network.BITCOIN_TESTNET, wallet: widget.wallet, user: widget.user);
+    selectedNetwork.walletDTO.btcBalanceInDouble = widget.wallet.btcAmount;
+    selectedNetwork.walletDTO.btcBalance = widget.wallet.btcAmount.toString();
     fetchDataBaseData();
     super.initState();
   }
 
+
+
   fetchDataBaseData() async {
+    selectedNetwork.walletDTO.btcBalanceInUsd = await walletService.calculateInUsd(selectedNetwork.walletDTO.btcBalanceInDouble);
+
     if(mounted){
-      var walletDto = await walletService.getBalanceBitcoin(selectedNetwork.walletDTO);
+      walletService.getBalanceBitcoin(selectedNetwork.walletDTO).then((walletDtoReceived){
+
+        if(selectedNetwork.walletDTO.updated){
+          selectedNetwork.walletDTO.updated = false;
+          setState(() async {
+            _isLoading = true;
+            await Future.delayed(const Duration(seconds: 2));
+            selectedNetwork.walletDTO = walletDtoReceived;
+            print("walletDto refresehd ${walletDtoReceived.btcBalanceInDouble}");
+            _isLoading = false;
+          });
+        }
+      });
 
       setState(() {
-        selectedNetwork.walletDTO = walletDto;
         _isLoading = false;
       });
+
     }
   }
 
@@ -105,7 +122,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                       Navigator.of(context).push(
                                         PageRouteBuilder(
                                           pageBuilder: (context, animation, secondaryAnimation) =>
-                                              Send(user: widget.user, selectedNetwork: selectedNetwork),
+                                              BitcoinAccountSendSend(user: widget.user, selectedNetwork: selectedNetwork),
                                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                             var begin = const Offset(0.0, 1.0);
                                             var end = Offset.zero;

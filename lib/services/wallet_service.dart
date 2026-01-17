@@ -15,6 +15,7 @@ import 'package:my_rootstock_wallet/util/wei.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web3dart/web3dart.dart' as web3;
 
+import '../entities/bitcoin_utxo.dart';
 import '../entities/transaction_helper.dart';
 import '../entities/wallet_helper.dart';
 import '../util/bitcoin.dart';
@@ -113,8 +114,9 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     try {
       final formatter = NumberFormat.simpleCurrency();
       var balance = wallet.btcAmount;
+      print('Balance obtained on DataBase: $balance BTC');
       if (balance > 0) {
-        print('Balance obtained on DataBase: $balance BTC');
+
         final usdPrice = await _getPrice();
         final value = balance * usdPrice;
         dto.btcBalanceInUsd = formatter.format(value);
@@ -154,7 +156,11 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       if(blockchainBalance.btcBalanceInDouble != dataBase.btcBalanceInDouble){
         dataBase.btcBalanceInDouble = blockchainBalance.btcBalanceInDouble;
+        dataBase.btcBalance = blockchainBalance.btcBalance;
+        dataBase.wallet.btcAmount = blockchainBalance.btcBalanceInDouble;
         await updateBalance(dataBase.wallet);
+        dataBase.updated = true;
+        return dataBase;
       }
 
     } catch (e) {
@@ -176,6 +182,107 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       log.severe("Error getting balance", error);
     }
     return lastBalanceReceivedInWei;
+  }
+
+  Future<List<Utxo>> listUtxos(String btcFromAddress ) async {
+    final node = dotenv.env['BITCOIN_NODE'];
+    if (node == null || node.isEmpty) {
+      return List<Utxo>.empty();
+    }
+
+    try {
+
+      final client = BitcoinNodeClient(
+        rpcUrl: node,
+        rpcUser: 'bitcoin',
+        rpcPassword: 'aTVQ5b0mS4y27qG',
+      );
+
+      var utxos = await client.listUtxos(btcFromAddress);
+      return utxos;
+
+    }catch(e){
+      log.severe("Error occurred listing UTXOs ${e}");
+    }
+
+    return List<Utxo>.empty();
+  }
+
+  /// Scan the UTXO set for an address using Bitcoin Core `scantxoutset`.
+  /// Returns a typed list of `Utxo` objects.
+  Future<List<Utxo>> scanUtxosForAddress(String btcFromAddress) async {
+    final node = dotenv.env['BITCOIN_NODE'];
+    if (node == null || node.isEmpty) {
+      return List<Utxo>.empty();
+    }
+
+    try {
+      final client = BitcoinNodeClient(
+        rpcUrl: node,
+        rpcUser: 'bitcoin',
+        rpcPassword: 'aTVQ5b0mS4y27qG',
+      );
+
+      var utxos = await client.scanUtxosForAddress(btcFromAddress);
+      return utxos;
+
+    }catch(e){
+      log.severe("Error occurred scanning UTXOs ${e}");
+    }
+
+    return List<Utxo>.empty();
+  }
+
+  Future<List<Utxo>> selectUtxosForAmount(double amount, List<Utxo>? allUtxos)async{
+    final node = dotenv.env['BITCOIN_NODE'];
+    if (node == null || node.isEmpty) {
+      return List<Utxo>.empty();
+    }
+
+    try {
+
+      final client = BitcoinNodeClient(
+        rpcUrl: node,
+        rpcUser: 'bitcoin',
+        rpcPassword: 'aTVQ5b0mS4y27qG',
+      );
+
+      var selectedUtxos = client.selectUtxosForAmount(amount, availableUtxos: allUtxos);
+      return selectedUtxos;
+
+    }catch(e){
+      log.severe("Error occurred calculating fees ${e}");
+    }
+
+    return List<Utxo>.empty();
+  }
+
+  Future <double> calculateBtcFee(List<Utxo> selectedUtxos) async {
+    final node = dotenv.env['BITCOIN_NODE'];
+    if (node == null || node.isEmpty) {
+      return 0.00;
+    }
+
+    try {
+
+      final client = BitcoinNodeClient(
+        rpcUrl: node,
+        rpcUser: 'bitcoin',
+        rpcPassword: 'aTVQ5b0mS4y27qG',
+      );
+
+    Map<String, dynamic> feeCalculated = await client.calculateFeeForBlocks(
+          numInputs: 0,
+          confTarget: 6,
+          utxos: selectedUtxos);
+
+      return feeCalculated['feeInBtc'] as double;
+
+    }catch(e){
+      log.severe("Error occurred calculating fees ${e}");
+    }
+
+    return 0.00;
   }
 
 // dart
@@ -277,16 +384,16 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
   String getExplorerUrl(Network network) {
     if (network == Network.ROOTSTOCK_MAINNET) {
-      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+      return dotenv.env['BLOCK_EXPLORER_URL_MAIN'] ?? "";
     }
     if (network == Network.ROOTSTOCK_TESTNET) {
       return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
     }
-    if (network == Network.ROOTSTOCK_MAINNET) {
-      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+    if (network == Network.BITCOIN_TESTNET) {
+      return dotenv.env['BTC_BLOCK_EXPLORER_URL'] ?? "";
     }
-    if (network == Network.ROOTSTOCK_MAINNET) {
-      return dotenv.env['BLOCK_EXPLORER_URL'] ?? "";
+    if (network == Network.BITCOIN_MAINNET) {
+      return dotenv.env['BTC_BLOCK_EXPLORER_URL_MAIN'] ?? "";
     }
     return "";
   }
@@ -308,7 +415,6 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       throw Exception('Could not launch $url');
     }
   }
-
 
   Future<WalletDTO> getBalanceRootstockFromDataBaseOnly(String privateKey) async {
     WalletHelper helper = WalletHelper();
@@ -332,7 +438,12 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return dto;
   }
 
-  Future<String> calculateInUsd(double rootstockAmount) async {
+  String formatString(double amount) {
+    final formatter = NumberFormat.simpleCurrency();
+    return formatter.format(amount);
+  }
+
+    Future<String> calculateInUsd(double rootstockAmount) async {
     if(rootstockAmount == 0) {
       return "USD 0.00";
     }
@@ -364,8 +475,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       }
       final client = BitcoinNodeClient(
         rpcUrl: node,
-        rpcUser: 'myuser',
-        rpcPassword: 'FRxDC5M7Aeebz-zqXlkwRhWUw-_mdQiD9-MJiC65654',
+        rpcUser: 'bitcoin',
+        rpcPassword: 'aTVQ5b0mS4y27qG',
       );
 
       final balance = await client.getBalanceForAddress(dto.wallet.btcAddress);
