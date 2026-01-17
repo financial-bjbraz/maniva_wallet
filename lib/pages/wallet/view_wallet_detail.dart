@@ -173,11 +173,21 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
           backgroundColor: Colors.transparent,
           elevation: 0.0,
           centerTitle: true,
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.currency_bitcoin)),
-              Tab(icon: Icon(Icons.currency_yuan)),
-              Tab(icon: Icon(Icons.directions_bike)),
+              Tab(icon: Image.asset(
+                "assets/icons/btc.png",
+                fit: BoxFit.cover,
+                width: 40,
+                height: 40,
+              )),
+              Tab(icon: Image.asset(
+                "assets/icons/rbtc2.png",
+                fit: BoxFit.cover,
+                width: 30,
+                height: 30,
+              )),
+              const Tab(icon: Icon(Icons.list)),
             ],
           ),
           title: const Text('Account #1'),

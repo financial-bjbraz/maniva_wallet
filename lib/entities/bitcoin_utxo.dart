@@ -9,6 +9,7 @@ class Utxo {
   final String? address;
   final int? confirmations;
   final bool? spendable;
+  bool selected = false;
 
   Utxo({
     required this.txid,

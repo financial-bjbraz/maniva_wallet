@@ -2,12 +2,9 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
+import 'package:logging/logging.dart';
 
 import '../entities/bitcoin_utxo.dart';
-import '../entities/wallet_dto.dart';
-import '../entities/wallet_helper.dart';
-import 'package:logging/logging.dart';
 
 class BitcoinNodeClient {
   final Uri rpcUri;
@@ -276,6 +273,8 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
   }
 
+
+
   Future<double> estimateFee({
     required int numInputs,
     int numOutputs = 2,
@@ -347,9 +346,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
   /// Returns a list of UTXOs for the given address by calling RPC `listunspent`.
   /// Each item is a `Map<String, dynamic>` with normalized fields (for example
   /// `amount` is converted to `double`).
-  Future<List<Map<String, dynamic>>> listUtxos(
+  Future<List<Utxo>> listUtxos(
     String address, {
-    int minConf = 0,
+    int minConf = 6,
     int maxConf = 9999999,
   }) async {
     final result = await _callRpc('listunspent', [
@@ -358,9 +357,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       [address]
     ]);
 
-    if (result is! List) return <Map<String, dynamic>>[];
+    if (result is! List) return <Utxo>[];
 
-    final List<Map<String, dynamic>> utxos = [];
+    final List<Utxo> utxos = [];
     for (final item in result) {
       if (item is Map<String, dynamic>) {
         // Normalize amount to double if possible
@@ -372,7 +371,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         final normalized = Map<String, dynamic>.from(item);
         normalized['amount'] = amount;
 
-        utxos.add(normalized);
+        utxos.add(Utxo.fromMap(normalized));
       }
     }
 
@@ -467,5 +466,219 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     if (sendResult is Map<String, dynamic> && sendResult.containsKey('txid'))
       return sendResult['txid'] as String;
     return sendResult.toString();
+  }
+
+  /// Select a set of UTXOs that cover the requested `amount` (in BTC).
+  ///
+  /// Behavior / contract:
+  /// - If `availableUtxos` is provided it will be used. Otherwise `address` must
+  ///   be provided and `listUtxos(address)` will be called to fetch UTXOs.
+  /// - The method accounts for the estimated fee by calling `estimateFeeByInputs`
+  ///   with the currently selected inputs (and `numOutputs`=2 by default).
+  /// - Selection is performed greedy by largest-first to minimize number of inputs
+  ///   (and therefore fee). If a single UTXO can cover the amount+fee it will be
+  ///   chosen (preferring the smallest that fits).
+  /// - Returns the list of selected `Utxo` objects. Throws on insufficient funds
+  ///   or invalid arguments.
+  Future<List<Utxo>> selectUtxosForAmount(
+    double amount, {
+    List<Utxo>? availableUtxos,
+    String? address,
+    int numOutputs = 2,
+    int confTarget = 6,
+    String defaultInputScript = 'p2wpkh',
+    double fallbackRateSatsPerVbyte = 50.0,
+  }) async {
+    if (amount <= 0) throw ArgumentError('amount must be > 0');
+
+    // Acquire UTXOs
+    List<Utxo> utxos;
+    if (availableUtxos != null) {
+      utxos = List<Utxo>.from(availableUtxos);
+    } else if (address != null && address.isNotEmpty) {
+      final raw = await listUtxos(address);
+      // listUtxos now returns List<Utxo>
+      utxos = List<Utxo>.from(raw);
+    } else {
+      throw ArgumentError('Either availableUtxos or address must be provided');
+    }
+
+    // Filter spendable if that information exists (prefer spendable==true or null)
+    utxos = utxos.where((u) => u.spendable == null || u.spendable == true).toList();
+
+    if (utxos.isEmpty) throw Exception('No available UTXOs');
+
+    // First try: see if a single UTXO can cover amount + fee (using that UTXO's script)
+    // We'll compute per-candidate fee and pick the smallest UTXO that satisfies it.
+    Utxo? singleCandidate;
+    // Sort ascending to prefer smaller single utxo when possible
+    final asc = List<Utxo>.from(utxos)..sort((a, b) => a.amount.compareTo(b.amount));
+    for (final u in asc) {
+      final script = inferInputScriptFromUtxo(u.toMap(), defaultScript: defaultInputScript);
+      final fee = await estimateFee(numInputs: 1, numOutputs: numOutputs, confTarget: confTarget, inputScript: script, fallbackRateSatsPerVbyte: fallbackRateSatsPerVbyte);
+      if (u.amount >= amount + fee) {
+        singleCandidate = u;
+        break;
+      }
+    }
+    if (singleCandidate != null) {
+      // Return single utxo chosen
+      return [singleCandidate];
+    }
+
+    // Otherwise, perform greedy selection by largest-first accumulating until
+    // sum(inputs) >= amount + fee(inputs)
+    final desc = List<Utxo>.from(utxos)..sort((a, b) => b.amount.compareTo(a.amount));
+    final List<Utxo> selected = [];
+    double selectedSum = 0.0;
+
+    for (final u in desc) {
+      selected.add(u);
+      selectedSum += u.amount;
+
+      // Estimate fee for the currently selected inputs using estimateFeeByInputs which
+      // can accept the utxos list to infer per-input script type.
+      final fee = await estimateFeeByInputs(
+        numOutputs: numOutputs,
+        confTarget: confTarget,
+        utxos: selected,
+        fallbackRateSatsPerVbyte: fallbackRateSatsPerVbyte,
+      );
+
+      if (selectedSum >= amount + fee) {
+        return selected;
+      }
+    }
+
+    // If we reach here, funds are insufficient
+    throw Exception('Insufficient funds: available ${utxos.fold(0.0, (p, e) => p + e.amount)} BTC, required ${amount} BTC plus fees');
+  }
+
+  /// Calculate fee for a given confirmation target (number of blocks).
+  ///
+  /// Calls `estimatesmartfee` RPC to obtain a fee rate for `confTarget` (blocks).
+  /// Then computes an estimated transaction vsize and fee (in BTC and sats).
+  ///
+  /// Returns a map with keys:
+  /// - `feeBtc` (double): estimated fee in BTC
+  /// - `feeSats` (int): estimated fee in sats
+  /// - `feeRateSatsPerVbyte` (double): fee rate used (sats/vbyte)
+  /// - `txVsize` (int): estimated transaction vsize in vbytes
+  Future<Map<String, dynamic>> calculateFeeForBlocks({
+    required int confTarget,
+    required int numInputs,
+    int numOutputs = 2,
+    String inputScript = 'p2wpkh',
+    double fallbackRateSatsPerVbyte = 50.0,
+    List<Utxo>? utxos,
+  }) async {
+    if (confTarget <= 0) throw ArgumentError('confTarget must be > 0');
+    if (numInputs <= 0 && (utxos == null || utxos.isEmpty)) {
+      throw ArgumentError('Provide numInputs > 0 or a non-empty utxos list');
+    }
+
+    // Determine fee rate (sats/vbyte) using estimatesmartfee RPC, fallback on provided rate
+    double feeRateSatsPerVbyte;
+    try {
+      final result = await _callRpc('estimatesmartfee', [confTarget]);
+      if (result is Map && result.containsKey('feerate')) {
+        final feerate = result['feerate'];
+        final feerateBtcPerKb = feerate is num ? feerate.toDouble() : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
+        feeRateSatsPerVbyte = feerateBtcPerKb > 0 ? feerateBtcPerKb * 1e8 / 1000.0 : fallbackRateSatsPerVbyte;
+      } else {
+        feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
+      }
+    } catch (e) {
+      feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
+    }
+
+    // Input size inference
+    final Map<String, int> perInputVsize = {
+      'p2pkh': 148,
+      'p2wpkh': 68,
+      'p2sh-p2wpkh': 91,
+      'p2tr': 57,
+    };
+    const int outputVsize = 34;
+    const int txOverhead = 10;
+
+    int totalInputVsize = 0;
+    if (utxos != null && utxos.isNotEmpty) {
+      for (final u in utxos) {
+        String chosenScript = inputScript;
+        try {
+          final addr = (u as dynamic).address as String?;
+          if (addr != null) {
+            final a = addr.toLowerCase();
+            if (a.startsWith('bc1p') || a.startsWith('tb1p')) {
+              chosenScript = 'p2tr';
+            } else if (a.startsWith('bc1q') || a.startsWith('tb1q')) {
+              chosenScript = 'p2wpkh';
+            } else if (a.startsWith('3') || a.startsWith('2')) {
+              chosenScript = 'p2sh-p2wpkh';
+            } else if (a.startsWith('1')) {
+              chosenScript = 'p2pkh';
+            }
+          }
+        } catch (_) {}
+        totalInputVsize += perInputVsize[chosenScript] ?? perInputVsize[inputScript]!;
+      }
+    } else {
+      final int inputVsize = perInputVsize[inputScript] ?? perInputVsize['p2wpkh']!;
+      totalInputVsize = numInputs * inputVsize;
+    }
+
+    final int txVsize = totalInputVsize + numOutputs * outputVsize + txOverhead;
+    final int feeSats = (txVsize * feeRateSatsPerVbyte).ceil();
+
+    return {
+      'feeBtc': feeSats / 1e8,
+      'feeSats': feeSats,
+      'feeRateSatsPerVbyte': feeRateSatsPerVbyte,
+      'txVsize': txVsize,
+    };
+  }
+
+  /// Scan the UTXO set for a single address using Bitcoin Core `scantxoutset`.
+  ///
+  /// This calls `scantxoutset` with `start` and the address descriptor `addr(<address>)`.
+  /// Returns a typed list of `Utxo` objects (empty list on no results).
+  Future<List<Utxo>> scanUtxosForAddress(String address) async {
+    if (address.isEmpty) throw ArgumentError('address must not be empty');
+
+    try {
+      final result = await _callRpc('scantxoutset', [
+        'start',
+        ['addr($address)']
+      ]);
+
+      if (result is! Map) return <Utxo>[];
+
+      // `unspents` contains entries with at least: txid, vout, scriptPubKey, amount, height
+      final unspents = result['unspents'];
+      if (unspents is! List) return <Utxo>[];
+
+      final List<Utxo> utxos = [];
+      for (final item in unspents) {
+        if (item is Map<String, dynamic>) {
+          final normalized = Map<String, dynamic>.from(item);
+          final rawAmount = normalized['amount'];
+          final double amount = rawAmount is num
+              ? rawAmount.toDouble()
+              : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
+          normalized['amount'] = amount;
+
+          // Map scantxoutset keys to fields expected by Utxo.fromMap when possible
+          // scantxoutset returns `address` on some versions; keep as-is if present
+
+          utxos.add(Utxo.fromMap(normalized));
+        }
+      }
+
+      return utxos;
+    } catch (e) {
+      // Propagate or return empty; choose to rethrow to let caller decide handling
+      rethrow;
+    }
   }
 }

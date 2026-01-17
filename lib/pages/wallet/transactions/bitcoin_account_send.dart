@@ -2,38 +2,42 @@ import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:hux/hux.dart';
-import 'package:my_rootstock_wallet/entities/network_dto.dart';
 import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/util/wei.dart';
-
+import '../../../entities/bitcoin_utxo.dart';
+import '../../../entities/network_dto.dart';
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
 import '../../../util/network.dart';
 import '../../../util/util.dart';
 
-class Send extends StatefulWidget {
-  const Send({super.key, required this.user, required this.selectedNetwork});
+class BitcoinAccountSendSend extends StatefulWidget {
+  const BitcoinAccountSendSend({super.key, required this.user, required this.selectedNetwork});
 
   final SimpleUser user;
   final NetworkDto selectedNetwork;
 
   @override
-  _Send createState() {
-    return _Send();
+  _BitcoinAccountSendSend createState() {
+    return _BitcoinAccountSendSend();
   }
 }
 
 enum SingingCharacter { tip, notip }
 
-class _Send extends State<Send> {
-  _Send();
+class User {
+  final String name;
+  final int age;
+  bool selected = false;
+
+  User({required this.name, required this.age});
+}
+
+class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
+  _BitcoinAccountSendSend();
 
   bool processing = false;
   bool full = true;
-  double _currentSliderValue = 5;
   String address = '';
   late WalletServiceImpl walletService;
   List<String> splittedMnemonic = List<String>.filled(1, '');
@@ -54,6 +58,7 @@ class _Send extends State<Send> {
   SingingCharacter? _character = SingingCharacter.tip;
   final double tipAmount = 0.000009;
   String tipAmountUsd = "USD 0.00";
+  List<Utxo> utxos = [];
 
   Icon fullIcon = const Icon(
     Icons.account_balance_wallet,
@@ -65,13 +70,18 @@ class _Send extends State<Send> {
     color: Colors.green,
   );
 
+  List<User> users = [
+    User(name: 'Alice', age: 24),
+    User(name: 'Bob', age: 30),
+    User(name: 'Charlie', age: 18),
+  ];
+
   @override
   void initState() {
     super.initState();
     walletService = WalletServiceImpl();
 
-    address = Network.generateAddress(Network.ROOTSTOCK_TESTNET, widget.selectedNetwork.wallet);
-
+    address = Network.generateAddress(Network.BITCOIN_TESTNET, widget.selectedNetwork.wallet);
 
     _myFocusNode.addListener(_handleFocusChange);
     _amountFocusNode.addListener(_handleAmountFocusChange);
@@ -79,6 +89,7 @@ class _Send extends State<Send> {
     balanceInUsd = widget.selectedNetwork.walletDTO.valueInUsdFormatted;
 
     calculateTip();
+    listUtxos();
   }
 
   void _handleFocusChange() {
@@ -91,7 +102,6 @@ class _Send extends State<Send> {
       print("TextFormField lost focus. Performing action...");
     } else {
       calculateFee();
-
     }
   }
 
@@ -101,8 +111,8 @@ class _Send extends State<Send> {
       setState(() {
         calculateAmount();
       });
-    }else{
-       calculateFee();
+    } else {
+      calculateFee();
     }
   }
 
@@ -138,19 +148,29 @@ class _Send extends State<Send> {
   }
 
   calculateFee() async {
-    var fee =
-        await walletService.calculateRbtcFee(from: address, to: destinationAddressController.text);
-    var feeUsd = await walletService.calculateInUsd(fee.getWei());
-    setState(() {
-      transactionFeeEstimation = fee.toRBTCString();
-      transactionFeeEstimationUsd = feeUsd;
-    });
+    // var fee = 0;
+    // await walletService.calculateBtcFee();
+    //
+    // setState(() {
+    //   transactionFeeEstimation = fee.toString();
+    //   transactionFeeEstimationUsd = feeUsd;
+    // });
   }
 
   calculateTip() async {
     var feeUsd = await walletService.calculateInUsd(tipAmount);
     setState(() {
       tipAmountUsd = feeUsd;
+    });
+  }
+
+
+
+  listUtxos() async {
+    // Use scantxoutset to scan the UTXO set for this address (works even if address isn't in the wallet)
+    var utxoList = await walletService.scanUtxosForAddress(address);
+    setState(() {
+      utxos = utxoList;
     });
   }
 
@@ -372,6 +392,39 @@ class _Send extends State<Send> {
                   title: Text('My tip is: ‘Do your best'),
                   leading: Radio<SingingCharacter>(value: SingingCharacter.notip),
                 ),
+                SizedBox(height: 20,),
+                ExpansionTile(
+                  title: const Text('ExpansionTile 3'),
+                  subtitle: const Text('Leading expansion arrow icon'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  children: <Widget>[
+                    SingleChildScrollView(
+                      // Added for potential horizontal scrolling
+                      child: DataTable(
+                        columns: const [
+                          DataColumn(label: Text('Id')),
+                          DataColumn(label: Text('Amount')),
+                        ],
+                        rows: utxos.map((user) {
+                          final isSelected = user.selected;
+                          return DataRow(
+                            selected: isSelected,
+                            onSelectChanged: (bool? value) {
+                              setState(() {
+                                user.selected = value ?? false;
+                              });
+                            },
+                            cells: [
+                              DataCell(Text(user.txid)),
+                              DataCell(Text('${user.amount}')),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    )
+                  ],
+                ),
+
               ],
             ),
           ),
@@ -476,11 +529,8 @@ class _Send extends State<Send> {
     if (_character == SingingCharacter.tip) {
       final tipAccount = dotenv.env['RSK_ADDRESS_TIP'];
       if (tipAccount != null || tipAccount!.isNotEmpty) {
-        await walletService.sendRBTC(
-            widget.selectedNetwork.walletDTO,
-            destinationAddressController.text,
-            BigInt.from(tipAmount)
-        );
+        await walletService.sendRBTC(widget.selectedNetwork.walletDTO,
+            destinationAddressController.text, BigInt.from(tipAmount));
       }
     }
   }
@@ -488,11 +538,8 @@ class _Send extends State<Send> {
   Future<SimpleTransaction> validateAndPerformTransaction() async {
     Big bp = prepareAmountValue();
 
-    var transactionPersist = await walletService.sendRBTC(
-        widget.selectedNetwork.walletDTO,
-        destinationAddressController.text,
-        BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
+    var transactionPersist = await walletService.sendRBTC(widget.selectedNetwork.walletDTO,
+        destinationAddressController.text, BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
     return transactionPersist;
   }
-
 }
