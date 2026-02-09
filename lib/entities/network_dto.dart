@@ -1,8 +1,8 @@
-import 'package:my_rootstock_wallet/entities/token_helper.dart';
-import 'package:my_rootstock_wallet/entities/user_helper.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/entities/wallet_helper.dart';
-import 'package:my_rootstock_wallet/util/network.dart';
+import 'package:maniva_wallet/entities/wallet_dto.dart';
+import 'package:maniva_wallet/entities/token_helper.dart';
+import 'package:maniva_wallet/entities/user_helper.dart';
+import 'package:maniva_wallet/entities/wallet_helper.dart';
+import 'package:maniva_wallet/util/network.dart';
 
 import '../services/wallet_service.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_rootstock_wallet/entities/bitcoin_utxo.dart';
-import 'package:my_rootstock_wallet/services/bitcoin_service.dart';
+import 'package:maniva_wallet/entities/bitcoin_utxo.dart';
+import 'package:maniva_wallet/services/bitcoin_service.dart';
 
 void main() {
   test('sendTransferUsingUtxos builds and sends tx, returns txid', () async {

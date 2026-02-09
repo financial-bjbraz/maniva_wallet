@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/pages/wallet/view_wallet_detail_btc.dart';
-import 'package:my_rootstock_wallet/pages/wallet/view_wallet_detail_rootstock.dart';
+import 'package:maniva_wallet/entities/wallet_dto.dart';
+import 'package:maniva_wallet/pages/wallet/view_wallet_detail_btc.dart';
+import 'package:maniva_wallet/pages/wallet/view_wallet_detail_rootstock.dart';
 import 'package:logging/logging.dart';
 
 import '../../../services/wallet_service.dart';

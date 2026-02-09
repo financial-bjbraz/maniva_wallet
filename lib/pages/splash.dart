@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/login.dart';
+import 'package:maniva_wallet/pages/login.dart';
 
 import '../util/util.dart';
 

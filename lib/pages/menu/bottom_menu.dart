@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/details/account_statements_detail.dart';
-import 'package:my_rootstock_wallet/pages/menu/item_menu_botton.dart';
+import 'package:maniva_wallet/pages/details/account_statements_detail.dart';
+import 'package:maniva_wallet/pages/menu/item_menu_botton.dart';
 
 import '../../l10n/app_localizations.dart';
 

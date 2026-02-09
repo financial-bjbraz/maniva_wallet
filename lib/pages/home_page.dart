@@ -1,8 +1,8 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/wallet/central_widgets_content.dart';
-import 'package:my_rootstock_wallet/pages/wallet/my_dots_app.dart';
-import 'package:my_rootstock_wallet/util/util.dart';
+import 'package:maniva_wallet/pages/wallet/central_widgets_content.dart';
+import 'package:maniva_wallet/pages/wallet/my_dots_app.dart';
+import 'package:maniva_wallet/util/util.dart';
 
 import '../entities/user_helper.dart';
 import '../entities/wallet_helper.dart';

@@ -1,6 +1,6 @@
-import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
-import 'package:my_rootstock_wallet/entities/wallet_helper.dart';
-import 'package:my_rootstock_wallet/util/wei.dart';
+import 'package:maniva_wallet/entities/transaction_helper.dart';
+import 'package:maniva_wallet/entities/wallet_helper.dart';
+import 'package:maniva_wallet/util/wei.dart';
 import 'package:web3dart/web3dart.dart';
 
 import '../util/util.dart';

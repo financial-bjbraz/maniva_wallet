@@ -8,10 +8,10 @@ import 'package:hex/hex.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/util/coingeck_resopnse.dart';
-import 'package:my_rootstock_wallet/util/transaction_type.dart';
-import 'package:my_rootstock_wallet/util/wei.dart';
+import 'package:maniva_wallet/entities/wallet_dto.dart';
+import 'package:maniva_wallet/util/coingeck_resopnse.dart';
+import 'package:maniva_wallet/util/transaction_type.dart';
+import 'package:maniva_wallet/util/wei.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web3dart/web3dart.dart' as web3;
 

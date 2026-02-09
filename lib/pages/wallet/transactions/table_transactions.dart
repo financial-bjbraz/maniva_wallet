@@ -1,10 +1,10 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/incoming_line.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/outgoing_line.dart';
-import 'package:my_rootstock_wallet/util/transaction_type.dart';
-import 'package:my_rootstock_wallet/util/util.dart';
+import 'package:maniva_wallet/pages/wallet/transactions/incoming_line.dart';
+import 'package:maniva_wallet/pages/wallet/transactions/outgoing_line.dart';
+import 'package:maniva_wallet/util/transaction_type.dart';
+import 'package:maniva_wallet/util/util.dart';
 import 'package:provider/provider.dart';
 
 import '../../../entities/transaction_helper.dart';

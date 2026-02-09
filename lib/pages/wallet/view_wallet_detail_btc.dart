@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/bitcoin_account_send.dart';
+import 'package:maniva_wallet/pages/wallet/transactions/account_receive.dart';
+import 'package:maniva_wallet/pages/wallet/transactions/bitcoin_account_send.dart';
 
 import '../../entities/network_dto.dart';
 import '../../entities/user_helper.dart';
