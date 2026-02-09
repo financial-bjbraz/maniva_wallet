@@ -115,9 +115,9 @@ class ShareAndCopy extends StatelessWidget {
 class ShowQrCode extends StatelessWidget {
   final String completeAddress;
   final ethereum = "ethereum:";
-  Network network;
+  final Network network;
 
-  ShowQrCode({super.key, required this.completeAddress, required this.network});
+  const ShowQrCode({super.key, required this.completeAddress, required this.network});
 
   @override
   Widget build(BuildContext context) {

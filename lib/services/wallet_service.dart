@@ -115,7 +115,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     try {
       final formatter = NumberFormat.simpleCurrency();
       var balance = wallet.btcAmount;
-      print('Balance obtained on DataBase: $balance BTC');
+      log.info('Balance obtained on DataBase: $balance BTC');
       if (balance > 0) {
 
         final usdPrice = await _getPrice();
@@ -227,7 +227,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       BitcoinAddressDetails details = await client.fetchAddressInfoFromBlockbook(btcFromAddress);
       List<Utxo> utxos = [];
 
-      for(var id in details.txids){
+      for(final id in details.txids){
         var txUtxos = await client.fetchUtxosFromTransaction(id);
         utxos.addAll(txUtxos);
       }
@@ -299,23 +299,21 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       return "";
     }
 
+    final client = BitcoinNodeClient(
+      rpcUrl: node,
+      rpcUser: 'bitcoin',
+      rpcPassword: 'aTVQ5b0mS4y27qG',
+    );
+
     try {
+      final id = await client.sendTransferUsingUtxos(destinationAddress, amount, utxos);
 
-      final client = BitcoinNodeClient(
-        rpcUrl: node,
-        rpcUser: 'bitcoin',
-        rpcPassword: 'aTVQ5b0mS4y27qG',
-      );
-
-      String id = await client.sendTransferUsingUtxos(destinationAddress, amount, utxos);
-
-      print(id);
+      log.info('BTC transfer sent, txid: $id');
+      return id;
     }catch(e){
       log.severe("Error occurred sending BTC transfer ${e}");
       throw StateError("Error occurred sending BTC transfer ${e}");
     }
-
-    return "";
   }
 
 // dart
@@ -327,13 +325,12 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   }) async {
     from = from.trim();
     to = to.trim();
-    print("calculating ${from} and ${to}");
     Wei fee = Wei(src: BigInt.zero, currency: 'wei');
     try {
       final node = dotenv.env['ROOTSTOCK_NODE'];
-      print("node is");
-      print(node);
-      if (node == null || node.isEmpty) return fee;
+      if (node == null || node.isEmpty) {
+        return fee;
+      }
 
       final client = web3.Web3Client(node, http.Client());
 
@@ -341,11 +338,10 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         web3.EtherUnit.wei,
         value ?? BigInt.zero,
       );
-      print("here 1");
 
       // get current gas price from node
       final gasPrice = await client.getGasPrice();
-      print("gasPrice is ${gasPrice} ");
+      log.info("gasPrice is ${gasPrice} ");
 
       // try to estimate gas; fall back to provided default if it fails
       int gasLimit;
@@ -355,26 +351,23 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
           to: web3.EthereumAddress.fromHex(to),
           value: unit,
         );
-        print("estimated is ${estimated}");
-        print(estimated);
-        gasLimit = estimated is BigInt ? estimated.toInt() : (estimated as int);
-        print("gaslimit is ${gasLimit} ");
+        gasLimit = estimated.toInt();
+        log.info("gaslimit is ${gasLimit} ");
       } catch (e) {
         gasLimit = fallbackGasLimit;
-        print("errorrrrrr ${e}");
+        log.warning("Error estimating gas: ${e}");
       }
 
       final feeWei = gasPrice.getInWei * BigInt.from(gasLimit);
       fee = Wei(src: feeWei, currency: 'wei');
-      print("fee calculated is ${fee}");
+      log.info("fee calculated is ${fee}");
 
       await client.dispose();
     } catch (error) {
       log.severe("Error estimating RBTC fee", error);
-      print("error ${error} ");
     }
 
-    print("returning the fee of ${fee}");
+    log.info("returning the fee of ${fee}");
     return fee;
   }
 
@@ -458,7 +451,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       final balanceRsk = wallet.amount;
       if (balanceRsk > 0) {
-        print('Balance obtained on DataBase: $balanceRsk RSK');
+        log.info('Balance obtained on DataBase: $balanceRsk RSK');
         final usdPrice = await _getPrice();
         final value = balanceRsk * usdPrice;
         dto.balanceInUsd = formatter.format(value);
@@ -499,7 +492,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     try {
       final node = dotenv.env['BITCOIN_NODE'];
       if (node == null || node.isEmpty) {
-        print("BITCOIN_NODE environment variable not set.");
+        log.info("BITCOIN_NODE environment variable not set.");
         dto.amountInUsd = 0.00;
         dto.valueInWeiFormatted = "0.00";
         dto.balanceInUsd = "0";
@@ -513,7 +506,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       );
 
       final balance = await client.getBalanceForAddress(dto.wallet.btcAddress);
-      print('Balance obtained on Blockchain: $balance BTC');
+      log.info('Balance obtained on Blockchain: $balance BTC');
       final formatter = NumberFormat.simpleCurrency();
 
       final usdPrice = await _getPrice();
@@ -545,7 +538,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       dto.wallet.amount = wei.src.toDouble();
       dto.balanceInDouble = wei.getWei();
       dto.balance = dto.valueInWeiFormatted;
-      print('Balance obtained on Blockchain: ${dto.balance} Rootstock');
+      log.info('Balance obtained on Blockchain: ${dto.balance} Rootstock');
 
       dto.balanceInUsd = dto.valueInUsdFormatted;
       return dto;

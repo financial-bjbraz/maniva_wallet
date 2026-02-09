@@ -5,13 +5,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
-import '../entities/bitcoin_utxo.dart';
 import '../entities/bitcoin_address_details.dart';
+import '../entities/bitcoin_utxo.dart';
 
 class BitcoinNodeClient {
   final Uri rpcUri;
   final String rpcUser;
   final String rpcPassword;
+
   /// Optional override to intercept RPC calls (useful for tests).
   final Future<dynamic> Function(String method, [List<dynamic>? params])? rpcCallOverride;
   final log = Logger("WalletServiceImpl");
@@ -26,7 +27,7 @@ class BitcoinNodeClient {
   Future<dynamic> _callRpc(String method, [List<dynamic>? params]) async {
     // If a test/test-double provided an override, delegate to it.
     if (rpcCallOverride != null) {
-      return await rpcCallOverride!(method, params);
+      return rpcCallOverride!(method, params);
     }
     final body =
         jsonEncode({'jsonrpc': '1.0', 'id': 'dart', 'method': method, 'params': params ?? []});
@@ -42,7 +43,6 @@ class BitcoinNodeClient {
     );
 
     if (resp.statusCode != 200) {
-
       throw StateError('RPC HTTP ${resp.statusCode}: ${resp.body}');
     }
 
@@ -64,8 +64,12 @@ class BitcoinNodeClient {
       if (result is Map<String, dynamic>) {
         if (result.containsKey('total_amount')) {
           final total = result['total_amount'];
-          if (total is num) return total.toDouble();
-          if (total is String) return double.tryParse(total) ?? 0.0;
+          if (total is num) {
+            return total.toDouble();
+          }
+          if (total is String) {
+            return double.tryParse(total) ?? 0.0;
+          }
         }
 
         if (result.containsKey('unspents')) {
@@ -74,9 +78,11 @@ class BitcoinNodeClient {
           for (final u in unspents) {
             if (u is Map<String, dynamic> && u.containsKey('amount')) {
               final amt = u['amount'];
-              if (amt is num)
+              if (amt is num) {
                 sum += amt.toDouble();
-              else if (amt is String) sum += double.tryParse(amt) ?? 0.0;
+              } else if (amt is String) {
+                sum += double.tryParse(amt) ?? 0.0;
+              }
             }
           }
           return sum;
@@ -92,20 +98,30 @@ class BitcoinNodeClient {
   /// Infer script type from a Bitcoin address prefix.
   /// Returns: 'p2tr', 'p2wpkh', 'p2sh-p2wpkh', 'p2pkh', 'other'
   String inferInputScriptFromAddress(String? address, {String defaultScript = 'p2wpkh'}) {
-    if (address == null || address.isEmpty) return defaultScript;
+    if (address == null || address.isEmpty) {
+      return defaultScript;
+    }
     final a = address.toLowerCase();
 
     // Bech32 v1 (taproot) - e.g. bc1p..., tb1p...
-    if (a.startsWith('bc1p') || a.startsWith('tb1p')) return 'p2tr';
+    if (a.startsWith('bc1p') || a.startsWith('tb1p')) {
+      return 'p2tr';
+    }
 
     // Bech32 v0 (native segwit) - e.g. bc1q..., tb1q...
-    if (a.startsWith('bc1q') || a.startsWith('tb1q')) return 'p2wpkh';
+    if (a.startsWith('bc1q') || a.startsWith('tb1q')) {
+      return 'p2wpkh';
+    }
 
     // P2SH (mainnet: 3, testnet: 2) - often P2SH-P2WPKH when wrapped segwit
-    if (a.startsWith('3') || a.startsWith('2')) return 'p2sh-p2wpkh';
+    if (a.startsWith('3') || a.startsWith('2')) {
+      return 'p2sh-p2wpkh';
+    }
 
     // Legacy P2PKH (mainnet: 1)
-    if (a.startsWith('1')) return 'p2pkh';
+    if (a.startsWith('1')) {
+      return 'p2pkh';
+    }
 
     return defaultScript;
   }
@@ -124,10 +140,18 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       if (spk is Map<String, dynamic>) {
         final type = (spk['type'] as String?)?.toLowerCase();
         if (type != null) {
-          if (type.contains('witness_v1') || type.contains('taproot')) return 'p2tr';
-          if (type.contains('witness_v0') && type.contains('keyhash')) return 'p2wpkh';
-          if (type.contains('scripthash')) return 'p2sh-p2wpkh';
-          if (type.contains('pubkeyhash')) return 'p2pkh';
+          if (type.contains('witness_v1') || type.contains('taproot')) {
+            return 'p2tr';
+          }
+          if (type.contains('witness_v0') && type.contains('keyhash')) {
+            return 'p2wpkh';
+          }
+          if (type.contains('scripthash')) {
+            return 'p2sh-p2wpkh';
+          }
+          if (type.contains('pubkeyhash')) {
+            return 'p2pkh';
+          }
           // other witness/script types could be handled here
         }
 
@@ -142,8 +166,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
 
       // Fallback: check top-level address field
       final topAddr = utxo['address'] as String?;
-      if (topAddr != null && topAddr.isNotEmpty)
+      if (topAddr != null && topAddr.isNotEmpty) {
         return inferInputScriptFromAddress(topAddr, defaultScript: defaultScript);
+      }
     } catch (_) {
       // ignore and fallback
     }
@@ -283,8 +308,6 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
   }
 
-
-
   Future<double> estimateFee({
     required int numInputs,
     int numOutputs = 2,
@@ -367,7 +390,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       [address]
     ]);
 
-    if (result is! List) return <Utxo>[];
+    if (result is! List) {
+      return <Utxo>[];
+    }
 
     final List<Utxo> utxos = [];
     for (final item in result) {
@@ -397,7 +422,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
 
     if (result is Map<String, dynamic> && result.containsKey('txid')) {
       final txid = result['txid'];
-      if (txid is String) return txid;
+      if (txid is String) {
+        return txid;
+      }
     }
 
     throw Exception('Failed to send to address: $result');
@@ -431,7 +458,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
 
     // Compute change and handle dust
-    final double dustThreshold = 0.00000546; // ~546 sats
+    const double dustThreshold = 0.00000546; // ~546 sats
     final double changeAmt = totalIn - amount - fee;
     if (changeAmt < -1e-12) {
       throw Exception('Insufficient funds: inputs ${totalIn} < amount ${amount} + fee ${fee}');
@@ -446,12 +473,13 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     // Create raw transaction
     final raw = await _callRpc('createrawtransaction', [inputs, outputs]);
     String rawHex;
-    if (raw is String)
+    if (raw is String) {
       rawHex = raw;
-    else if (raw is Map<String, dynamic> && raw.containsKey('hex'))
+    } else if (raw is Map<String, dynamic> && raw.containsKey('hex')) {
       rawHex = raw['hex'] as String;
-    else
+    } else {
       throw Exception('createrawtransaction returned unexpected result: $raw');
+    }
 
     // Sign with wallet
     final signed = await _callRpc('signrawtransactionwithwallet', [rawHex]);
@@ -472,9 +500,12 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
 
     // Broadcast
     final sendResult = await _callRpc('sendrawtransaction', [signedHex]);
-    if (sendResult is String) return sendResult;
-    if (sendResult is Map<String, dynamic> && sendResult.containsKey('txid'))
+    if (sendResult is String) {
+      return sendResult;
+    }
+    if (sendResult is Map<String, dynamic> && sendResult.containsKey('txid')) {
       return sendResult['txid'] as String;
+    }
     return sendResult.toString();
   }
 
@@ -499,7 +530,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     String defaultInputScript = 'p2wpkh',
     double fallbackRateSatsPerVbyte = 50.0,
   }) async {
-    if (amount <= 0) throw ArgumentError('amount must be > 0');
+    if (amount <= 0) {
+      throw ArgumentError('amount must be > 0');
+    }
 
     // Acquire UTXOs
     List<Utxo> utxos;
@@ -514,9 +547,11 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
 
     // Filter spendable if that information exists (prefer spendable==true or null)
-    utxos = utxos.where((u) => u.spendable == null || u.spendable == true).toList();
+    utxos = utxos.where((u) => u.spendable == null || (u.spendable ?? false)).toList();
 
-    if (utxos.isEmpty) throw Exception('No available UTXOs');
+    if (utxos.isEmpty) {
+      throw Exception('No available UTXOs');
+    }
 
     // First try: see if a single UTXO can cover amount + fee (using that UTXO's script)
     // We'll compute per-candidate fee and pick the smallest UTXO that satisfies it.
@@ -525,7 +560,12 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     final asc = List<Utxo>.from(utxos)..sort((a, b) => a.amount.compareTo(b.amount));
     for (final u in asc) {
       final script = inferInputScriptFromUtxo(u.toMap(), defaultScript: defaultInputScript);
-      final fee = await estimateFee(numInputs: 1, numOutputs: numOutputs, confTarget: confTarget, inputScript: script, fallbackRateSatsPerVbyte: fallbackRateSatsPerVbyte);
+      final fee = await estimateFee(
+          numInputs: 1,
+          numOutputs: numOutputs,
+          confTarget: confTarget,
+          inputScript: script,
+          fallbackRateSatsPerVbyte: fallbackRateSatsPerVbyte);
       if (u.amount >= amount + fee) {
         singleCandidate = u;
         break;
@@ -561,10 +601,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
 
     // If we reach here, funds are insufficient
-    throw Exception('Insufficient funds: available ${utxos.fold(0.0, (p, e) => p + e.amount)} BTC, required ${amount} BTC plus fees');
+    throw Exception(
+        'Insufficient funds: available ${utxos.fold(0.0, (p, e) => p + e.amount)} BTC, required ${amount} BTC plus fees');
   }
-
-
 
   /// Calculate fee for a given confirmation target (number of blocks).
   ///
@@ -584,7 +623,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     double fallbackRateSatsPerVbyte = 50.0,
     List<Utxo>? utxos,
   }) async {
-    if (confTarget <= 0) throw ArgumentError('confTarget must be > 0');
+    if (confTarget <= 0) {
+      throw ArgumentError('confTarget must be > 0');
+    }
     if (numInputs <= 0 && (utxos == null || utxos.isEmpty)) {
       throw ArgumentError('Provide numInputs > 0 or a non-empty utxos list');
     }
@@ -595,8 +636,10 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       final result = await _callRpc('estimatesmartfee', [confTarget]);
       if (result is Map && result.containsKey('feerate')) {
         final feerate = result['feerate'];
-        final feerateBtcPerKb = feerate is num ? feerate.toDouble() : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
-        feeRateSatsPerVbyte = feerateBtcPerKb > 0 ? feerateBtcPerKb * 1e8 / 1000.0 : fallbackRateSatsPerVbyte;
+        final feerateBtcPerKb =
+            feerate is num ? feerate.toDouble() : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
+        feeRateSatsPerVbyte =
+            feerateBtcPerKb > 0 ? feerateBtcPerKb * 1e8 / 1000.0 : fallbackRateSatsPerVbyte;
       } else {
         feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
       }
@@ -661,8 +704,10 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
   ///   provided the method will throw (to avoid adding dotenv dependency here).
   /// - extraHeaders: optional HTTP headers to include
   Future<List<Utxo>> fetchUtxosFromTransaction(String txid,
-      { Map<String, String>? extraHeaders}) async {
-    if (txid.isEmpty) throw ArgumentError('txid must not be empty');
+      {Map<String, String>? extraHeaders}) async {
+    if (txid.isEmpty) {
+      throw ArgumentError('txid must not be empty');
+    }
 
     String? blockbookBaseUrl = dotenv.env['BLOCK_BOOK_URL'];
     final base = (blockbookBaseUrl ?? '').trim();
@@ -694,26 +739,35 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
 
     final vouts = tx['vout'];
-    if (vouts is! List) return <Utxo>[];
+    if (vouts is! List) {
+      return <Utxo>[];
+    }
 
     final List<Utxo> utxos = [];
     for (var idx = 0; idx < vouts.length; idx++) {
       final v = vouts[idx];
-      if (v is! Map<String, dynamic>) continue;
+      if (v is! Map<String, dynamic>) {
+        continue;
+      }
 
       final Map<String, dynamic> normalized = {};
       normalized['txid'] = txid;
 
       // vout index
-      if (v.containsKey('n')) normalized['vout'] = v['n'];
-      else if (v.containsKey('vout')) normalized['vout'] = v['vout'];
-      else normalized['vout'] = idx;
+      if (v.containsKey('n')) {
+        normalized['vout'] = v['n'];
+      } else if (v.containsKey('vout')) {
+        normalized['vout'] = v['vout'];
+      } else {
+        normalized['vout'] = idx;
+      }
 
       // amount: try 'value' (BTC or sats string), 'valueSat', or 'amount'
       if (v.containsKey('value')) {
         final raw = v['value'];
-        if (raw is num) normalized['amount'] = raw.toDouble();
-        else if (raw is String) {
+        if (raw is num) {
+          normalized['amount'] = raw.toDouble();
+        } else if (raw is String) {
           if (RegExp(r'^\d+$').hasMatch(raw)) {
             final sats = int.tryParse(raw) ?? 0;
             normalized['amount'] = sats / 1e8;
@@ -723,12 +777,18 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         }
       } else if (v.containsKey('valueSat')) {
         final raw = v['valueSat'];
-        if (raw is num) normalized['amount'] = raw.toInt() / 1e8;
-        else if (raw is String) normalized['amount'] = (int.tryParse(raw) ?? 0) / 1e8;
+        if (raw is num) {
+          normalized['amount'] = raw.toInt() / 1e8;
+        } else if (raw is String) {
+          normalized['amount'] = (int.tryParse(raw) ?? 0) / 1e8;
+        }
       } else if (v.containsKey('amount')) {
         final raw = v['amount'];
-        if (raw is num) normalized['amount'] = raw.toDouble();
-        else if (raw is String) normalized['amount'] = double.tryParse(raw) ?? 0.0;
+        if (raw is num) {
+          normalized['amount'] = raw.toDouble();
+        } else if (raw is String) {
+          normalized['amount'] = double.tryParse(raw) ?? 0.0;
+        }
       }
 
       // scriptPubKey
@@ -736,12 +796,19 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       if (v.containsKey('scriptPubKey')) {
         final spk = v['scriptPubKey'];
         if (spk is Map<String, dynamic>) {
-          if (spk.containsKey('hex')) scriptHex = spk['hex'] as String?;
-          else if (spk.containsKey('asm')) scriptHex = spk['asm'] as String?;
+          if (spk.containsKey('hex')) {
+            scriptHex = spk['hex'] as String?;
+          }else if (spk.containsKey('asm')){
+            scriptHex = spk['asm'] as String?;
+          }
 
-          if (spk.containsKey('addresses') && spk['addresses'] is List && (spk['addresses'] as List).isNotEmpty) {
+          if (spk.containsKey('addresses') &&
+              spk['addresses'] is List &&
+              (spk['addresses'] as List).isNotEmpty) {
             final addr = (spk['addresses'] as List).firstWhere((_) => true, orElse: () => null);
-            if (addr is String) normalized['address'] = addr;
+            if (addr is String) {
+              normalized['address'] = addr;
+            }
           } else if (spk.containsKey('address') && spk['address'] is String) {
             normalized['address'] = spk['address'];
           }
@@ -751,17 +818,26 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       }
 
       if (scriptHex == null) {
-        if (v.containsKey('hex') && v['hex'] is String) scriptHex = v['hex'] as String?;
-        else if (v.containsKey('script') && v['script'] is String) scriptHex = v['script'] as String?;
+        if (v.containsKey('hex') && v['hex'] is String) {
+          scriptHex = v['hex'] as String?;
+        }else if (v.containsKey('script') && v['script'] is String) {
+          scriptHex = v['script'] as String?;
+        }
       }
 
-      if (scriptHex != null) normalized['scriptPubKey'] = scriptHex;
+      if (scriptHex != null) {
+        normalized['scriptPubKey'] = scriptHex;
+      }
 
       // addresses directly on vout
       if (!normalized.containsKey('address')) {
-        if (v.containsKey('addresses') && v['addresses'] is List && (v['addresses'] as List).isNotEmpty) {
+        if (v.containsKey('addresses') &&
+            v['addresses'] is List &&
+            (v['addresses'] as List).isNotEmpty) {
           final addr = (v['addresses'] as List).firstWhere((_) => true, orElse: () => null);
-          if (addr is String) normalized['address'] = addr;
+          if (addr is String) {
+            normalized['address'] = addr;
+          }
         }
       }
 
@@ -785,8 +861,10 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
   /// - `txids` (List<String>) : extracted txids (if available)
   /// - `raw` (Map<String,dynamic>) : the original parsed response (or its `data` wrapper)
   Future<BitcoinAddressDetails> fetchAddressInfoFromBlockbook(String address,
-      { Map<String, String>? extraHeaders}) async {
-    if (address.isEmpty) throw ArgumentError('address must not be empty');
+      {Map<String, String>? extraHeaders}) async {
+    if (address.isEmpty) {
+      throw ArgumentError('address must not be empty');
+    }
 
     String? blockbookBaseUrl = dotenv.env['BLOCK_BOOK_URL'];
     final base = (blockbookBaseUrl ?? '').trim();
@@ -795,7 +873,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
 
     String normalizedBase = base;
-    if (normalizedBase.endsWith('/')) normalizedBase = normalizedBase.substring(0, normalizedBase.length - 1);
+    if (normalizedBase.endsWith('/')) {
+      normalizedBase = normalizedBase.substring(0, normalizedBase.length - 1);
+    }
 
     final uri = Uri.parse('$normalizedBase/api/v2/address/$address');
     final headers = <String, String>{'Accept': 'application/json', ...?extraHeaders};
@@ -829,12 +909,22 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         double recv = 0.0;
         double sent = 0.0;
         if (tr != null) {
-          if (tr is num) recv = (tr > 1e6) ? tr.toDouble() / 1e8 : tr.toDouble();
-          else if (tr is String) recv = RegExp(r'^\d+$').hasMatch(tr) ? (int.tryParse(tr) ?? 0) / 1e8 : double.tryParse(tr) ?? 0.0;
+          if (tr is num) {
+            recv = (tr > 1e6) ? tr.toDouble() / 1e8 : tr.toDouble();
+          }else if (tr is String) {
+            recv = RegExp(r'^\d+$').hasMatch(tr)
+                ? (int.tryParse(tr) ?? 0) / 1e8
+                : double.tryParse(tr) ?? 0.0;
+          }
         }
         if (ts != null) {
-          if (ts is num) sent = (ts > 1e6) ? ts.toDouble() / 1e8 : ts.toDouble();
-          else if (ts is String) sent = RegExp(r'^\d+$').hasMatch(ts) ? (int.tryParse(ts) ?? 0) / 1e8 : double.tryParse(ts) ?? 0.0;
+          if (ts is num) {
+            sent = (ts > 1e6) ? ts.toDouble() / 1e8 : ts.toDouble();
+          }else if (ts is String) {
+            sent = RegExp(r'^\d+$').hasMatch(ts)
+                ? (int.tryParse(ts) ?? 0) / 1e8
+                : double.tryParse(ts) ?? 0.0;
+          }
         }
         balanceBtc = recv - sent;
         balanceSats = (balanceBtc * 1e8).round();
@@ -882,7 +972,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
           txids.add(t);
         } else if (t is Map<String, dynamic>) {
           final tid = t['txid'] ?? t['tx_hash'] ?? t['id'];
-          if (tid is String) txids.add(tid);
+          if (tid is String) {
+            txids.add(tid);
+          }
         }
       }
     }
@@ -900,5 +992,4 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
 
     return details;
   }
-
 }

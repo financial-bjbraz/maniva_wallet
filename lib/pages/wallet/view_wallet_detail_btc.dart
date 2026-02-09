@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/bitcoin_account_send.dart';
 
 import '../../entities/network_dto.dart';
@@ -26,6 +26,7 @@ class ViewBitcoinAccount extends StatefulWidget {
 }
 
 class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
+  static final _log = Logger('view_wallet_detail_btc');
   bool _isLoading = true;
   static const int SEND = 1;
   static const int RECEIVE = 2;
@@ -39,7 +40,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
   Network.generateFormattedAddress(Network.BITCOIN_TESTNET, widget.wallet);
   late String completeAddress =
   Network.generateAddress(Network.BITCOIN_TESTNET, widget.wallet);
-  bool _showSaldo = true;
+  final bool _showSaldo = true;
 
   @override
   void initState() {
@@ -65,7 +66,10 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
             _isLoading = true;
             await Future.delayed(const Duration(seconds: 2));
             selectedNetwork.walletDTO = walletDtoReceived;
-            print("walletDto refresehd ${walletDtoReceived.btcBalanceInDouble}");
+            if (kDebugMode) {
+              _log.info("walletDto refresehd ${walletDtoReceived
+                  .btcBalanceInDouble}");
+            }
             _isLoading = false;
           });
         }
@@ -118,7 +122,10 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                 onSelected: (int value) {
                                   switch (value) {
                                     case SEND:
-                                      print("Send");
+                                      if (kDebugMode) {
+                                        _log.info("Send");
+                                      }
+
                                       Navigator.of(context).push(
                                         PageRouteBuilder(
                                           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -138,7 +145,6 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                           },
                                         ),
                                       );
-                                      break;
                                     case RECEIVE:
 
 
@@ -164,22 +170,23 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                           },
                                         ),
                                       );
-                                      break;
                                     case VIEW:
 
                                       walletService.openBlockExplorerForAddress(
                                           completeAddress, selectedNetwork.network);
-                                      break;
                                     case COPY:
-                                      print("Copy");
+                                      if (kDebugMode) {
+                                        _log.info("Copy");
+                                      }
 
                                       Clipboard.setData(ClipboardData(text: completeAddress)).then((value) {
                                         showMessage("${AppLocalizations.of(context)!.copiedMessage}: $completeAddress",
                                             context);
                                       });
-                                      break;
                                     case REFRESH:
-                                      print("Send");
+                                      if (kDebugMode){
+                                        _log.info("Send");
+                                      }
                                   }
                                   setState(() {});
                                 },
@@ -249,7 +256,9 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                               // Secondary text
                               onTap: () {
                                 // Handle tap event on the card
-                                print('Card tapped!');
+                                if (kDebugMode) {
+                                  _log.info('Card tapped!');
+                                }
                               },
                             ),
                           ),

@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hux/hux.dart';
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
 import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
 import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
@@ -27,6 +27,7 @@ class ViewRootstockAccount extends StatefulWidget {
 }
 
 class _ViewRootstockAccount extends State<ViewRootstockAccount> {
+  static final _log = Logger('view_wallet_detail_rootstock');
   bool _isLoading = true;
   static const int SEND = 1;
   static const int RECEIVE = 2;
@@ -39,7 +40,7 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
   late String formattedAddress =
       Network.generateFormattedAddress(Network.ROOTSTOCK_TESTNET, widget.wallet);
   late String completeAddress = Network.generateAddress(Network.ROOTSTOCK_TESTNET, widget.wallet);
-  bool _showSaldo = true;
+  final bool _showSaldo = true;
 
   @override
   void initState() {
@@ -97,7 +98,9 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                             onSelected: (int value) {
                               switch (value) {
                                 case SEND:
-                                  print("Send");
+                                  if (kDebugMode) {
+                                    _log.info("Send");
+                                  }
                                   Navigator.of(context).push(
                                     PageRouteBuilder(
                                       pageBuilder: (context, animation, secondaryAnimation) =>
@@ -118,7 +121,6 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                                       },
                                     ),
                                   );
-                                  break;
                                 case RECEIVE:
                                   Navigator.of(context).push(
                                     PageRouteBuilder(
@@ -144,22 +146,23 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                                       },
                                     ),
                                   );
-                                  break;
                                 case VIEW:
                                   walletService.openBlockExplorerForAddress(
                                       completeAddress, selectedNetwork.network);
-                                  break;
                                 case COPY:
-                                  print("Copy");
+                                  if (kDebugMode) {
+                                    _log.info("Copy");
+                                  }
                                   String address = widget.wallet.publicKey;
                                   Clipboard.setData(ClipboardData(text: address)).then((value) {
                                     showMessage(
                                         "${AppLocalizations.of(context)!.copiedMessage}: $address",
                                         context);
                                   });
-                                  break;
                                 case REFRESH:
-                                  print("Send");
+                                  if (kDebugMode){
+                                    _log.info("Send");
+                                  }
                               }
                               setState(() {});
                             },
@@ -228,7 +231,9 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                           // Secondary text
                           onTap: () {
                             // Handle tap event on the card
-                            print('Card tapped!');
+                            if (kDebugMode) {
+                              _log.info('Card tapped!');
+                            }
                           },
                         ),
 

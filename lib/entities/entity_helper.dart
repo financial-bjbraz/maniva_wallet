@@ -33,47 +33,47 @@ class EntityHelper {
     var dbKey = dotenv.env['PRIVATE_KEY'];
     String path = join(await getDatabasesPath(), "$DATA_BASE_VERSION+$DATA_BASE_NAME");
     if (kDebugMode) {
-      print("Database persisted at ${path}");
+      log.info("Database persisted at ${path}");
     }
 
     return openDatabase(path, password: dbKey, version: DATA_BASE_VERSION,
         onCreate: (db, int version) {
       try {
         if (kDebugMode) {
-          print("Creating transactions");
+          log.info("Creating transactions");
         }
         db.execute(TransactionHelper.scriptCreation());
         if (kDebugMode) {
-          print("Transactions created");
+          log.info("Transactions created");
         }
       } catch (e) {
         log.severe("Error creating transactions table: $e");
       }
       try {
         if (kDebugMode) {
-          print("Creating wallets");
+          log.info("Creating wallets");
         }
         db.execute(WalletHelper.scriptCreation());
         if (kDebugMode) {
-          print("Wallets created");
+          log.info("Wallets created");
         }
       } catch (e) {}
       try {
         if (kDebugMode) {
-          print("Creating users");
+          log.info("Creating users");
         }
         db.execute(UserHelper.scriptCreation());
         if (kDebugMode) {
-          print("Users created");
+          log.info("Users created");
         }
       } catch (e) {}
       try {
         if (kDebugMode) {
-          print("Creating tokens");
+          log.info("Creating tokens");
         }
         db.execute(TokenHelper.scriptCreation());
         if (kDebugMode) {
-          print("Table Tokens created");
+          log.info("Table Tokens created");
         }
       } catch (e) {}
 
@@ -88,7 +88,7 @@ class EntityHelper {
           );
         }
         if (kDebugMode) {
-          print("${jsonMap.length} tokens added to database");
+          log.info("${jsonMap.length} tokens added to database");
         }
       }
 
@@ -104,7 +104,7 @@ class EntityHelper {
         }
       }
       if (kDebugMode) {
-        print("Initial available data inserted");
+        log.info("Initial available data inserted");
       }
     });
   }
