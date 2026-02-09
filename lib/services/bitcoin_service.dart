@@ -1,24 +1,33 @@
 // dart
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 import '../entities/bitcoin_utxo.dart';
+import '../entities/bitcoin_address_details.dart';
 
 class BitcoinNodeClient {
   final Uri rpcUri;
   final String rpcUser;
   final String rpcPassword;
+  /// Optional override to intercept RPC calls (useful for tests).
+  final Future<dynamic> Function(String method, [List<dynamic>? params])? rpcCallOverride;
   final log = Logger("WalletServiceImpl");
 
   BitcoinNodeClient({
     required String rpcUrl,
     required this.rpcUser,
     required this.rpcPassword,
+    this.rpcCallOverride,
   }) : rpcUri = Uri.parse(rpcUrl);
 
   Future<dynamic> _callRpc(String method, [List<dynamic>? params]) async {
+    // If a test/test-double provided an override, delegate to it.
+    if (rpcCallOverride != null) {
+      return await rpcCallOverride!(method, params);
+    }
     final body =
         jsonEncode({'jsonrpc': '1.0', 'id': 'dart', 'method': method, 'params': params ?? []});
 
@@ -33,7 +42,8 @@ class BitcoinNodeClient {
     );
 
     if (resp.statusCode != 200) {
-      throw Exception('RPC HTTP ${resp.statusCode}: ${resp.body}');
+
+      throw StateError('RPC HTTP ${resp.statusCode}: ${resp.body}');
     }
 
     final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -554,6 +564,8 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     throw Exception('Insufficient funds: available ${utxos.fold(0.0, (p, e) => p + e.amount)} BTC, required ${amount} BTC plus fees');
   }
 
+
+
   /// Calculate fee for a given confirmation target (number of blocks).
   ///
   /// Calls `estimatesmartfee` RPC to obtain a fee rate for `confTarget` (blocks).
@@ -639,46 +651,254 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     };
   }
 
-  /// Scan the UTXO set for a single address using Bitcoin Core `scantxoutset`.
+  /// Fetch vouts from a Blockbook-compatible REST API for a specific transaction (txid)
+  /// and return them as a list of `Utxo` objects. This extracts `scriptPubKey` (hex when
+  /// available) and an `address` from each vout when present.
   ///
-  /// This calls `scantxoutset` with `start` and the address descriptor `addr(<address>)`.
-  /// Returns a typed list of `Utxo` objects (empty list on no results).
-  Future<List<Utxo>> scanUtxosForAddress(String address) async {
-    if (address.isEmpty) throw ArgumentError('address must not be empty');
+  /// Parameters:
+  /// - txid: transaction id to fetch
+  /// - blockbookBaseUrl: optional base URL for blockbook (e.g. https://blockbook.example). If not
+  ///   provided the method will throw (to avoid adding dotenv dependency here).
+  /// - extraHeaders: optional HTTP headers to include
+  Future<List<Utxo>> fetchUtxosFromTransaction(String txid,
+      { Map<String, String>? extraHeaders}) async {
+    if (txid.isEmpty) throw ArgumentError('txid must not be empty');
 
-    try {
-      final result = await _callRpc('scantxoutset', [
-        'start',
-        ['addr($address)']
-      ]);
+    String? blockbookBaseUrl = dotenv.env['BLOCK_BOOK_URL'];
+    final base = (blockbookBaseUrl ?? '').trim();
+    if (base.isEmpty) {
+      throw ArgumentError('blockbookBaseUrl must be provided');
+    }
 
-      if (result is! Map) return <Utxo>[];
+    String normalizedBase = base;
+    if (normalizedBase.endsWith('/')) {
+      normalizedBase = normalizedBase.substring(0, normalizedBase.length - 1);
+    }
 
-      // `unspents` contains entries with at least: txid, vout, scriptPubKey, amount, height
-      final unspents = result['unspents'];
-      if (unspents is! List) return <Utxo>[];
+    final uri = Uri.parse('$normalizedBase/api/v2/tx-specific/$txid');
+    final headers = <String, String>{'Accept': 'application/json', ...?extraHeaders};
 
-      final List<Utxo> utxos = [];
-      for (final item in unspents) {
-        if (item is Map<String, dynamic>) {
-          final normalized = Map<String, dynamic>.from(item);
-          final rawAmount = normalized['amount'];
-          final double amount = rawAmount is num
-              ? rawAmount.toDouble()
-              : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
-          normalized['amount'] = amount;
+    final resp = await http.get(uri, headers: headers);
+    if (resp.statusCode != 200) {
+      throw Exception('Blockbook HTTP ${resp.statusCode}: ${resp.body}');
+    }
 
-          // Map scantxoutset keys to fields expected by Utxo.fromMap when possible
-          // scantxoutset returns `address` on some versions; keep as-is if present
+    final body = jsonDecode(resp.body);
+    Map<String, dynamic>? tx;
+    if (body is Map<String, dynamic>) {
+      tx = body;
+    } else if (body is Map && body.containsKey('data') && body['data'] is Map) {
+      tx = body['data'] as Map<String, dynamic>;
+    } else {
+      return <Utxo>[];
+    }
 
-          utxos.add(Utxo.fromMap(normalized));
+    final vouts = tx['vout'];
+    if (vouts is! List) return <Utxo>[];
+
+    final List<Utxo> utxos = [];
+    for (var idx = 0; idx < vouts.length; idx++) {
+      final v = vouts[idx];
+      if (v is! Map<String, dynamic>) continue;
+
+      final Map<String, dynamic> normalized = {};
+      normalized['txid'] = txid;
+
+      // vout index
+      if (v.containsKey('n')) normalized['vout'] = v['n'];
+      else if (v.containsKey('vout')) normalized['vout'] = v['vout'];
+      else normalized['vout'] = idx;
+
+      // amount: try 'value' (BTC or sats string), 'valueSat', or 'amount'
+      if (v.containsKey('value')) {
+        final raw = v['value'];
+        if (raw is num) normalized['amount'] = raw.toDouble();
+        else if (raw is String) {
+          if (RegExp(r'^\d+$').hasMatch(raw)) {
+            final sats = int.tryParse(raw) ?? 0;
+            normalized['amount'] = sats / 1e8;
+          } else {
+            normalized['amount'] = double.tryParse(raw) ?? 0.0;
+          }
+        }
+      } else if (v.containsKey('valueSat')) {
+        final raw = v['valueSat'];
+        if (raw is num) normalized['amount'] = raw.toInt() / 1e8;
+        else if (raw is String) normalized['amount'] = (int.tryParse(raw) ?? 0) / 1e8;
+      } else if (v.containsKey('amount')) {
+        final raw = v['amount'];
+        if (raw is num) normalized['amount'] = raw.toDouble();
+        else if (raw is String) normalized['amount'] = double.tryParse(raw) ?? 0.0;
+      }
+
+      // scriptPubKey
+      String? scriptHex;
+      if (v.containsKey('scriptPubKey')) {
+        final spk = v['scriptPubKey'];
+        if (spk is Map<String, dynamic>) {
+          if (spk.containsKey('hex')) scriptHex = spk['hex'] as String?;
+          else if (spk.containsKey('asm')) scriptHex = spk['asm'] as String?;
+
+          if (spk.containsKey('addresses') && spk['addresses'] is List && (spk['addresses'] as List).isNotEmpty) {
+            final addr = (spk['addresses'] as List).firstWhere((_) => true, orElse: () => null);
+            if (addr is String) normalized['address'] = addr;
+          } else if (spk.containsKey('address') && spk['address'] is String) {
+            normalized['address'] = spk['address'];
+          }
+        } else if (spk is String) {
+          scriptHex = spk;
         }
       }
 
-      return utxos;
-    } catch (e) {
-      // Propagate or return empty; choose to rethrow to let caller decide handling
-      rethrow;
+      if (scriptHex == null) {
+        if (v.containsKey('hex') && v['hex'] is String) scriptHex = v['hex'] as String?;
+        else if (v.containsKey('script') && v['script'] is String) scriptHex = v['script'] as String?;
+      }
+
+      if (scriptHex != null) normalized['scriptPubKey'] = scriptHex;
+
+      // addresses directly on vout
+      if (!normalized.containsKey('address')) {
+        if (v.containsKey('addresses') && v['addresses'] is List && (v['addresses'] as List).isNotEmpty) {
+          final addr = (v['addresses'] as List).firstWhere((_) => true, orElse: () => null);
+          if (addr is String) normalized['address'] = addr;
+        }
+      }
+
+      try {
+        utxos.add(Utxo.fromMap(normalized));
+      } catch (e) {
+        log.warning('Skipping malformed vout for tx $txid: $e');
+      }
     }
+
+    return utxos;
   }
+
+  /// Fetch address info from a Blockbook-compatible REST API endpoint
+  /// `GET {blockbookBaseUrl}/api/v2/address/{address}`.
+  ///
+  /// Returns a Map with keys:
+  /// - `balance` (double, BTC)
+  /// - `balanceSats` (int, satoshis)
+  /// - `txs` (List<dynamic>) : raw tx objects or txids as returned by Blockbook
+  /// - `txids` (List<String>) : extracted txids (if available)
+  /// - `raw` (Map<String,dynamic>) : the original parsed response (or its `data` wrapper)
+  Future<BitcoinAddressDetails> fetchAddressInfoFromBlockbook(String address,
+      { Map<String, String>? extraHeaders}) async {
+    if (address.isEmpty) throw ArgumentError('address must not be empty');
+
+    String? blockbookBaseUrl = dotenv.env['BLOCK_BOOK_URL'];
+    final base = (blockbookBaseUrl ?? '').trim();
+    if (base.isEmpty) {
+      throw ArgumentError('blockbookBaseUrl must be provided');
+    }
+
+    String normalizedBase = base;
+    if (normalizedBase.endsWith('/')) normalizedBase = normalizedBase.substring(0, normalizedBase.length - 1);
+
+    final uri = Uri.parse('$normalizedBase/api/v2/address/$address');
+    final headers = <String, String>{'Accept': 'application/json', ...?extraHeaders};
+
+    final resp = await http.get(uri, headers: headers);
+    if (resp.statusCode != 200) {
+      throw Exception('Blockbook HTTP ${resp.statusCode}: ${resp.body}');
+    }
+
+    final body = jsonDecode(resp.body);
+    Map<String, dynamic>? data;
+    if (body is Map<String, dynamic>) {
+      data = body;
+    } else if (body is Map && body.containsKey('data') && body['data'] is Map) {
+      data = body['data'] as Map<String, dynamic>;
+    } else {
+      // Unexpected shape
+      data = <String, dynamic>{};
+    }
+
+    // Normalize balance (prefer 'balance', fallback to totalReceived - totalSent)
+    double balanceBtc = 0.0;
+    int balanceSats = 0;
+
+    dynamic balRaw = data['balance'] ?? data['balanceSat'] ?? data['balanceSatoshi'];
+    if (balRaw == null) {
+      // try compute from totals
+      final tr = data['totalReceived'] ?? data['total_received'] ?? data['totalReceivedBTC'];
+      final ts = data['totalSent'] ?? data['total_sent'] ?? data['totalSentBTC'];
+      if (tr != null || ts != null) {
+        double recv = 0.0;
+        double sent = 0.0;
+        if (tr != null) {
+          if (tr is num) recv = (tr > 1e6) ? tr.toDouble() / 1e8 : tr.toDouble();
+          else if (tr is String) recv = RegExp(r'^\d+$').hasMatch(tr) ? (int.tryParse(tr) ?? 0) / 1e8 : double.tryParse(tr) ?? 0.0;
+        }
+        if (ts != null) {
+          if (ts is num) sent = (ts > 1e6) ? ts.toDouble() / 1e8 : ts.toDouble();
+          else if (ts is String) sent = RegExp(r'^\d+$').hasMatch(ts) ? (int.tryParse(ts) ?? 0) / 1e8 : double.tryParse(ts) ?? 0.0;
+        }
+        balanceBtc = recv - sent;
+        balanceSats = (balanceBtc * 1e8).round();
+      }
+    } else {
+      if (balRaw is num) {
+        // Heuristic: if value > 1e6 treat as sats
+        if (balRaw > 1e6) {
+          balanceSats = balRaw.toInt();
+          balanceBtc = balanceSats / 1e8;
+        } else {
+          balanceBtc = balRaw.toDouble();
+          balanceSats = (balanceBtc * 1e8).round();
+        }
+      } else if (balRaw is String) {
+        if (RegExp(r'^\d+$').hasMatch(balRaw)) {
+          // integer string -> sats
+          balanceSats = int.tryParse(balRaw) ?? 0;
+          balanceBtc = balanceSats / 1e8;
+        } else {
+          balanceBtc = double.tryParse(balRaw) ?? 0.0;
+          balanceSats = (balanceBtc * 1e8).round();
+        }
+      }
+    }
+
+    // Extract txs / txids
+    List<dynamic> txs = [];
+    List<String> txids = [];
+
+    if (data.containsKey('txs') && data['txs'] is List) {
+      txs = data['txs'] as List<dynamic>;
+    } else if (data.containsKey('transactions') && data['transactions'] is List) {
+      txs = data['transactions'] as List<dynamic>;
+    } else if (data.containsKey('txids') && data['txids'] is List) {
+      // sometimes txids returned directly
+      final items = data['txids'] as List<dynamic>;
+      txids = items.whereType<String>().toList();
+    }
+
+    // If txs are present, try to extract txids from their contents
+    if (txs.isNotEmpty) {
+      for (final t in txs) {
+        if (t is String) {
+          txids.add(t);
+        } else if (t is Map<String, dynamic>) {
+          final tid = t['txid'] ?? t['tx_hash'] ?? t['id'];
+          if (tid is String) txids.add(tid);
+        }
+      }
+    }
+
+    // Deduplicate txids
+    txids = txids.toSet().toList();
+
+    final details = BitcoinAddressDetails(
+      balance: balanceBtc,
+      balanceSats: balanceSats,
+      txs: txs,
+      txids: txids,
+      raw: data,
+    );
+
+    return details;
+  }
+
 }
