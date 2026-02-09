@@ -15,6 +15,7 @@ import 'package:my_rootstock_wallet/util/wei.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web3dart/web3dart.dart' as web3;
 
+import '../entities/bitcoin_address_details.dart';
 import '../entities/bitcoin_utxo.dart';
 import '../entities/transaction_helper.dart';
 import '../entities/wallet_helper.dart';
@@ -223,7 +224,14 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         rpcPassword: 'aTVQ5b0mS4y27qG',
       );
 
-      var utxos = await client.scanUtxosForAddress(btcFromAddress);
+      BitcoinAddressDetails details = await client.fetchAddressInfoFromBlockbook(btcFromAddress);
+      List<Utxo> utxos = [];
+
+      for(var id in details.txids){
+        var txUtxos = await client.fetchUtxosFromTransaction(id);
+        utxos.addAll(txUtxos);
+      }
+
       return utxos;
 
     }catch(e){
@@ -283,6 +291,30 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     }
 
     return 0.00;
+  }
+
+  Future<String> sendTransferUsingUtxos(WalletDTO wallet,String destinationAddress, double amount, List<Utxo> utxos) async {
+    final node = dotenv.env['BITCOIN_NODE'];
+    if (node == null || node.isEmpty) {
+      return "";
+    }
+
+    try {
+
+      final client = BitcoinNodeClient(
+        rpcUrl: node,
+        rpcUser: 'bitcoin',
+        rpcPassword: 'aTVQ5b0mS4y27qG',
+      );
+
+      String id = await client.sendTransferUsingUtxos(destinationAddress, amount, utxos);
+
+      print(id);
+    }catch(e){
+      log.severe("Error occurred sending BTC transfer ${e}");
+    }
+
+    return "";
   }
 
 // dart

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
+import 'package:my_rootstock_wallet/util/transaction_type.dart';
+import '../../../entities/bitcoin_address_details.dart';
 import '../../../entities/bitcoin_utxo.dart';
 import '../../../entities/network_dto.dart';
 import '../../../entities/user_helper.dart';
@@ -163,8 +165,6 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
       tipAmountUsd = feeUsd;
     });
   }
-
-
 
   listUtxos() async {
     // Use scantxoutset to scan the UTXO set for this address (works even if address isn't in the wallet)
@@ -538,8 +538,13 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
   Future<SimpleTransaction> validateAndPerformTransaction() async {
     Big bp = prepareAmountValue();
 
-    var transactionPersist = await walletService.sendRBTC(widget.selectedNetwork.walletDTO,
-        destinationAddressController.text, BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
-    return transactionPersist;
+    var transactionPersist = await walletService.sendTransferUsingUtxos(
+      widget.selectedNetwork.walletDTO,
+        destinationAddressController.text,
+        BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()).toDouble(),
+        utxos);
+
+    return SimpleTransaction(transactionId: "", amountInWeis: "", ddateTime: "", walletId: "", valueInUsdFormatted: "", valueInWeiFormatted: "", type: TransactionType.REGULAR_OUTGOING.type, destination: "");
   }
+
 }
