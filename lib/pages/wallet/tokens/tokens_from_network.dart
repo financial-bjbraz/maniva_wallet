@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:my_rootstock_wallet/pages/wallet/tokens/token_item.dart';
+import 'package:maniva_wallet/pages/wallet/tokens/token_item.dart';
 import 'package:web3dart/web3dart.dart' as i1;
 import 'package:logging/logging.dart';
 

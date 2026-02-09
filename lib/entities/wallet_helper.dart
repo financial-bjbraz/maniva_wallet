@@ -1,4 +1,4 @@
-import 'package:my_rootstock_wallet/entities/entity_helper.dart';
+import 'package:maniva_wallet/entities/entity_helper.dart';
 import 'package:sqflite/sqflite.dart';
 
 class WalletHelper extends EntityHelper {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
+import 'package:maniva_wallet/entities/wallet_dto.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../entities/user_helper.dart';

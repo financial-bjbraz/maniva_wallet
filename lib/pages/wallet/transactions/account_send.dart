@@ -2,8 +2,8 @@ import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:my_rootstock_wallet/entities/network_dto.dart';
-import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
+import 'package:maniva_wallet/entities/network_dto.dart';
+import 'package:maniva_wallet/entities/transaction_helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 

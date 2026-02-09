@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_rootstock_wallet/pages/details/detail_list.dart';
+import 'package:maniva_wallet/pages/details/detail_list.dart';
 
 class ItemMenuBottom extends StatelessWidget {
   final IconData icon;

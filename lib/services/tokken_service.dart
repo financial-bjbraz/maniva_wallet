@@ -1,4 +1,4 @@
-import 'package:my_rootstock_wallet/entities/token_helper.dart';
+import 'package:maniva_wallet/entities/token_helper.dart';
 
 abstract class TokenService {
   void createOrUpdate(Token token);

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_exit_app/flutter_exit_app.dart';
 import 'package:hux/hux.dart';
-import 'package:my_rootstock_wallet/pages/login.dart';
-import 'package:my_rootstock_wallet/pages/menu/item_menu.dart';
+import 'package:maniva_wallet/pages/login.dart';
+import 'package:maniva_wallet/pages/menu/item_menu.dart';
 
 import '../../l10n/app_localizations.dart';
 

@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logging/logging.dart';
-import 'package:my_rootstock_wallet/entities/token_helper.dart';
-import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
-import 'package:my_rootstock_wallet/entities/user_helper.dart';
-import 'package:my_rootstock_wallet/entities/wallet_helper.dart';
+import 'package:maniva_wallet/entities/token_helper.dart';
+import 'package:maniva_wallet/entities/transaction_helper.dart';
+import 'package:maniva_wallet/entities/user_helper.dart';
+import 'package:maniva_wallet/entities/wallet_helper.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
