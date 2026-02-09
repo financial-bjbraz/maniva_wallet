@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_rootstock_wallet/entities/bitcoin_utxo.dart';
 import 'package:my_rootstock_wallet/services/bitcoin_service.dart';
@@ -7,8 +5,8 @@ import 'package:my_rootstock_wallet/services/bitcoin_service.dart';
 void main() {
   test('sendTransferUsingUtxos builds and sends tx, returns txid', () async {
     // Input from user
-    final toAddress = 'tb1q53fg23u5tfzvxewcewfdhdjyl7402y8jfs0546';
-    final amount = 0.000004; // BTC
+    const toAddress = 'tb1q53fg23u5tfzvxewcewfdhdjyl7402y8jfs0546';
+    const amount = 0.000004; // BTC
 
     // Create a Utxo from provided JSON-like data
     final utxoMap = {

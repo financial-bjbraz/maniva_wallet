@@ -6,10 +6,10 @@ import 'package:my_rootstock_wallet/pages/splash.dart';
 import 'package:my_rootstock_wallet/services/create_user_service.dart';
 import 'package:my_rootstock_wallet/services/wallet_service.dart';
 import 'package:provider/provider.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:stac/stac.dart';
 
 import 'l10n/app_localizations.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

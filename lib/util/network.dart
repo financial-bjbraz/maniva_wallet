@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_rootstock_wallet/util/util.dart';
 
-import '../entities/wallet_dto.dart';
 import '../entities/wallet_helper.dart';
-import '../services/wallet_service.dart';
 import 'addresses.dart';
 import 'bitcoin.dart';
 

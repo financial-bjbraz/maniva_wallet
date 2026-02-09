@@ -1,26 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:hux/hux.dart';
+import 'package:flutter/foundation.dart';
 import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/pages/wallet/tokens/tokens_from_network.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/account_receive.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/account_send.dart';
-import 'package:my_rootstock_wallet/pages/wallet/transactions/table_transactions.dart';
 import 'package:my_rootstock_wallet/pages/wallet/view_wallet_detail_btc.dart';
 import 'package:my_rootstock_wallet/pages/wallet/view_wallet_detail_rootstock.dart';
+import 'package:logging/logging.dart';
 
 import '../../../services/wallet_service.dart';
 import '../../entities/network_dto.dart';
 import '../../entities/user_helper.dart';
 import '../../entities/wallet_helper.dart';
-import '../../l10n/app_localizations.dart';
 import '../../services/tokken_service.dart';
 import '../../util/network.dart';
-import '../../util/shimmer_loading.dart';
-import '../../util/util.dart';
-import '../../util/widget_shimmer.dart';
 
 class ViewWalletDetailPage extends StatefulWidget {
   const ViewWalletDetailPage({super.key, required this.wallet, required this.user});
@@ -33,10 +25,10 @@ class ViewWalletDetailPage extends StatefulWidget {
 }
 
 class _ViewWalletApp extends State<ViewWalletDetailPage> {
+  static final _log = Logger('view_wallet_detail');
+
   late WalletDTO walletDto;
   late WalletServiceImpl walletService = WalletServiceImpl();
-  bool _showSaldo = true;
-  bool _isLoading = true;
   final double iconSize = 48;
   final double fontSize = 20;
   Timer? _periodicTimer;
@@ -48,15 +40,6 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   late List<NetworkDto> availableNetworks;
 
   int operation = 0;
-  static const int BITCOIN_INDEX = 0;
-  static const int ROOTSTOCK_INDEX = 1;
-  static const int TRANSACTIONS_INDEX = 2;
-  static const int SEND = 1;
-  static const int RECEIVE = 2;
-  static const int VIEW = 3;
-  static const int COPY = 4;
-  static const int REFRESH = 5;
-
   bool loaded = false;
   bool receiveScreenOpened = false;
   bool openListTransactions = false;
@@ -82,45 +65,27 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
 
   _ViewWalletApp();
 
-  Widget _buildSegmentButton() {
-    return HuxTabs(
-      size: HuxTabSize.large,
-      variant: HuxTabVariant.minimal,
-      tabs: const [
-        HuxTabItem(label: 'Bitcoin', content: Text(''), icon: Icons.currency_bitcoin),
-        HuxTabItem(label: 'Rootstock', content: Text(''), icon: Icons.account_balance),
-        HuxTabItem(label: 'Transactions', content: Text(''), icon: Icons.list),
-      ],
-      onTabChanged: (index) async {
-        setState(() {
-          openListTransactions = index == TRANSACTIONS_INDEX;
-
-          if (!openListTransactions) {
-            selectedNetwork = availableNetworks[index];
-            currentAddress =
-                Network.generateFormattedAddress(selectedNetwork.network, widget.wallet);
-          }
-        });
-      },
-    );
-  }
 
   _loadBalanceFromBlockchain() {
     try {
       setState(() {
         loaded = false;
-        _isLoading = true;
       });
-      print("Refreshing data from blockchain...");
+      if (kDebugMode) {
+        _log.info("Refreshing data from blockchain...");
+      }
       walletServiceImpl.getDataFromBlockchain(widget.wallet).then((_) {
-        print("Updating...");
+        if (kDebugMode){
+          _log.info("Updating...");
+        }
       });
-    } catch (_) {
-      print("Error refreshing data: $_");
+    } catch (e) {
+      if (kDebugMode){
+        _log.info("Error refreshing data: $e");
+      }
     } finally {
       setState(() {
         loaded = true;
-        _isLoading = false;
       });
     }
   }
@@ -129,7 +94,9 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
     _periodicTimer?.cancel();
     _periodicTimer =
         Timer.periodic(Duration(seconds: !searchedFirstTime ? 180 : 360), (timer) async {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       await _loadBalanceFromBlockchain();
       searchedFirstTime = true;
     });
@@ -138,15 +105,16 @@ class _ViewWalletApp extends State<ViewWalletDetailPage> {
   @override
   void initState() {
     super.initState();
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
+
     loaded = true;
-    _isLoading = false;
   }
 
   @override
   void dispose() {
     _periodicTimer?.cancel();
-    _isLoading = false;
     super.dispose();
   }
 

@@ -2,11 +2,10 @@ import 'package:big_dart/big_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:hux/hux.dart';
 import 'package:my_rootstock_wallet/entities/network_dto.dart';
 import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
-import 'package:my_rootstock_wallet/entities/wallet_dto.dart';
-import 'package:my_rootstock_wallet/util/wei.dart';
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
 
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
@@ -31,9 +30,11 @@ enum SingingCharacter { tip, notip }
 class _Send extends State<Send> {
   _Send();
 
+  static final _log = Logger('account_send');
+
   bool processing = false;
   bool full = true;
-  double _currentSliderValue = 5;
+  // double _currentSliderValue = 5;
   String address = '';
   late WalletServiceImpl walletService;
   List<String> splittedMnemonic = List<String>.filled(1, '');
@@ -85,10 +86,14 @@ class _Send extends State<Send> {
     if (!_myFocusNode.hasFocus) {
       // Focus is lost (on blur event)
       setState(() {
-        print("Focus lost!");
+        if (kDebugMode) {
+          _log.info("Focus lost!");
+        }
       });
       // You can add your custom logic here, like validation or saving data
-      print("TextFormField lost focus. Performing action...");
+      if (kDebugMode) {
+        _log.info("TextFormField lost focus. Performing action...");
+      }
     } else {
       calculateFee();
 

@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_rootstock_wallet/pages/wallet/tokens/token_item.dart';
 import 'package:web3dart/web3dart.dart' as i1;
+import 'package:logging/logging.dart';
 
 import '../../../contracts/ERC20.g.dart';
 import '../../../entities/token_helper.dart';
@@ -33,6 +34,7 @@ class TokensFromNetwork extends StatefulWidget {
 }
 
 class _TokensFromNetwork extends State<TokensFromNetwork> {
+  static final _log = Logger('tokens_from_network');
   String accountBalance = "0";
   String tokenSymbol = "";
   final List<Token> dbTokens = [];
@@ -104,7 +106,7 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
       final node = dotenv.env['ROOTSTOCK_NODE'];
       if (node == null || node.isEmpty) {
         if (kDebugMode) {
-          print("ROOTSTOCK_NODE environment variable not set.");
+          _log.info("ROOTSTOCK_NODE environment variable not set.");
         }
         return "0.00";
       }
@@ -116,7 +118,7 @@ class _TokensFromNetwork extends State<TokensFromNetwork> {
       ERC20 token = ERC20(address: contractAddr, client: client);
       final BigInt balanceObtained = await token.balanceOf((account: myAccount));
       if (kDebugMode) {
-        print(
+        _log.info(
             "Raw balance obtained from $contractAddr, and the balance is $balanceObtained from account $myAccount");
       } // final BigInt decimalsObtained = await token.decimals();
       // final int decimals = decimalsObtained.toInt();

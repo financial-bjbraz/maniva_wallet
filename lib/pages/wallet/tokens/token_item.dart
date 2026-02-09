@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:hux/hux.dart';
+import 'package:logging/logging.dart';
 
 class TokenItem extends StatelessWidget {
   final String tokenName;
@@ -18,6 +19,8 @@ class TokenItem extends StatelessWidget {
       required this.tokenAddress,
       required this.tokenBalance,
       required this.networkId});
+
+  static final _log = Logger('TokenItem');
 
   static Future<bool> _assetExists(String path) async {
     try {
@@ -45,7 +48,7 @@ class TokenItem extends StatelessWidget {
             onTap: () {
               Clipboard.setData(ClipboardData(text: tokenAddress));
               if (kDebugMode) {
-                print('Token address copied to clipboard: $tokenAddress');
+                _log.info('Token address copied to clipboard: $tokenAddress');
               }
             }),
         HuxContextMenuItem(
@@ -53,7 +56,7 @@ class TokenItem extends StatelessWidget {
           icon: FeatherIcons.clipboard,
           onTap: () {
             if (kDebugMode) {
-              print('Paste action triggered');
+              _log.info('Paste action triggered');
             }
           },
         ),
@@ -89,7 +92,7 @@ class TokenItem extends StatelessWidget {
           onTap: () {
             // Handle tap event on the card
             if (kDebugMode) {
-              print('Card tapped!');
+              _log.info('Card tapped!');
             }
           },
         ),

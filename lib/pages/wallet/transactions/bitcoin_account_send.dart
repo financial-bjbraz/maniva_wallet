@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:my_rootstock_wallet/entities/transaction_helper.dart';
 import 'package:my_rootstock_wallet/util/transaction_type.dart';
-import '../../../entities/bitcoin_address_details.dart';
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
+
 import '../../../entities/bitcoin_utxo.dart';
 import '../../../entities/network_dto.dart';
 import '../../../entities/user_helper.dart';
@@ -37,6 +39,8 @@ class User {
 
 class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
   _BitcoinAccountSendSend();
+
+  static final _log = Logger('bitcoin_account_send');
 
   bool processing = false;
   bool full = true;
@@ -98,10 +102,14 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
     if (!_myFocusNode.hasFocus) {
       // Focus is lost (on blur event)
       setState(() {
-        print("Focus lost!");
+        if (kDebugMode){
+          _log.info("Focus lost!");
+        }
       });
       // You can add your custom logic here, like validation or saving data
-      print("TextFormField lost focus. Performing action...");
+      if (kDebugMode){
+        _log.info("TextFormField lost focus. Performing action...");
+      }
     } else {
       calculateFee();
     }
@@ -392,7 +400,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
                   title: Text('My tip is: ‘Do your best'),
                   leading: Radio<SingingCharacter>(value: SingingCharacter.notip),
                 ),
-                SizedBox(height: 20,),
+                const SizedBox(height: 20,),
                 ExpansionTile(
                   title: const Text('ExpansionTile 3'),
                   subtitle: const Text('Leading expansion arrow icon'),
@@ -539,7 +547,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
     try {
       Big bp = prepareAmountValue();
 
-      var transactionPersist = await walletService.sendTransferUsingUtxos(
+      await walletService.sendTransferUsingUtxos(
           widget.selectedNetwork.walletDTO,
           destinationAddressController.text,
           BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()).toDouble(),

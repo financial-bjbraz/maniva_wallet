@@ -1,7 +1,5 @@
 import 'package:my_rootstock_wallet/entities/token_helper.dart';
 
-import '../entities/token_helper.dart';
-
 abstract class TokenService {
   void createOrUpdate(Token token);
 
