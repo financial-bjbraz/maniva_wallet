@@ -312,6 +312,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       print(id);
     }catch(e){
       log.severe("Error occurred sending BTC transfer ${e}");
+      throw StateError("Error occurred sending BTC transfer ${e}");
     }
 
     return "";

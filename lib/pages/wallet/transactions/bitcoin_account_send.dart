@@ -536,13 +536,17 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
   }
 
   Future<SimpleTransaction> validateAndPerformTransaction() async {
-    Big bp = prepareAmountValue();
+    try {
+      Big bp = prepareAmountValue();
 
-    var transactionPersist = await walletService.sendTransferUsingUtxos(
-      widget.selectedNetwork.walletDTO,
-        destinationAddressController.text,
-        BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()).toDouble(),
-        utxos);
+      var transactionPersist = await walletService.sendTransferUsingUtxos(
+          widget.selectedNetwork.walletDTO,
+          destinationAddressController.text,
+          BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()).toDouble(),
+          utxos);
+    }catch(e){
+      rethrow;
+    }
 
     return SimpleTransaction(transactionId: "", amountInWeis: "", ddateTime: "", walletId: "", valueInUsdFormatted: "", valueInWeiFormatted: "", type: TransactionType.REGULAR_OUTGOING.type, destination: "");
   }
