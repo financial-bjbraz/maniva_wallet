@@ -1,9 +1,9 @@
 import 'package:maniva_wallet/entities/token_helper.dart';
 
 abstract class TokenService {
-  void createOrUpdate(Token token);
+  Future<int> createOrUpdate(Token token);
 
-  void list(int chainId);
+  Future<List<Token>> list(int chainId);
 }
 
 class TokenServiceImpl implements TokenService {

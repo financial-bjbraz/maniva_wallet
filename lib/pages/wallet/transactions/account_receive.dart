@@ -114,15 +114,19 @@ class ShareAndCopy extends StatelessWidget {
 
 class ShowQrCode extends StatelessWidget {
   final String completeAddress;
-  final ethereum = "ethereum:";
   final Network network;
 
   const ShowQrCode({super.key, required this.completeAddress, required this.network});
 
   @override
   Widget build(BuildContext context) {
+    // Use bitcoin: for Bitcoin networks, ethereum: for Rootstock networks
+    final String uriScheme = (network == Network.BITCOIN_TESTNET || network == Network.BITCOIN_MAINNET)
+        ? "bitcoin:"
+        : "ethereum:";
+    
     return QrImageView(
-      data: ethereum + completeAddress,
+      data: uriScheme + completeAddress,
       version: QrVersions.auto,
       backgroundColor: Colors.white,
       embeddedImage: (network == Network.ROOTSTOCK_TESTNET || network == Network.ROOTSTOCK_MAINNET)

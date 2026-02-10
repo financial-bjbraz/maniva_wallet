@@ -1,9 +1,9 @@
 import '../entities/transaction_helper.dart';
 
 abstract class CreateTransactionService {
-  void createOrUpdateTransaction(SimpleTransaction transaction);
+  Future<int> createOrUpdateTransaction(SimpleTransaction transaction);
 
-  void listTransactionsOnDataBase(String walletId);
+  Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId);
 }
 
 class CreateTransactionServiceImpl implements CreateTransactionService {

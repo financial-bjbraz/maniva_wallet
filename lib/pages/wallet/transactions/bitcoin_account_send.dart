@@ -135,7 +135,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
     _myFocusNode.removeListener(_handleFocusChange);
     _myFocusNode.dispose();
 
-    _amountFocusNode.removeListener(_handleFocusChange);
+    _amountFocusNode.removeListener(_handleAmountFocusChange);
     _amountFocusNode.dispose();
 
     super.dispose();
@@ -182,12 +182,29 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
     });
   }
 
+  bool _isValidBitcoinAddress(String address) {
+    final trimmed = address.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+
+    // Bech32 mainnet (bc1...) and testnet (tb1...) addresses
+    final bech32Pattern = RegExp(r'^(bc1|tb1)[0-9a-zA-Z]{11,71}$');
+
+    // Base58 legacy and P2SH-style addresses for mainnet/testnet
+    // Starts with common prefixes and uses the Base58 character set.
+    final base58Pattern =
+        RegExp(r'^[123mn2][1-9A-HJ-NP-Za-km-z]{25,39}$');
+
+    return bech32Pattern.hasMatch(trimmed) || base58Pattern.hasMatch(trimmed);
+  }
+
   Big prepareAmountValue() {
     var pointedText = amountController.text;
     pointedText = pointedText.replaceAll(",", ".");
     var bp = Big(pointedText);
 
-    if (!destinationAddressController.text.trim().startsWith("0x")) {
+    if (!_isValidBitcoinAddress(destinationAddressController.text)) {
       throw const FormatException("Invalid address");
     }
 
@@ -535,10 +552,19 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
 
   void validateAndPerformTipTransaction() async {
     if (_character == SingingCharacter.tip) {
-      final tipAccount = dotenv.env['RSK_ADDRESS_TIP'];
-      if (tipAccount != null || tipAccount!.isNotEmpty) {
-        await walletService.sendRBTC(widget.selectedNetwork.walletDTO,
-            destinationAddressController.text, BigInt.from(tipAmount));
+      final String? tipAccount = dotenv.env['RSK_ADDRESS_TIP']?.trim();
+      if (tipAccount != null && tipAccount.isNotEmpty) {
+        // Convert the human-readable tip amount to the smallest unit
+        final Big tipAmountBig = Big.parse(tipAmount.toString());
+        final Big tipInSmallestUnitBig = tipAmountBig.times(RBTC_DECIMAL_PLACES);
+        final BigInt tipInSmallestUnit =
+            BigInt.parse(tipInSmallestUnitBig.toString());
+
+        await walletService.sendRBTC(
+          widget.selectedNetwork.walletDTO,
+          tipAccount,
+          tipInSmallestUnit,
+        );
       }
     }
   }
