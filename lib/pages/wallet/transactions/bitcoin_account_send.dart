@@ -550,7 +550,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
       await walletService.sendTransferUsingUtxos(
           widget.selectedNetwork.walletDTO,
           destinationAddressController.text,
-          BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()).toDouble(),
+          bp.toDouble(),
           utxos);
     }catch(e){
       rethrow;
