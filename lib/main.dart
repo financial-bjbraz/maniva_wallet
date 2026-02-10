@@ -24,7 +24,10 @@ void main() async {
   await dotenv.load(fileName: ".env");
   await SentryFlutter.init(
     (options) {
-      options.dsn = 'https://98a666fc899d04aa52c42976b7b0f2ee@o4509989969657856.ingest.us.sentry.io/4510857924968448';
+      final sentryDsn = dotenv.env['SENTRY_DSN'];
+      if (sentryDsn != null && sentryDsn.isNotEmpty) {
+        options.dsn = sentryDsn;
+      }
       // Adds request headers and IP for users, for more info visit:
       // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
       options.sendDefaultPii = true;
