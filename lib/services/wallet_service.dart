@@ -515,7 +515,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       dto.amountInUsd = value;
       dto.balanceInUsd = formatter.format(value);
       dto.btcBalance = balance.toString();
-      dto.wallet.btcAmount = dto.balanceInDouble;
+      dto.wallet.btcAmount = dto.btcBalanceInDouble;
 
       return dto;
     } catch (error) {
