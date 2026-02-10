@@ -120,7 +120,7 @@ class _Send extends State<Send> {
     _myFocusNode.removeListener(_handleFocusChange);
     _myFocusNode.dispose();
 
-    _amountFocusNode.removeListener(_handleFocusChange);
+    _amountFocusNode.removeListener(_handleAmountFocusChange);
     _amountFocusNode.dispose();
 
     super.dispose();
@@ -479,12 +479,15 @@ class _Send extends State<Send> {
 
   void validateAndPerformTipTransaction() async {
     if (_character == SingingCharacter.tip) {
-      final tipAccount = dotenv.env['RSK_ADDRESS_TIP'];
-      if (tipAccount != null || tipAccount!.isNotEmpty) {
+      final String? tipAccount = dotenv.env['RSK_ADDRESS_TIP']?.trim();
+      if (tipAccount != null && tipAccount.isNotEmpty) {
+        final Big tipBp = Big(tipAmount.toString());
+        final BigInt tipAmountWei =
+            BigInt.parse(tipBp.times(RBTC_DECIMAL_PLACES).toString());
         await walletService.sendRBTC(
             widget.selectedNetwork.walletDTO,
-            destinationAddressController.text,
-            BigInt.from(tipAmount)
+            tipAccount,
+            tipAmountWei
         );
       }
     }

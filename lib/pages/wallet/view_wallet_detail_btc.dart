@@ -58,20 +58,24 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
     selectedNetwork.walletDTO.btcBalanceInUsd = await walletService.calculateInUsd(selectedNetwork.walletDTO.btcBalanceInDouble);
 
     if(mounted){
-      walletService.getBalanceBitcoin(selectedNetwork.walletDTO).then((walletDtoReceived){
+      walletService.getBalanceBitcoin(selectedNetwork.walletDTO).then((walletDtoReceived) async {
 
-        if(selectedNetwork.walletDTO.updated){
-          selectedNetwork.walletDTO.updated = false;
-          setState(() async {
+        if(walletDtoReceived.updated){
+          walletDtoReceived.updated = false;
+          setState(() {
             _isLoading = true;
-            await Future.delayed(const Duration(seconds: 2));
-            selectedNetwork.walletDTO = walletDtoReceived;
-            if (kDebugMode) {
-              _log.info("walletDto refresehd ${walletDtoReceived
-                  .btcBalanceInDouble}");
-            }
-            _isLoading = false;
           });
+          await Future.delayed(const Duration(seconds: 2));
+          if (mounted) {
+            setState(() {
+              selectedNetwork.walletDTO = walletDtoReceived;
+              if (kDebugMode) {
+                _log.info("walletDto refresehd ${walletDtoReceived
+                    .btcBalanceInDouble}");
+              }
+              _isLoading = false;
+            });
+          }
         }
       });
 
@@ -145,6 +149,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                           },
                                         ),
                                       );
+                                      break;
                                     case RECEIVE:
 
 
@@ -170,10 +175,12 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                           },
                                         ),
                                       );
+                                      break;
                                     case VIEW:
 
                                       walletService.openBlockExplorerForAddress(
                                           completeAddress, selectedNetwork.network);
+                                      break;
                                     case COPY:
                                       if (kDebugMode) {
                                         _log.info("Copy");
@@ -183,10 +190,12 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                         showMessage("${AppLocalizations.of(context)!.copiedMessage}: $completeAddress",
                                             context);
                                       });
+                                      break;
                                     case REFRESH:
                                       if (kDebugMode){
                                         _log.info("Send");
                                       }
+                                      break;
                                   }
                                   setState(() {});
                                 },

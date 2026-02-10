@@ -255,7 +255,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         rpcPassword: 'aTVQ5b0mS4y27qG',
       );
 
-      var selectedUtxos = client.selectUtxosForAmount(amount, availableUtxos: allUtxos);
+      var selectedUtxos = await client.selectUtxosForAmount(amount, availableUtxos: allUtxos);
       return selectedUtxos;
 
     }catch(e){
@@ -284,7 +284,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
           confTarget: 6,
           utxos: selectedUtxos);
 
-      return feeCalculated['feeInBtc'] as double;
+      return feeCalculated['feeBtc'] as double;
 
     }catch(e){
       log.severe("Error occurred calculating fees ${e}");
@@ -515,7 +515,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       dto.amountInUsd = value;
       dto.balanceInUsd = formatter.format(value);
       dto.btcBalance = balance.toString();
-      dto.wallet.btcAmount = dto.balanceInDouble;
+      dto.wallet.btcAmount = dto.btcBalanceInDouble;
 
       return dto;
     } catch (error) {

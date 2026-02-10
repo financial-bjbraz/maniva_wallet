@@ -121,6 +121,7 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                                       },
                                     ),
                                   );
+                                  break;
                                 case RECEIVE:
                                   Navigator.of(context).push(
                                     PageRouteBuilder(
@@ -146,9 +147,11 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                                       },
                                     ),
                                   );
+                                  break;
                                 case VIEW:
                                   walletService.openBlockExplorerForAddress(
                                       completeAddress, selectedNetwork.network);
+                                  break;
                                 case COPY:
                                   if (kDebugMode) {
                                     _log.info("Copy");
@@ -159,10 +162,12 @@ class _ViewRootstockAccount extends State<ViewRootstockAccount> {
                                         "${AppLocalizations.of(context)!.copiedMessage}: $address",
                                         context);
                                   });
+                                  break;
                                 case REFRESH:
                                   if (kDebugMode){
                                     _log.info("Send");
                                   }
+                                  break;
                               }
                               setState(() {});
                             },
