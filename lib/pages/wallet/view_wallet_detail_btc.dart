@@ -70,7 +70,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
             setState(() {
               selectedNetwork.walletDTO = walletDtoReceived;
               if (kDebugMode) {
-                _log.info("walletDto refresehd ${walletDtoReceived
+                _log.info("walletDto refreshed ${walletDtoReceived
                     .btcBalanceInDouble}");
               }
               _isLoading = false;
