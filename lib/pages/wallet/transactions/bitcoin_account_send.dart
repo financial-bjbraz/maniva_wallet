@@ -555,7 +555,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
       final String? tipAccount = dotenv.env['RSK_ADDRESS_TIP']?.trim();
       if (tipAccount != null && tipAccount.isNotEmpty) {
         // Convert the human-readable tip amount to the smallest unit
-        final Big tipAmountBig = Big.parse(tipAmount.toString());
+        final Big tipAmountBig = Big(tipAmount.toString());
         final Big tipInSmallestUnitBig = tipAmountBig.times(RBTC_DECIMAL_PLACES);
         final BigInt tipInSmallestUnit =
             BigInt.parse(tipInSmallestUnitBig.toString());
@@ -576,7 +576,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
       await walletService.sendTransferUsingUtxos(
           widget.selectedNetwork.walletDTO,
           destinationAddressController.text,
-          bp.toDouble(),
+          bp.toNumber(),
           utxos);
     }catch(e){
       rethrow;
