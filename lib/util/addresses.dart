@@ -53,7 +53,7 @@ bool isHexPrefix(String str) {
 /// Converts an address to a checksummed address (EIP-55).
 String toChecksumAddress(String address, int chainId) {
   address = stripHexPrefix(address).toLowerCase();
-  final prefix = (chainId != null) ? '${chainId.toString()}0x' : '';
+  final prefix = '${chainId.toString()}0x';
   final hash = hex
       .encode(
         KeccakDigest(256).process(ascii.encode('$prefix$address')),

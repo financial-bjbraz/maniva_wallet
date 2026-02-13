@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:encrypt/encrypt.dart' as enc;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -203,7 +204,11 @@ String formatUsd(String balanceInUsd) {
   try {
     double value = double.parse(balanceInUsd);
     return value.toStringAsFixed(2);
-  } catch (e) {}
+  } catch (e) {
+    if (kDebugMode) {
+      print(e);
+    }
+  }
   return balanceInUsd;
 }
 
@@ -232,13 +237,22 @@ openDataBase() async {
 }
 
 testEncriptData() {
-  print("Teste de encriptacao");
-  final plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
-  print("PlainText:$plainText");
+
+  if (kDebugMode) {
+    print("Teste de encriptacao");
+  }
+  const plainText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit';
+  if (kDebugMode) {
+    print("PlainText:$plainText");
+  }
   var encriptedText = encrypt(plainText);
-  print("Encripted:$encriptedText");
+  if (kDebugMode) {
+    print("Encripted:$encriptedText");
+  }
   var decryptedText = decrypt(encriptedText);
-  print("Decripted$decryptedText");
+  if (kDebugMode) {
+    print("Decripted$decryptedText");
+  }
 }
 
 enc.Encrypter generateEncrypter() {
@@ -321,7 +335,7 @@ InputDecoration simmpleDecoration(final String labelText, final Icon icon) {
 loadWalletDataExample(String myAddress, String contractAddress, String privateKey) async {
   final node = dotenv.env['ROOTSTOCK_NODE'];
   final client = web3.Web3Client(node!, http.Client());
-  final credentials = web3.EthPrivateKey.fromHex(privateKey);
+  // final credentials = web3.EthPrivateKey.fromHex(privateKey);
 
   final web3.EthereumAddress contractAddr = web3.EthereumAddress.fromHex(contractAddress);
   final web3.EthereumAddress receiver = web3.EthereumAddress.fromHex(myAddress);
@@ -334,5 +348,5 @@ loadWalletDataExample(String myAddress, String contractAddress, String privateKe
 
   final balance =
       await client.call(contract: contract, function: balanceFunction, params: [receiver]);
-  var balanceObtained = balance.first.toString();
+  balance.first.toString();
 }

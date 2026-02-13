@@ -149,10 +149,7 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                           },
                                         ),
                                       );
-                                      break;
                                     case RECEIVE:
-
-
                                       Navigator.of(context).push(
                                         PageRouteBuilder(
                                           pageBuilder: (context, animation, secondaryAnimation) => Receive(
@@ -175,27 +172,21 @@ class _ViewBitcoinAccount extends State<ViewBitcoinAccount> {
                                           },
                                         ),
                                       );
-                                      break;
                                     case VIEW:
-
                                       walletService.openBlockExplorerForAddress(
                                           completeAddress, selectedNetwork.network);
-                                      break;
                                     case COPY:
                                       if (kDebugMode) {
                                         _log.info("Copy");
                                       }
-
                                       Clipboard.setData(ClipboardData(text: completeAddress)).then((value) {
                                         showMessage("${AppLocalizations.of(context)!.copiedMessage}: $completeAddress",
                                             context);
                                       });
-                                      break;
                                     case REFRESH:
                                       if (kDebugMode){
                                         _log.info("Send");
                                       }
-                                      break;
                                   }
                                   setState(() {});
                                 },

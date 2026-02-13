@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
+import 'package:dartsv/dartsv.dart' as dartsv;
 
 import '../entities/bitcoin_address_details.dart';
 import '../entities/bitcoin_utxo.dart';
@@ -431,13 +432,14 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
   }
 
   /// Uses the provided list of `Utxo` objects as inputs for the created transaction.
-  Future<String> sendTransferUsingUtxos(
+    Future<String> sendTransferUsingUtxos(
     String toAddress,
     double amount,
     List<Utxo> utxos, {
     double fee = 0.0001,
     String? changeAddress,
-  }) async {
+    List<String>? privKeysWif,
+    }) async {
     if (utxos.isEmpty) {
       throw ArgumentError('UTXOs list must not be empty');
     }
@@ -481,21 +483,45 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       throw Exception('createrawtransaction returned unexpected result: $raw');
     }
 
-    // Sign with wallet
-    final signed = await _callRpc('signrawtransactionwithwallet', [rawHex]);
+    // Sign with wallet or offline using provided WIF keys
     String signedHex;
-    if (signed is Map<String, dynamic>) {
-      final hex = signed['hex'];
-      final complete = signed['complete'];
-      if (hex is String && (complete == true || complete == null)) {
-        signedHex = hex;
-      } else {
-        throw Exception('Wallet failed to sign transaction completely: $signed');
+    if (privKeysWif != null && privKeysWif.isNotEmpty) {
+      // Try offline signing using provided WIF keys and the UTXOs info
+      try {
+        signedHex = await _signRawTransactionOffline(rawHex, utxos, privKeysWif);
+      } catch (e) {
+        log.warning('Offline signing failed, falling back to wallet RPC: $e');
+        final signed = await _callRpc('signrawtransactionwithwallet', [rawHex]);
+        if (signed is Map<String, dynamic>) {
+          final hex = signed['hex'];
+          final complete = signed['complete'];
+          if (hex is String && (complete == true || complete == null)) {
+            signedHex = hex;
+          } else {
+            throw Exception('Wallet failed to sign transaction completely: $signed');
+          }
+        } else if (signed is String) {
+          signedHex = signed;
+        } else {
+          throw Exception('signrawtransactionwithwallet returned unexpected result: $signed');
+        }
       }
-    } else if (signed is String) {
-      signedHex = signed;
     } else {
-      throw Exception('signrawtransactionwithwallet returned unexpected result: $signed');
+      // Default behaviour: use wallet to sign
+      final signed = await _callRpc('signrawtransactionwithwallet', [rawHex]);
+      if (signed is Map<String, dynamic>) {
+        final hex = signed['hex'];
+        final complete = signed['complete'];
+        if (hex is String && (complete == true || complete == null)) {
+          signedHex = hex;
+        } else {
+          throw Exception('Wallet failed to sign transaction completely: $signed');
+        }
+      } else if (signed is String) {
+        signedHex = signed;
+      } else {
+        throw Exception('signrawtransactionwithwallet returned unexpected result: $signed');
+      }
     }
 
     // Broadcast
@@ -507,7 +533,91 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       return sendResult['txid'] as String;
     }
     return sendResult.toString();
-  }
+    }
+
+    /// Attempt to sign [rawHex] offline using provided [wifs] (WIF private keys) and
+    /// information contained in [utxos] (scriptPubKey and amount when available).
+    ///
+    /// This method attempts to support common input types (P2PKH, P2WPKH, P2SH-P2WPKH)
+    /// using the bundled `dartsv`/`bitcoin_base` helpers. It is intentionally
+    /// best-effort: if signing cannot be completed the method throws.
+    Future<String> _signRawTransactionOffline(
+      String rawHex, List<Utxo> utxos, List<String> wifs) async {
+    // Attempt a best-effort offline signing using dartsv library which is
+    // available in this project. We use dynamic typing to keep the code
+    // resilient to small API differences, but rely on dartsv providing
+    // Transaction.fromHex and KeyPair.fromWIF.
+    try {
+      final tx = dartsv.Transaction.fromHex(rawHex);
+
+      // Parse WIF keys into SVPrivateKey objects and wrap them into TransactionSigner
+      final List<dartsv.TransactionSigner> signers = [];
+      for (final w in wifs) {
+        try {
+          final svPriv = dartsv.SVPrivateKey.fromWIF(w);
+          // SIGHASH_ALL (1) is the common default
+          final signer = dartsv.TransactionSigner(1, svPriv);
+          signers.add(signer);
+        } catch (e) {
+          log.warning('Invalid WIF provided, skipping: $e');
+        }
+      }
+
+      if (signers.isEmpty) {
+        throw Exception('No valid WIF keys provided');
+      }
+
+      // For each input, find the matching UTXO and sign using any available signer
+      for (var i = 0; i < tx.inputs.length; i++) {
+        final input = tx.inputs[i];
+
+        Utxo? match;
+        for (final u in utxos) {
+          // dartsv TransactionInput stores prevTxnId and prevTxnOutputIndex
+          final prevId = input.prevTxnId.toLowerCase();
+          final prevIndex = input.prevTxnOutputIndex;
+          if (u.txid.toLowerCase() == prevId && u.vout == prevIndex) {
+            match = u;
+            break;
+          }
+        }
+
+        if (match == null) {
+          throw Exception('Missing UTXO information for input index $i');
+        }
+
+        final valueSats = (match.amount * 1e8).round();
+        final scriptHex = match.scriptPubKey ?? '';
+        final outScript = scriptHex.isNotEmpty ? dartsv.SVScript.fromHex(scriptHex) : null;
+
+        bool signed = false;
+        for (final signer in signers) {
+          try {
+            // Build a TransactionOutput representing the UTXO being spent
+            if (outScript == null) {
+              // Need script to sign properly
+              continue;
+            }
+            final utxoOutput = dartsv.TransactionOutput(BigInt.from(valueSats), outScript);
+            signer.sign(tx, utxoOutput, i);
+            signed = true;
+            break;
+          } catch (e) {
+            // try next signer
+          }
+        }
+
+        if (!signed) {
+          throw Exception('Failed to sign input $i with provided keys');
+        }
+      }
+
+      return tx.serialize();
+    } catch (e) {
+      throw Exception('Offline signing failed: $e');
+    }
+     }
+
 
   /// Select a set of UTXOs that cover the requested `amount` (in BTC).
   ///
