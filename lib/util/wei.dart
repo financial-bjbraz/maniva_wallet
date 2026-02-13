@@ -29,7 +29,9 @@ class Wei {
   String toRBTCStringFixed2() {
     try {
       final amount = getWei(); // existing Wei method returning a double
-      if (amount.isNaN || amount.isInfinite) return "0.00";
+      if (amount.isNaN || amount.isInfinite){
+        return "0.00";
+      }
       return amount.toStringAsFixed(2);
     } catch (_) {
       return "0.00";
@@ -39,7 +41,9 @@ class Wei {
   String toRBTCStringFixed4() {
     try {
       final amount = getWei(); // existing Wei method returning a double
-      if (amount.isNaN || amount.isInfinite) return "0.00";
+      if (amount.isNaN || amount.isInfinite) {
+        return "0.00";
+      }
       return amount.toStringAsFixed(4);
     } catch (_) {
       return "0.00";

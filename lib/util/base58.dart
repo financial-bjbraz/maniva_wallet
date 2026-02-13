@@ -1,14 +1,12 @@
-import "package:convert/convert.dart" show hex;
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:maniva_wallet/util/util.dart';
-import 'package:pointycastle/export.dart';
-
 import 'bitcoin.dart';
 import 'network.dart';
 
 String base58Encode(String hex) {
   const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  final base = chars.length;
+  const base = chars.length;
 
   BigInt i = BigInt.parse(hex, radix: 16);
   String buffer = '';
@@ -25,22 +23,22 @@ String base58Encode(String hex) {
   return leadingZeros + buffer;
 }
 
-String getBtcPrivateKey(String rskAddress) {
-  List<int> addressArray = rskAddress.codeUnits;
-  List<int> partialResult = [];
-  List<int> result = [];
-
-  partialResult.add(0xEF);
-  partialResult.addAll(addressArray);
-  partialResult.add(0x01);
-
-  List<int> check = sha256.convert(sha256.convert(partialResult).bytes).bytes;
-
-  result.addAll(partialResult);
-  result.addAll(check.sublist(0, 8));
-
-  return base58Encode(hex.encode(result));
-}
+// String getBtcPrivateKey(String rskAddress) {
+//   List<int> addressArray = rskAddress.codeUnits;
+//   List<int> partialResult = [];
+//   List<int> result = [];
+//
+//   partialResult.add(0xEF);
+//   partialResult.addAll(addressArray);
+//   partialResult.add(0x01);
+//
+//   List<int> check = sha256.convert(sha256.convert(partialResult).bytes).bytes;
+//
+//   result.addAll(partialResult);
+//   result.addAll(check.sublist(0, 8));
+//
+//   return base58Encode(hex.encode(result));
+// }
 
 String checksum(String str) {
   String hash = hash256(str);
@@ -58,32 +56,28 @@ String hash256(String hex) {
   return result;
 }
 
-String generatePublicKey(String privateKeyHex) {
-  final privateKey =
-      ECPrivateKey(BigInt.parse(privateKeyHex, radix: 16), ECDomainParameters('secp256k1'));
-  final publicKey = privateKey.parameters!.G * privateKey.d!;
-  final publicKeyBytes = publicKey?.getEncoded(false);
-  return hex.encode(publicKeyBytes!.toList());
-}
+// String generatePublicKey(String privateKeyHex) {
+//   final privateKey =
+//       ECPrivateKey(BigInt.parse(privateKeyHex, radix: 16), ECDomainParameters('secp256k1'));
+//   final publicKey = privateKey.parameters!.G * privateKey.d!;
+//   final publicKeyBytes = publicKey?.getEncoded(false);
+//   return hex.encode(publicKeyBytes!.toList());
+// }
 
 void main() {
   String privateKey = "bbe55fc1379fed1e783054ef4dd7f666367413087e1eb2ab22cce0f89e386708";
   const String MAINNET = "80";
-  const String TESTNET = "ef";
+  // const String TESTNET = "ef";
   const String REGTEST = "f0";
   String extended = "$REGTEST${privateKey}01";
 
   String extendedChecksum = extended + checksum(extended);
   String wif = base58Encode(extendedChecksum);
-  print(wif);
-  print(generatePublicKey(privateKey));
-  // print(generatePublicKey(wif));
-  var addressGenerated =
-      BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
-  print(addressGenerated);
-
-  String enc = encrypt(MAINNET);
-  print(decrypt(enc));
+  if (kDebugMode) {
+    print(wif);
+  }
+  BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
+  encrypt(MAINNET);
 }
 
 /*
