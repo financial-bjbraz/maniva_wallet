@@ -68,7 +68,7 @@ jobs:
           fi
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-runner
           path: build/artifacts/${{ github.run_number }}-maniva-app.zip

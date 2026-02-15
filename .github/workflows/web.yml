@@ -68,7 +68,7 @@ jobs:
           fi
 
       - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-bundle
           path: build/artifacts/${{ github.run_number }}-maniva-web-app.tar.gz
