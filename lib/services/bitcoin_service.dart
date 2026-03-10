@@ -1,10 +1,10 @@
 // dart
 import 'dart:convert';
 
+import 'package:dartsv/dartsv.dart' as dartsv;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import 'package:dartsv/dartsv.dart' as dartsv;
 
 import '../entities/bitcoin_address_details.dart';
 import '../entities/bitcoin_utxo.dart';
@@ -432,14 +432,14 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
   }
 
   /// Uses the provided list of `Utxo` objects as inputs for the created transaction.
-    Future<String> sendTransferUsingUtxos(
+  Future<String> sendTransferUsingUtxos(
     String toAddress,
     double amount,
     List<Utxo> utxos, {
     double fee = 0.0001,
     String? changeAddress,
     List<String>? privKeysWif,
-    }) async {
+  }) async {
     if (utxos.isEmpty) {
       throw ArgumentError('UTXOs list must not be empty');
     }
@@ -460,16 +460,22 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
 
     // Compute change and handle dust
-    const double dustThreshold = 0.00000546; // ~546 sats
-    final double changeAmt = totalIn - amount - fee;
-    if (changeAmt < -1e-12) {
+    // Use integer arithmetic (satoshis) to avoid floating point rounding issues
+    const int dustThresholdSats = 546; // sats
+    final int totalInSats = (totalIn * 1e8).round();
+    final int amountSats = (amount * 1e8).round();
+    final int feeSats = (fee * 1e8).round();
+    final int changeSats = totalInSats - amountSats - feeSats;
+
+    if (changeSats < 0) {
       throw Exception('Insufficient funds: inputs ${totalIn} < amount ${amount} + fee ${fee}');
     }
 
-    // Build outputs map
+    // Build outputs map (RPC expects BTC amounts as doubles). Convert sats back to BTC
     final Map<String, dynamic> outputs = {toAddress: amount};
-    if (changeAmt > dustThreshold) {
-      outputs[changeAddr] = double.parse(changeAmt.toStringAsFixed(8));
+    if (changeSats > dustThresholdSats) {
+      final double changeBtc = changeSats / 1e8;
+      outputs[changeAddr] = double.parse(changeBtc.toStringAsFixed(8));
     } // else treat change as additional fee
 
     // Create raw transaction
@@ -533,15 +539,15 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       return sendResult['txid'] as String;
     }
     return sendResult.toString();
-    }
+  }
 
-    /// Attempt to sign [rawHex] offline using provided [wifs] (WIF private keys) and
-    /// information contained in [utxos] (scriptPubKey and amount when available).
-    ///
-    /// This method attempts to support common input types (P2PKH, P2WPKH, P2SH-P2WPKH)
-    /// using the bundled `dartsv`/`bitcoin_base` helpers. It is intentionally
-    /// best-effort: if signing cannot be completed the method throws.
-    Future<String> _signRawTransactionOffline(
+  /// Attempt to sign [rawHex] offline using provided [wifs] (WIF private keys) and
+  /// information contained in [utxos] (scriptPubKey and amount when available).
+  ///
+  /// This method attempts to support common input types (P2PKH, P2WPKH, P2SH-P2WPKH)
+  /// using the bundled `dartsv`/`bitcoin_base` helpers. It is intentionally
+  /// best-effort: if signing cannot be completed the method throws.
+  Future<String> _signRawTransactionOffline(
       String rawHex, List<Utxo> utxos, List<String> wifs) async {
     // Attempt a best-effort offline signing using dartsv library which is
     // available in this project. We use dynamic typing to keep the code
@@ -616,8 +622,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     } catch (e) {
       throw Exception('Offline signing failed: $e');
     }
-     }
-
+  }
 
   /// Select a set of UTXOs that cover the requested `amount` (in BTC).
   ///
@@ -668,6 +673,8 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     Utxo? singleCandidate;
     // Sort ascending to prefer smaller single utxo when possible
     final asc = List<Utxo>.from(utxos)..sort((a, b) => a.amount.compareTo(b.amount));
+    // Use integer sats for comparison to avoid floating rounding
+    final int amountSatsTarget = (amount * 1e8).round();
     for (final u in asc) {
       final script = inferInputScriptFromUtxo(u.toMap(), defaultScript: defaultInputScript);
       final fee = await estimateFee(
@@ -676,7 +683,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
           confTarget: confTarget,
           inputScript: script,
           fallbackRateSatsPerVbyte: fallbackRateSatsPerVbyte);
-      if (u.amount >= amount + fee) {
+      final int feeSats = (fee * 1e8).round();
+      final int uSats = (u.amount * 1e8).round();
+      if (uSats >= amountSatsTarget + feeSats) {
         singleCandidate = u;
         break;
       }
@@ -690,11 +699,11 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     // sum(inputs) >= amount + fee(inputs)
     final desc = List<Utxo>.from(utxos)..sort((a, b) => b.amount.compareTo(a.amount));
     final List<Utxo> selected = [];
-    double selectedSum = 0.0;
+    int selectedSumSats = 0;
 
     for (final u in desc) {
       selected.add(u);
-      selectedSum += u.amount;
+      selectedSumSats += (u.amount * 1e8).round();
 
       // Estimate fee for the currently selected inputs using estimateFeeByInputs which
       // can accept the utxos list to infer per-input script type.
@@ -705,7 +714,8 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         fallbackRateSatsPerVbyte: fallbackRateSatsPerVbyte,
       );
 
-      if (selectedSum >= amount + fee) {
+      final int feeSatsNow = (fee * 1e8).round();
+      if (selectedSumSats >= amountSatsTarget + feeSatsNow) {
         return selected;
       }
     }
@@ -908,7 +918,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         if (spk is Map<String, dynamic>) {
           if (spk.containsKey('hex')) {
             scriptHex = spk['hex'] as String?;
-          }else if (spk.containsKey('asm')){
+          } else if (spk.containsKey('asm')) {
             scriptHex = spk['asm'] as String?;
           }
 
@@ -930,7 +940,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       if (scriptHex == null) {
         if (v.containsKey('hex') && v['hex'] is String) {
           scriptHex = v['hex'] as String?;
-        }else if (v.containsKey('script') && v['script'] is String) {
+        } else if (v.containsKey('script') && v['script'] is String) {
           scriptHex = v['script'] as String?;
         }
       }
@@ -1021,7 +1031,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         if (tr != null) {
           if (tr is num) {
             recv = (tr > 1e6) ? tr.toDouble() / 1e8 : tr.toDouble();
-          }else if (tr is String) {
+          } else if (tr is String) {
             recv = RegExp(r'^\d+$').hasMatch(tr)
                 ? (int.tryParse(tr) ?? 0) / 1e8
                 : double.tryParse(tr) ?? 0.0;
@@ -1030,7 +1040,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         if (ts != null) {
           if (ts is num) {
             sent = (ts > 1e6) ? ts.toDouble() / 1e8 : ts.toDouble();
-          }else if (ts is String) {
+          } else if (ts is String) {
             sent = RegExp(r'^\d+$').hasMatch(ts)
                 ? (int.tryParse(ts) ?? 0) / 1e8
                 : double.tryParse(ts) ?? 0.0;

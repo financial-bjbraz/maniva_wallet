@@ -1,11 +1,12 @@
 import 'package:big_dart/big_dart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logging/logging.dart';
 import 'package:maniva_wallet/entities/network_dto.dart';
 import 'package:maniva_wallet/entities/transaction_helper.dart';
-import 'package:flutter/foundation.dart';
-import 'package:logging/logging.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
@@ -73,7 +74,6 @@ class _Send extends State<Send> {
 
     address = Network.generateAddress(Network.ROOTSTOCK_TESTNET, widget.selectedNetwork.wallet);
 
-
     _myFocusNode.addListener(_handleFocusChange);
     _amountFocusNode.addListener(_handleAmountFocusChange);
     balance = widget.selectedNetwork.walletDTO.valueInWeiFormatted;
@@ -96,7 +96,6 @@ class _Send extends State<Send> {
       }
     } else {
       calculateFee();
-
     }
   }
 
@@ -106,8 +105,8 @@ class _Send extends State<Send> {
       setState(() {
         calculateAmount();
       });
-    }else{
-       calculateFee();
+    } else {
+      calculateFee();
     }
   }
 
@@ -182,7 +181,13 @@ class _Send extends State<Send> {
         amountInUsd = usdAmount;
       });
     } catch (e) {
+      // Send the same message shown to user (line 185) to Sentry for telemetry
       displaySnackBar("Error sending transaction, review and try again");
+      try {
+        await Sentry.captureMessage("Error sending transaction, review and try again");
+      } catch (_) {
+        // ignore Sentry failures to avoid breaking the app flow
+      }
       success = false;
       sucessIcon = const Icon(
         Icons.dangerous_outlined,
@@ -231,16 +236,17 @@ class _Send extends State<Send> {
                   size: 48,
                 ),
                 Expanded(
-                    child: TextField(
-                  style: const TextStyle(
-                    color: Colors.white,
-                    backgroundColor: Color.fromRGBO(7, 255, 208, 1),
-                    fontSize: 20,
+                  child: TextField(
+                    style: const TextStyle(
+                      color: Colors.white,
+                      backgroundColor: Color.fromRGBO(7, 255, 208, 1),
+                      fontSize: 20,
+                    ),
+                    decoration: const InputDecoration(labelText: "Destination Address"),
+                    keyboardType: TextInputType.text,
+                    controller: destinationAddressController,
                   ),
-                  decoration: const InputDecoration(labelText: "Destination Address"),
-                  keyboardType: TextInputType.text,
-                  controller: destinationAddressController,
-                )),
+                ),
                 ElevatedButton(
                   style: blackWhiteButton,
                   onPressed: () {},
@@ -248,20 +254,16 @@ class _Send extends State<Send> {
                     children: <Widget>[
                       Row(
                         children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              const Icon(
-                                Icons.document_scanner_outlined,
-                                color: Colors.black,
-                              ),
-                              const SizedBox(
-                                width: 10,
-                              ),
-                              const Text(
-                                "Scan",
-                                style: smallBlackText,
-                              ),
-                            ],
+                          const Icon(
+                            Icons.document_scanner_outlined,
+                            color: Colors.black,
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          const Text(
+                            "Scan",
+                            style: smallBlackText,
                           ),
                         ],
                       ),
@@ -286,14 +288,14 @@ class _Send extends State<Send> {
             ],
           ),
           Expanded(
-              child: Row(
-            children: [
-              Image.asset(
-                "assets/icons/rbtc2.png",
-                width: 48,
-              ),
-              Expanded(
-                child: TextFormField(
+            child: Row(
+              children: [
+                Image.asset(
+                  "assets/icons/rbtc2.png",
+                  width: 48,
+                ),
+                Expanded(
+                  child: TextFormField(
                     focusNode: _amountFocusNode,
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -307,45 +309,47 @@ class _Send extends State<Send> {
                     ],
                     decoration: const InputDecoration(
                       labelText: "Amount to Send",
-                    )),
-              ),
-              ElevatedButton(
-                style: blackWhiteButton,
-                onPressed: () {
-                  setState(() {
-                    if (full) {
-                      fullIcon = const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: Colors.black,
-                      );
-                    } else {
-                      fullIcon = const Icon(
-                        Icons.account_balance_wallet,
-                        color: Colors.black,
-                      );
-                    }
-                    full = !full;
-                  });
-                },
-                child: Row(
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        fullIcon,
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        const Text(
-                          "Max",
-                          style: smallBlackText,
-                        ),
-                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          )),
+                ElevatedButton(
+                  style: blackWhiteButton,
+                  onPressed: () {
+                    setState(() {
+                      if (full) {
+                        fullIcon = const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: Colors.black,
+                        );
+                      } else {
+                        fullIcon = const Icon(
+                          Icons.account_balance_wallet,
+                          color: Colors.black,
+                        );
+                      }
+                      full = !full;
+                    });
+                  },
+                  child: Row(
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          fullIcon,
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          const Text(
+                            "Max",
+                            style: smallBlackText,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           Row(
             children: [
               Padding(
@@ -453,25 +457,27 @@ class _Send extends State<Send> {
             ),
           ),
           Expanded(
-              flex: 3,
-              child: Row(
-                children: [
-                  const SizedBox(
-                    width: 15,
-                  ),
-                  Expanded(
-                      child: !sendingTransaction
-                          ? const SizedBox(
-                              width: 10,
-                            )
-                          : sendingTransaction
-                              ? const LinearProgressIndicator()
-                              : sucessIcon),
-                  const SizedBox(
-                    width: 15,
-                  ),
-                ],
-              )),
+            flex: 3,
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 15,
+                ),
+                Expanded(
+                  child: !sendingTransaction
+                      ? const SizedBox(
+                          width: 10,
+                        )
+                      : sendingTransaction
+                          ? const LinearProgressIndicator()
+                          : sucessIcon,
+                ),
+                const SizedBox(
+                  width: 15,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -482,12 +488,11 @@ class _Send extends State<Send> {
       final String? tipAccount = dotenv.env['RSK_ADDRESS_TIP']?.trim();
       if (tipAccount != null && tipAccount.isNotEmpty) {
         final Big tipBp = Big(tipAmount.toString());
-        final BigInt tipAmountWei =
-            BigInt.parse(tipBp.times(RBTC_DECIMAL_PLACES).toString());
+        final BigInt tipAmountWei = BigInt.parse(tipBp.times(RBTC_DECIMAL_PLACES).toString());
         await walletService.sendRBTC(
-            widget.selectedNetwork.walletDTO,
-            tipAccount,
-            tipAmountWei
+          widget.selectedNetwork.walletDTO,
+          tipAccount,
+          tipAmountWei,
         );
       }
     }
@@ -497,10 +502,10 @@ class _Send extends State<Send> {
     Big bp = prepareAmountValue();
 
     var transactionPersist = await walletService.sendRBTC(
-        widget.selectedNetwork.walletDTO,
-        destinationAddressController.text,
-        BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()));
+      widget.selectedNetwork.walletDTO,
+      destinationAddressController.text,
+      BigInt.parse(bp.times(RBTC_DECIMAL_PLACES).toString()),
+    );
     return transactionPersist;
   }
-
 }
