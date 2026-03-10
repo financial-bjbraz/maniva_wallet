@@ -1,0 +1,70 @@
+00:00 +0: loading /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart                                                                                                     00:01 +0: loading /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart                                                                                                     00:02 +0: loading /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart                                                                                                     00:02 +0 -1: loading /Users/abraz/projetos/myRootstockWallet/test/bitcoin_transfer_test.dart [E]                                                                                                       
+  Failed to load "/Users/abraz/projetos/myRootstockWallet/test/bitcoin_transfer_test.dart":
+  Compilation failed for testPath=/Users/abraz/projetos/myRootstockWallet/test/bitcoin_transfer_test.dart: test/bitcoin_transfer_test.dart:468:109: Error: Can't find '}' to match '{'.
+        expect(result, test('retorna mapa com chaves feeBtc, feeSats, feeRateSatsPerVbyte, txVsize', () async {
+                                                                                                              ^
+  test/bitcoin_transfer_test.dart:468:13: Error: Can't find ')' to match '('.
+        expect(result, test('retorna mapa com chaves feeBtc, feeSats, feeRateSatsPerVbyte, txVsize', () async {
+              ^
+  test/bitcoin_transfer_test.dart:464:112: Error: Expected ')' before this.
+        expect(result, expect(result, isA<Map>().having((m) => m.containsKey('feeBtc'), 'contains feeBtc', true));
+                                                                                                                 ^
+  test/bitcoin_transfer_test.dart:476:102: Error: Method not found: 'containsKey'.
+          expect(result, isA<Map>().having((m) => m.containsKey('feeSats'), 'contains feeSats', true));containsKey('feeSats'));
+                                                                                                       ^^^^^^^^^^^
+  test/bitcoin_transfer_test.dart:476:123: Error: Expected ';' after this.
+          expect(result, isA<Map>().having((m) => m.containsKey('feeSats'), 'contains feeSats', true));containsKey('feeSats'));
+                                                                                                                            ^
+  test/bitcoin_transfer_test.dart:477:22: Error: Method not found: 'containsKey'.
+        expect(result, containsKey('feeRateSatsPerVbyte'));
+                       ^^^^^^^^^^^
+  test/bitcoin_transfer_test.dart:478:22: Error: Method not found: 'containsKey'.
+        expect(result, containsKey('txVsize'));
+                       ^^^^^^^^^^^
+  test/bitcoin_transfer_test.dart:1019:17: Error: Method not found: 'containsKey'.
+        expect(m, containsKey('txid'));
+                  ^^^^^^^^^^^
+  test/bitcoin_transfer_test.dart:1020:17: Error: Method not found: 'containsKey'.
+        expect(m, containsKey('vout'));
+                  ^^^^^^^^^^^
+  test/bitcoin_transfer_test.dart:1021:17: Error: Method not found: 'containsKey'.
+        expect(m, containsKey('amount'));
+                  ^^^^^^^^^^^
+  test/bitcoin_transfer_test.dart:1059:53: Error: No named parameter with the name 'tags'.
+    group('Integração – transferência real testnet3', tags: ['integration'], () {
+                                                      ^^^^
+  ../../specialapps/flutter/flutter/packages/flutter_test/lib/src/test_compat.dart:208:6: Context: Found this candidate, but the arguments don't match.
+  void group(Object description, void Function() body, {dynamic skip, int? retry}) {
+       ^^^^^
+  test/bitcoin_transfer_test.dart:464:22: Error: This expression has type 'void' and can't be used.
+        expect(result, expect(result, isA<Map>().having((m) => m.containsKey('feeBtc'), 'contains feeBtc', true));
+                       ^
+  test/bitcoin_transfer_test.dart:468:22: Error: This expression has type 'void' and can't be used.
+        expect(result, test('retorna mapa com chaves feeBtc, feeSats, feeRateSatsPerVbyte, txVsize', () async {
+                       ^
+  .
+
+To run this test again: /Users/abraz/specialapps/flutter/flutter/bin/cache/dart-sdk/bin/dart test /Users/abraz/projetos/myRootstockWallet/test/bitcoin_transfer_test.dart -p vm --plain-name 'loading /Users/abraz/projetos/myRootstockWallet/test/bitcoin_transfer_test.dart'
+00:03 +0 -2: loading /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart [E]                                                                                              
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 911:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone.dart 1538:47                     _rootRunUnary
+  dart:async/zone.dart 1429:19                     _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone.dart 1525:13                     _rootRun
+  dart:async/zone.dart 1422:19                     _CustomZone.run
+  dart:async/zone.dart 1321:7                      _CustomZone.runGuarded
+  dart:async/zone.dart 1362:23                     _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+
+To run this test again: /Users/abraz/specialapps/flutter/flutter/bin/cache/dart-sdk/bin/dart test /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart -p vm --plain-name 'loading /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart'
+00:03 +0 -2: /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart: sendTransferUsingUtxos builds and sends tx, returns txid                                                00:03 +1 -2: /Users/abraz/projetos/myRootstockWallet/test/send_transfer_using_utxos_test.dart: sendTransferUsingUtxos builds and sends tx, returns txid                                                00:03 +1 -2: loading /Users/abraz/projetos/myRootstockWallet/test/widget_test.dart                                                                                                                     00:03 +1 -2: /Users/abraz/projetos/myRootstockWallet/test/widget_test.dart: Counter increments smoke test                                                                                              00:04 +1 -2: /Users/abraz/projetos/myRootstockWallet/test/widget_test.dart: Counter increments smoke test                                                                                              00:04 +2 -2: /Users/abraz/projetos/myRootstockWallet/test/widget_test.dart: Counter increments smoke test                                                                                              00:04 +2 -2: Some tests failed.                                                                                                                                                                        

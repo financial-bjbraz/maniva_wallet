@@ -158,13 +158,19 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
   }
 
   calculateFee() async {
-    // var fee = 0;
-    // await walletService.calculateBtcFee();
-    //
-    // setState(() {
-    //   transactionFeeEstimation = fee.toString();
-    //   transactionFeeEstimationUsd = feeUsd;
-    // });
+    var selectedUtxos = utxos.where((u) => u.selected).toList();
+    if (selectedUtxos.isEmpty) selectedUtxos = utxos;
+    if (selectedUtxos.isEmpty) return;
+
+    var fee = await walletService.calculateBtcFee(selectedUtxos);
+    var feeUsd = await walletService.calculateInUsd(fee);
+
+    if (mounted) {
+      setState(() {
+        transactionFeeEstimation = fee.toStringAsFixed(8);
+        transactionFeeEstimationUsd = feeUsd;
+      });
+    }
   }
 
   calculateTip() async {
@@ -420,7 +426,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
                 const SizedBox(height: 20,),
                 ExpansionTile(
                   title: const Text('ExpansionTile 3'),
-                  subtitle: const Text('Leading expansion arrow icon'),
+                  subtitle: Text('Leading expansion arrow icon ${widget.selectedNetwork.wallet.}'),
                   controlAffinity: ListTileControlAffinity.leading,
                   children: <Widget>[
                     SingleChildScrollView(
