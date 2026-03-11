@@ -115,6 +115,8 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
                                             await walletService.getPublicKeyString(privateKey);
                                         var btcAddress =
                                             walletService.getBtcAddressFromPrivateKey(privateKey);
+                                        String btcWif =
+                                            walletService.getBtcWifFromPrivateKey(privateKey);
                                         var walletId = await getIndex();
                                         WalletEntity wallet = WalletEntity(
                                             amount: BigInt.zero.toDouble(),
@@ -124,7 +126,8 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
                                             btcAddress: btcAddress,
                                             walletId: walletId,
                                             walletName: "Wallet #",
-                                            ownerEmail: widget.user.email);
+                                            ownerEmail: widget.user.email,
+                                            btcWif: btcWif);
                                         try {
                                           walletService.persistNewWallet(wallet);
                                           showMessage("Account Created", context);

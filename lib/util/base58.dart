@@ -1,6 +1,6 @@
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:maniva_wallet/util/util.dart';
+
 import 'bitcoin.dart';
 import 'network.dart';
 
@@ -66,18 +66,49 @@ String hash256(String hex) {
 
 void main() {
   String privateKey = "bbe55fc1379fed1e783054ef4dd7f666367413087e1eb2ab22cce0f89e386708";
-  const String MAINNET = "80";
-  // const String TESTNET = "ef";
-  const String REGTEST = "f0";
-  String extended = "$REGTEST${privateKey}01";
+  print(testCompress(privateKey));
+  print(hexToWif(privateKey));
+}
 
-  String extendedChecksum = extended + checksum(extended);
-  String wif = base58Encode(extendedChecksum);
-  if (kDebugMode) {
-    print(wif);
+String testCompress(String privateKey) {
+  return BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
+}
+
+String hexToWif(String hexKey, {bool testnet = true, bool compressed = true}) {
+  final keyBytes = _hexToBytes(hexKey);
+  final prefix = testnet ? 0xEF : 0x80;
+  final payload = <int>[prefix, ...keyBytes, if (compressed) 0x01];
+  final h1 = sha256.convert(payload).bytes;
+  final h2 = sha256.convert(h1).bytes;
+  final checksum = h2.sublist(0, 4);
+  return _base58Encode(Uint8List.fromList([...payload, ...checksum]));
+}
+
+Uint8List _hexToBytes(String hex) {
+  final out = Uint8List(hex.length ~/ 2);
+  for (var i = 0; i < hex.length; i += 2) {
+    out[i ~/ 2] = int.parse(hex.substring(i, i + 2), radix: 16);
   }
-  BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
-  encrypt(MAINNET);
+  return out;
+}
+
+String _base58Encode(Uint8List data) {
+  const alpha = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  var n = BigInt.parse(data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(), radix: 16);
+  var result = '';
+  while (n > BigInt.zero) {
+    final mod = n % BigInt.from(58);
+    result = alpha[mod.toInt()] + result;
+    n ~/= BigInt.from(58);
+  }
+  for (final b in data) {
+    if (b == 0) {
+      result = '1$result';
+    } else {
+      break;
+    }
+  }
+  return result;
 }
 
 /*

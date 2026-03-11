@@ -11,6 +11,7 @@ class WalletHelper extends EntityHelper {
   static const ownerEmail = 'ownerEmail';
   static const amount = 'amount';
   static const btcAmount = 'btcAmount';
+  static const btcWif = 'btcWif';
 
   static final WalletHelper _instance = WalletHelper._internal();
 
@@ -30,7 +31,8 @@ class WalletHelper extends EntityHelper {
             $btcAddress TEXT, 
             $ownerEmail TEXT, 
             $amount REAL,
-            $btcAmount REAL
+            $btcAmount REAL,
+            $btcWif TEXT
           )
           ''';
     return createTable;
@@ -38,6 +40,7 @@ class WalletHelper extends EntityHelper {
 
   Future<int> insertItem(WalletEntity wallet) async {
     final db = await database;
+    // Use the map provided by toMap(), which now normalizes ownerEmail
     int inserted = await db.insert(
       'wallets',
       wallet.toMap(),
@@ -80,14 +83,18 @@ class WalletHelper extends EntityHelper {
       walletId: walletMaps[0]['walletId'] as String,
       walletName: walletMaps[0]['walletName'] as String,
       ownerEmail: walletMaps[0]['ownerEmail'] as String,
+      btcWif: walletMaps[0]['btcWif'] as String,
     );
   }
 
-  Future<List<WalletEntity>> fetchItems(final String ownerEmail) async {
+  Future<List<WalletEntity>> fetchItems(final String ownerEmailParam) async {
     final db = await database;
 
+    // sanitize incoming parameter: trim whitespace and normalize to lowercase
+    final String sanitizedEmail = ownerEmailParam.trim().toLowerCase();
+
     final List<Map<String, Object?>> walletMaps =
-        await db.query('wallets', where: 'ownerEmail = ?', whereArgs: [ownerEmail]);
+        await db.query('wallets', where: 'ownerEmail = ?', whereArgs: [sanitizedEmail]);
 
     if (walletMaps.isNotEmpty) {
       return [
@@ -100,6 +107,7 @@ class WalletHelper extends EntityHelper {
               'publicKey': publicKey as String,
               'btcAddress': btcAddress as String,
               'ownerEmail': ownerEmail as String,
+              'btcWif': btcWif as String,
             } in walletMaps)
           WalletEntity(
             amount: amountValue,
@@ -110,6 +118,7 @@ class WalletHelper extends EntityHelper {
             walletId: walletId,
             walletName: walletName,
             ownerEmail: ownerEmail,
+            btcWif: btcWif,
           ),
       ];
     }
@@ -127,6 +136,7 @@ class WalletEntity {
   final String publicKey;
   final String btcAddress;
   final String ownerEmail;
+  final String btcWif;
 
   WalletEntity({
     required this.amount,
@@ -137,6 +147,7 @@ class WalletEntity {
     required this.publicKey,
     required this.ownerEmail,
     required this.btcAddress,
+    required this.btcWif,
   });
 
   Map<String, Object?> toMap() {
@@ -148,12 +159,14 @@ class WalletEntity {
       'walletId': walletId,
       'publicKey': publicKey,
       'btcAddress': btcAddress,
-      'ownerEmail': ownerEmail,
+      // normalize ownerEmail before persisting: trim and lowercase
+      'ownerEmail': ownerEmail.trim().toLowerCase(),
+      'btcWif': btcWif,
     };
   }
 
   @override
   String toString() {
-    return 'WalletEntity{btcAddress: $btcAddress, walletName: $walletName, walletId: $walletId, publicKey: $publicKey ownerEmail: $ownerEmail amount: $amount btcAmount: $btcAmount}';
+    return 'WalletEntity{btcAddress: $btcAddress, walletName: $walletName, walletId: $walletId, publicKey: $publicKey ownerEmail: $ownerEmail amount: $amount btcAmount: $btcAmount btcWif: $btcWif}';
   }
 }

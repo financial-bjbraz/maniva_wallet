@@ -1,17 +1,18 @@
 import 'package:big_dart/big_dart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logging/logging.dart';
 import 'package:maniva_wallet/entities/transaction_helper.dart';
 import 'package:maniva_wallet/util/transaction_type.dart';
-import 'package:flutter/foundation.dart';
-import 'package:logging/logging.dart';
 
 import '../../../entities/bitcoin_utxo.dart';
 import '../../../entities/network_dto.dart';
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/bitcoin.dart';
 import '../../../util/network.dart';
 import '../../../util/util.dart';
 
@@ -102,12 +103,12 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
     if (!_myFocusNode.hasFocus) {
       // Focus is lost (on blur event)
       setState(() {
-        if (kDebugMode){
+        if (kDebugMode) {
           _log.info("Focus lost!");
         }
       });
       // You can add your custom logic here, like validation or saving data
-      if (kDebugMode){
+      if (kDebugMode) {
         _log.info("TextFormField lost focus. Performing action...");
       }
     } else {
@@ -199,8 +200,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
 
     // Base58 legacy and P2SH-style addresses for mainnet/testnet
     // Starts with common prefixes and uses the Base58 character set.
-    final base58Pattern =
-        RegExp(r'^[123mn2][1-9A-HJ-NP-Za-km-z]{25,39}$');
+    final base58Pattern = RegExp(r'^[123mn2][1-9A-HJ-NP-Za-km-z]{25,39}$');
 
     return bech32Pattern.hasMatch(trimmed) || base58Pattern.hasMatch(trimmed);
   }
@@ -423,10 +423,12 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
                   title: Text('My tip is: ‘Do your best'),
                   leading: Radio<SingingCharacter>(value: SingingCharacter.notip),
                 ),
-                const SizedBox(height: 20,),
+                const SizedBox(
+                  height: 20,
+                ),
                 ExpansionTile(
                   title: const Text('ExpansionTile 3'),
-                  subtitle: Text('Leading expansion arrow icon ${widget.selectedNetwork.wallet.}'),
+                  subtitle: Text('Leading expansion arrow icon ${getWif()}'),
                   controlAffinity: ListTileControlAffinity.leading,
                   children: <Widget>[
                     SingleChildScrollView(
@@ -455,7 +457,6 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
                     )
                   ],
                 ),
-
               ],
             ),
           ),
@@ -563,8 +564,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
         // Convert the human-readable tip amount to the smallest unit
         final Big tipAmountBig = Big(tipAmount.toString());
         final Big tipInSmallestUnitBig = tipAmountBig.times(RBTC_DECIMAL_PLACES);
-        final BigInt tipInSmallestUnit =
-            BigInt.parse(tipInSmallestUnitBig.toString());
+        final BigInt tipInSmallestUnit = BigInt.parse(tipInSmallestUnitBig.toString());
 
         await walletService.sendRBTC(
           widget.selectedNetwork.walletDTO,
@@ -580,15 +580,28 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
       Big bp = prepareAmountValue();
 
       await walletService.sendTransferUsingUtxos(
-          widget.selectedNetwork.walletDTO,
-          destinationAddressController.text,
-          bp.toNumber(),
-          utxos);
-    }catch(e){
+          widget.selectedNetwork.wallet, destinationAddressController.text, bp.toNumber(), utxos);
+    } catch (e) {
       rethrow;
     }
 
-    return SimpleTransaction(transactionId: "", amountInWeis: "", ddateTime: "", walletId: "", valueInUsdFormatted: "", valueInWeiFormatted: "", type: TransactionType.REGULAR_OUTGOING.type, destination: "");
+    return SimpleTransaction(
+        transactionId: "",
+        amountInWeis: "",
+        ddateTime: "",
+        walletId: "",
+        valueInUsdFormatted: "",
+        valueInWeiFormatted: "",
+        type: TransactionType.REGULAR_OUTGOING.type,
+        destination: "");
   }
 
+  String getWif() {
+    String compressed = BitcoinWallet.generateWIF(
+        widget.selectedNetwork.wallet.privateKey, Network.BITCOIN_TESTNET.networkByte);
+    if (kDebugMode) {
+      print(compressed);
+    }
+    return compressed;
+  }
 }
