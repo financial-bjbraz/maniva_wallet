@@ -238,8 +238,7 @@ class _BodyState extends State<Body> {
   void clickLoginAnonimous() async {
     final anonimousUser = SimpleUser(
       name: AppLocalizations.of(context)!.anonimus,
-      email:
-          "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
+      email: "password@password.com",
       password: "",
     );
     goToHome(anonimousUser);

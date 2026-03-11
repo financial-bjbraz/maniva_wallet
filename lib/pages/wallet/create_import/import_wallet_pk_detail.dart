@@ -114,6 +114,8 @@ class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail
                                             await walletService.getPublicKeyString(privateKey);
                                         var btcAdress =
                                             walletService.getBtcAddressFromPrivateKey(privateKey);
+                                        var btcWif =
+                                            walletService.getBtcWifFromPrivateKey(privateKey);
                                         var walletId = await getIndex();
                                         WalletEntity wallet = WalletEntity(
                                           amount: BigInt.zero.toDouble(),
@@ -124,6 +126,7 @@ class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail
                                           walletId: walletId,
                                           walletName: "Wallet #",
                                           ownerEmail: widget.user.email,
+                                          btcWif: btcWif,
                                         );
 
                                         walletService.persistNewWallet(wallet);

@@ -67,10 +67,38 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return address.hex;
   }
 
+  /// Sanitizes and validates an owner email.
+  /// Returns the sanitized (trimmed & lowercased) email, or `null` if invalid.
+  static String? sanitizeOwnerEmail(String ownerEmail) {
+    if (ownerEmail == null) return null; // defensive, though String param is non-nullable
+
+    final sanitized = ownerEmail.trim().toLowerCase();
+    if (sanitized.isEmpty) {
+      return null;
+    }
+
+    // Basic email format validation
+    final emailRegex = RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}');
+    if (!emailRegex.hasMatch(sanitized)) {
+      return null;
+    }
+
+    return sanitized;
+  }
+
   Future<List<WalletEntity>> getWallets(final String ownerEmail) async {
+    // sanitize ownerEmail, add validation for null, empty, special characters or whitespaces
     WidgetsFlutterBinding.ensureInitialized();
     WalletHelper walletHelper = WalletHelper();
-    return walletHelper.fetchItems(ownerEmail);
+
+    final sanitized = sanitizeOwnerEmail(ownerEmail);
+
+    if (sanitized == null) {
+      log.warning('getWallets called with invalid or empty ownerEmail: $ownerEmail');
+      return List<WalletEntity>.empty();
+    }
+
+    return walletHelper.fetchItems(sanitized);
   }
 
   Future<int> updateBalance(WalletEntity wallet) async {
@@ -106,7 +134,6 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     }
   }
 
-
   Future<WalletDTO> getBitcoinBalanceOnDataBase(String privateKey) async {
     log.info("Searching BTC Balance");
     WalletHelper helper = WalletHelper();
@@ -117,13 +144,11 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       var balance = wallet.btcAmount;
       log.info('Balance obtained on DataBase: $balance BTC');
       if (balance > 0) {
-
         final usdPrice = await _getPrice();
         final value = balance * usdPrice;
         dto.btcBalanceInUsd = formatter.format(value);
         dto.btcBalance = balance.toString();
       }
-
     } catch (error) {
       log.severe("Error creating wallet to display $error");
       throw Exception("Error creating wallet to display");
@@ -131,19 +156,18 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return dto;
   }
 
-
   Future<WalletDTO> getBalanceFromRsk(WalletDTO dto) async {
-    try{
+    try {
       var dataBase = await getBalanceRootstockFromDataBaseOnly(dto.wallet.privateKey);
       var blockchain = await getRootstockWalletRefreshed(dto.wallet);
-      if(dataBase.balanceInDouble != blockchain.balanceInDouble){
+      if (dataBase.balanceInDouble != blockchain.balanceInDouble) {
         dataBase.balanceInDouble = blockchain.balanceInDouble;
         dataBase.balance = blockchain.balance;
         dataBase.wallet.amount = dataBase.balanceInDouble;
         updateBalance(dataBase.wallet);
       }
       return dataBase;
-    }catch(e){
+    } catch (e) {
       log.severe("Error getting balance ${e}");
     }
     return dto;
@@ -155,7 +179,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       var blockchainBalance = await getBitcoinBalanceFromBlockchainOnly(dto.wallet);
 
-      if(blockchainBalance.btcBalanceInDouble != dataBase.btcBalanceInDouble){
+      if (blockchainBalance.btcBalanceInDouble != dataBase.btcBalanceInDouble) {
         dataBase.btcBalanceInDouble = blockchainBalance.btcBalanceInDouble;
         dataBase.btcBalance = blockchainBalance.btcBalance;
         dataBase.wallet.btcAmount = blockchainBalance.btcBalanceInDouble;
@@ -163,7 +187,6 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
         dataBase.updated = true;
         return dataBase;
       }
-
     } catch (e) {
       log.severe("Error obtaining database balance ${e}");
     }
@@ -185,14 +208,13 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return lastBalanceReceivedInWei;
   }
 
-  Future<List<Utxo>> listUtxos(String btcFromAddress ) async {
+  Future<List<Utxo>> listUtxos(String btcFromAddress) async {
     final node = dotenv.env['BITCOIN_NODE'];
     if (node == null || node.isEmpty) {
       return List<Utxo>.empty();
     }
 
     try {
-
       final client = BitcoinNodeClient(
         rpcUrl: node,
         rpcUser: 'bitcoin',
@@ -201,8 +223,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       var utxos = await client.listUtxos(btcFromAddress);
       return utxos;
-
-    }catch(e){
+    } catch (e) {
       log.severe("Error occurred listing UTXOs ${e}");
     }
 
@@ -227,28 +248,26 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
       BitcoinAddressDetails details = await client.fetchAddressInfoFromBlockbook(btcFromAddress);
       List<Utxo> utxos = [];
 
-      for(final id in details.txids){
+      for (final id in details.txids) {
         var txUtxos = await client.fetchUtxosFromTransaction(id);
         utxos.addAll(txUtxos);
       }
 
       return utxos;
-
-    }catch(e){
+    } catch (e) {
       log.severe("Error occurred scanning UTXOs ${e}");
     }
 
     return List<Utxo>.empty();
   }
 
-  Future<List<Utxo>> selectUtxosForAmount(double amount, List<Utxo>? allUtxos)async{
+  Future<List<Utxo>> selectUtxosForAmount(double amount, List<Utxo>? allUtxos) async {
     final node = dotenv.env['BITCOIN_NODE'];
     if (node == null || node.isEmpty) {
       return List<Utxo>.empty();
     }
 
     try {
-
       final client = BitcoinNodeClient(
         rpcUrl: node,
         rpcUser: 'bitcoin',
@@ -257,43 +276,39 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
       var selectedUtxos = await client.selectUtxosForAmount(amount, availableUtxos: allUtxos);
       return selectedUtxos;
-
-    }catch(e){
+    } catch (e) {
       log.severe("Error occurred calculating fees ${e}");
     }
 
     return List<Utxo>.empty();
   }
 
-  Future <double> calculateBtcFee(List<Utxo> selectedUtxos) async {
+  Future<double> calculateBtcFee(List<Utxo> selectedUtxos) async {
     final node = dotenv.env['BITCOIN_NODE'];
     if (node == null || node.isEmpty) {
       return 0.00;
     }
 
     try {
-
       final client = BitcoinNodeClient(
         rpcUrl: node,
         rpcUser: 'bitcoin',
         rpcPassword: 'aTVQ5b0mS4y27qG',
       );
 
-    Map<String, dynamic> feeCalculated = await client.calculateFeeForBlocks(
-          numInputs: 0,
-          confTarget: 6,
-          utxos: selectedUtxos);
+      Map<String, dynamic> feeCalculated =
+          await client.calculateFeeForBlocks(numInputs: 0, confTarget: 6, utxos: selectedUtxos);
 
       return feeCalculated['feeBtc'] as double;
-
-    }catch(e){
+    } catch (e) {
       log.severe("Error occurred calculating fees ${e}");
     }
 
     return 0.00;
   }
 
-  Future<String> sendTransferUsingUtxos(WalletDTO wallet,String destinationAddress, double amount, List<Utxo> utxos) async {
+  Future<String> sendTransferUsingUtxos(
+      WalletEntity wallet, String destinationAddress, double amount, List<Utxo> utxos) async {
     final node = dotenv.env['BITCOIN_NODE'];
     if (node == null || node.isEmpty) {
       return "";
@@ -306,11 +321,12 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     );
 
     try {
-      final id = await client.sendTransferUsingUtxos(destinationAddress, amount, utxos);
+      final id = await client
+          .sendTransferUsingUtxos(destinationAddress, amount, utxos, privKeysWif: [wallet.btcWif]);
 
       log.info('BTC transfer sent, txid: $id');
       return id;
-    }catch(e){
+    } catch (e) {
       log.severe("Error occurred sending BTC transfer ${e}");
       throw StateError("Error occurred sending BTC transfer ${e}");
     }
@@ -469,8 +485,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     return formatter.format(amount);
   }
 
-    Future<String> calculateInUsd(double rootstockAmount) async {
-    if(rootstockAmount == 0) {
+  Future<String> calculateInUsd(double rootstockAmount) async {
+    if (rootstockAmount == 0) {
       return "USD 0.00";
     }
 
@@ -618,5 +634,9 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
   String getBtcAddressFromPrivateKey(final String privateKey) {
     return BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
+  }
+
+  String getBtcWifFromPrivateKey(String privateKey) {
+    return BitcoinWallet.generateWIF(privateKey, Network.BITCOIN_TESTNET.networkByte);
   }
 }

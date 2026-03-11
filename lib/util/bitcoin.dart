@@ -4,6 +4,8 @@ import 'package:crypto/crypto.dart';
 import 'package:pointycastle/digests/ripemd160.dart';
 import 'package:pointycastle/ecc/curves/secp256k1.dart';
 
+import 'base58.dart';
+
 class BitcoinWallet {
   static String generateAddress(String privateKey, int network) {
     final publicKey = _privateToPublic(privateKey);
@@ -64,6 +66,10 @@ class BitcoinWallet {
       }
     }
     return result;
+  }
+
+  static String generateWIF(String privateKey, int networkByte) {
+    return hexToWif(privateKey);
   }
 }
 

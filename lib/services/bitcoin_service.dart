@@ -436,9 +436,9 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     String toAddress,
     double amount,
     List<Utxo> utxos, {
+    List<String>? privKeysWif,
     double fee = 0.0001,
     String? changeAddress,
-    List<String>? privKeysWif,
   }) async {
     if (utxos.isEmpty) {
       throw ArgumentError('UTXOs list must not be empty');
