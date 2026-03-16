@@ -16,7 +16,7 @@ class BitcoinNodeClient {
 
   /// Optional override to intercept RPC calls (useful for tests).
   final Future<dynamic> Function(String method, [List<dynamic>? params])? rpcCallOverride;
-  final log = Logger("WalletServiceImpl");
+  final log = Logger("BitcoinNodeClient");
 
   BitcoinNodeClient({
     required String rpcUrl,
