@@ -241,12 +241,15 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     try {
       final client = BitcoinNodeClient(
         rpcUrl: node,
-        rpcUser: 'bitcoin',
-        rpcPassword: 'aTVQ5b0mS4y27qG',
+        rpcUser: '',
+        rpcPassword: '',
       );
 
       BitcoinAddressDetails details = await client.fetchAddressInfoFromBlockbook(btcFromAddress);
       List<Utxo> utxos = [];
+      if (details.txids.isEmpty) {
+        utxos = await client.listUtxos(btcFromAddress);
+      }
 
       for (final id in details.txids) {
         var txUtxos = await client.fetchUtxosFromTransaction(id);
