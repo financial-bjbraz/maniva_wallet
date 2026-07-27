@@ -1,0 +1,50 @@
+# myRootstockWallet (maniva_wallet) — Guia para Claude Code
+
+Wallet Flutter (iOS, Android, macOS, Linux, web) que suporta Bitcoin (BTC, testnet3) e Rootstock (RSK/RBTC + tokens ERC20 como RIF, USDRIF, DOC, RIFPRO, tBRZ).
+
+**Não confundir com os projetos da plataforma BRLN** (cripto-controller, cripto-dashboard, cripto-bff, dfns_integration) descritos em instruções globais — este é um projeto separado e sem relação.
+
+---
+
+## Arquitetura da wallet
+
+Uma única chave privada (`WalletEntity.privateKey`) gera tanto o endereço/WIF Bitcoin (`getBtcAddressFromPrivateKey`/`getBtcWifFromPrivateKey` em `lib/services/wallet_service.dart`) quanto o endereço RSK/EVM, guardados juntos na mesma linha da wallet. Isso é proposital: permite que a mesma conta opere nas duas chains, o que importa para o bridge PowPeg da Rootstock (BTC↔RBTC), já que o PowPeg depende do mesmo par de chaves produzindo endereços consistentes nas duas redes.
+
+**Arquivos-chave**:
+- `lib/services/bitcoin_service.dart` — `BitcoinNodeClient`: toda a lógica de RPC Bitcoin Core + REST Esplora (UTXOs, fees, montagem de tx, assinatura offline via `dartsv`).
+- `lib/services/wallet_service.dart` — `WalletServiceImpl`: orquestra os fluxos BTC e RSK (web3dart); mantém `CreateTransactionServiceImpl service` para persistir histórico de transações.
+- `lib/pages/wallet/transactions/bitcoin_account_send.dart` — tela de envio de BTC.
+- `lib/entities/transaction_helper.dart` — modelo `SimpleTransaction` + persistência sqlite.
+- `test/bitcoin_transfer_test.dart` — arquivo grande com testes unitários (mockados) e testes de integração (rede real) para os fluxos Bitcoin.
+
+---
+
+## Backend Bitcoin — por que é dividido em duas fontes
+
+`BitcoinNodeClient` divide as chamadas Bitcoin propositalmente — não simplificar de volta para uma única fonte:
+
+- **Descoberta de UTXO + saldo**: `fetchUtxosFromEsplora` / `fetchBalanceFromEsplora`, usando uma API REST compatível com Esplora (env var `BITCOIN_ESPLORA_URL`, default `https://mempool.space/testnet/api`).
+- **Apenas estimativa de fee + broadcast**: o nó Bitcoin Core via JSON-RPC (env var `BITCOIN_NODE`, ex. `bitcoin-testnet-rpc.publicnode.com`) — *somente* para `estimatesmartfee` e `sendrawtransaction`.
+- **Assinatura**: sempre offline, no cliente, usando a WIF da própria wallet via `dartsv` — nunca via RPC do nó.
+
+**Motivo**: provedores públicos de RPC Bitcoin (única opção realista para uma wallet mobile sem operar o próprio nó) rejeitam métodos RPC que exigem wallet carregada no servidor (`listunspent`, `getrawchangeaddress`, `scantxoutset`, `signrawtransactionwithwallet`, `sendtoaddress`) com `-32701 Method not allowed` — confirmado empiricamente contra `bitcoin-testnet-rpc.publicnode.com`. O código original assumia um nó self-hosted com wallet carregada, o que não existe neste deployment; essa incompatibilidade era a causa raiz do envio/saldo de Bitcoin estarem completamente quebrados (corrigido em 2026-07-27).
+
+**Como aplicar**: se o envio/saldo de BTC quebrar novamente, verificar se essa separação não foi reintroduzida incorretamente — não rotear saldo/UTXO de volta por `getBalanceForAddress`/`listUtxos` (RPC) como caminho primário; eles existem apenas como fallback best-effort para quem roda nó próprio. Além disso: `changeAddress` em `sendTransferUsingUtxos` é parâmetro obrigatório (o próprio endereço da wallet) — não há fallback via `getrawchangeaddress` de propósito.
+
+### Pegadinha do `dartsv`
+
+Ao estender a assinatura offline além de P2PKH (ex. adicionar suporte a P2WPKH/segwit), atenção: o `UnlockingScriptBuilder` padrão do `dartsv` em um `TransactionInput` **não** monta corretamente o scriptSig a partir de uma assinatura adicionada — ele apenas ecoa de volta o último script que viu (inclusive o subscript temporário usado no cálculo do sighash), produzindo uma transação inválida que não gera exceção localmente, mas é rejeitada pela rede como `mempool-script-verify-flag-failed`. É necessário anexar explicitamente o `*UnlockBuilder` correto (ex. `P2PKHUnlockBuilder`) ao input **antes** de chamar `TransactionSigner.sign()`. Isso já está tratado para P2PKH em `_signRawTransactionOffline`; só é relevante ao adicionar novos tipos de script.
+
+---
+
+## Testes — cuidado com rede real
+
+`test/bitcoin_transfer_test.dart` tem um grupo `'Integração – transferência real testnet3'` que **não é bloqueado por tag de teste real** (só documentado em comentário como exigindo `--tags integration`) — ele roda em qualquer `flutter test`, inclusive sem argumentos. Deriva um endereço da `PRIVATE_KEY` do `.env`, busca UTXOs reais via Esplora e faz broadcast de uma transação real de 1000 sats na testnet3 (pula graciosamente via `markTestSkipped` se não houver saldo).
+
+Isso é proposital (chave é testnet-only, fundos sem valor), mas significa que: o saldo de teste diminui a cada `flutter test` completo, a suíte depende de serviços externos reais (mempool.space, nó RPC público), e é o único teste que exercita assinatura+broadcast reais de ponta a ponta — foi o que revelou o bug do `dartsv` acima, que todos os testes mockados não pegavam. Se o saldo acabar, reabastecer via https://coinfaucet.eu/en/btc-testnet/ no endereço derivado da `PRIVATE_KEY` atual do `.env` (impresso pelo próprio teste).
+
+---
+
+## Workflow preferido
+
+Para investigações de bugs não-triviais neste projeto, o usuário prefere um fluxo em etapas: **revisão** (com evidência concreta, ex. testar diretamente os serviços externos envolvidos antes de escrever qualquer código) → **plano** → **ação**. Assim que o usuário der um sinal verde com direção concreta, pode seguir direto pelo plano e implementação sem reconfirmar cada passo.
