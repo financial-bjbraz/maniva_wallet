@@ -73,6 +73,7 @@ class _TableTransactions extends State<TableTransactions> {
     }
     final snackBar = SnackBar(
       content: Text(message),
+      duration: const Duration(seconds: 3),
       action: SnackBarAction(
         label: 'Ok',
         onPressed: () {

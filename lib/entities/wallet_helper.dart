@@ -47,8 +47,6 @@ class WalletHelper extends EntityHelper {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    db.close();
-
     return inserted;
   }
 
@@ -64,7 +62,6 @@ class WalletHelper extends EntityHelper {
       whereArgs: [wallet.privateKey],
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    db.close();
     return updateCount;
   }
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../entities/user_helper.dart';
 import '../../../entities/wallet_helper.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/app_theme.dart';
 import '../../../util/util.dart';
 import '../../home_page.dart';
 
@@ -28,7 +29,7 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
     final TextEditingController mailController = TextEditingController();
 
     return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: rootstockBlack,
         appBar: AppBar(
           title: const Padding(
             padding: EdgeInsets.all(20),
@@ -103,60 +104,67 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
                                   const SizedBox(
                                     height: 20,
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      var seed = mailController.text;
+                                  Center(
+                                    child: SizedBox(
+                                      width: 260,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          var seed = mailController.text;
 
-                                      if (seed.isEmpty) {
-                                        showMessage("Invalid Seed", context);
-                                      } else {
-                                        var privateKey = await walletService.getPrivateKey(seed);
-                                        var publicKey =
-                                            await walletService.getPublicKeyString(privateKey);
-                                        var btcAddress =
-                                            walletService.getBtcAddressFromPrivateKey(privateKey);
-                                        String btcWif =
-                                            walletService.getBtcWifFromPrivateKey(privateKey);
-                                        var walletId = await getIndex();
-                                        WalletEntity wallet = WalletEntity(
-                                            amount: BigInt.zero.toDouble(),
-                                            btcAmount: BigInt.zero.toDouble(),
-                                            privateKey: privateKey,
-                                            publicKey: publicKey,
-                                            btcAddress: btcAddress,
-                                            walletId: walletId,
-                                            walletName: "Wallet #",
-                                            ownerEmail: widget.user.email,
-                                            btcWif: btcWif);
-                                        try {
-                                          walletService.persistNewWallet(wallet);
-                                          showMessage("Account Created", context);
-                                          final List<WalletEntity> wallets =
-                                              await walletService.getWallets(widget.user.email);
-                                          Navigator.of(context).pushReplacement(MaterialPageRoute(
-                                              builder: (context) =>
-                                                  HomePage(user: widget.user, wallets: wallets)));
-                                        } catch (error) {
-                                          showMessage("Failed to create account", context);
-                                        }
-                                      }
-                                    },
-                                    style: raisedButtonStyle,
-                                    child: const Row(
-                                      children: <Widget>[
-                                        Row(
+                                          if (seed.isEmpty) {
+                                            showMessage("Invalid Seed", context);
+                                          } else {
+                                            var privateKey =
+                                                await walletService.getPrivateKey(seed);
+                                            var publicKey =
+                                                await walletService.getPublicKeyString(privateKey);
+                                            var btcAddress = walletService
+                                                .getBtcAddressFromPrivateKey(privateKey);
+                                            String btcWif =
+                                                walletService.getBtcWifFromPrivateKey(privateKey);
+                                            var walletId = await getIndex();
+                                            WalletEntity wallet = WalletEntity(
+                                                amount: BigInt.zero.toDouble(),
+                                                btcAmount: BigInt.zero.toDouble(),
+                                                privateKey: privateKey,
+                                                publicKey: publicKey,
+                                                btcAddress: btcAddress,
+                                                walletId: walletId,
+                                                walletName: "Wallet #",
+                                                ownerEmail: widget.user.email,
+                                                btcWif: btcWif);
+                                            try {
+                                              walletService.persistNewWallet(wallet);
+                                              showMessage("Account Created", context);
+                                              final List<WalletEntity> wallets =
+                                                  await walletService.getWallets(widget.user.email);
+                                              Navigator.of(context).pushReplacement(
+                                                  MaterialPageRoute(
+                                                      builder: (context) => HomePage(
+                                                          user: widget.user, wallets: wallets)));
+                                            } catch (error) {
+                                              showMessage("Failed to create account", context);
+                                            }
+                                          }
+                                        },
+                                        style: greenButton,
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: <Widget>[
-                                            Icon(Icons.key),
+                                            Icon(Icons.key, color: Colors.white),
                                             SizedBox(
                                               width: 10,
                                             ),
                                             Text(
                                               "Validate and Import",
-                                              style: TextStyle(fontSize: 20),
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
                                             ),
                                           ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 ],

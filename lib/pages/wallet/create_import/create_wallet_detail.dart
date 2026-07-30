@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 import 'package:maniva_wallet/pages/wallet/create_import/import_wallet_seed_detail.dart';
 import 'package:provider/provider.dart';
 import 'package:web3dart/web3dart.dart';
@@ -7,6 +7,8 @@ import 'package:web3dart/web3dart.dart';
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/app_theme.dart';
+import '../../../util/clipboard_guard.dart';
 import '../../../util/util.dart';
 import '../../details/detail_list.dart';
 
@@ -23,8 +25,11 @@ class CreateNewWalletDetail extends StatefulWidget {
 }
 
 class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
+  static final _log = Logger('create_wallet_detail');
+
   bool processing = false;
   bool _created = false;
+  bool _creationFailed = false;
   late WalletServiceImpl walletService;
   List<String> splittedMnemonic = List<String>.filled(1, "");
   late EthereumAddress address;
@@ -37,16 +42,27 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
   }
 
   void createNewAccount() async {
-    if (!_created) {
-      walletService = Provider.of<WalletServiceImpl>(context);
+    if (_created || _creationFailed) {
+      return;
+    }
+    try {
+      walletService = Provider.of<WalletServiceImpl>(context, listen: false);
       final mnemonic = walletService.generateMnemonic();
       final privateKey = await walletService.getPrivateKey(mnemonic);
       address = walletService.getPublicKey(privateKey);
-      splittedMnemonic = mnemonic.split(' ');
-      setState(() {
-        splittedMnemonic = mnemonic.split(' ');
-      });
-      _created = !_created;
+      if (mounted) {
+        setState(() {
+          splittedMnemonic = mnemonic.split(' ');
+          _created = true;
+        });
+      }
+    } catch (e, stack) {
+      _log.severe('Error generating new wallet seed', e, stack);
+      if (mounted) {
+        setState(() {
+          _creationFailed = true;
+        });
+      }
     }
   }
 
@@ -54,29 +70,25 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
   Widget build(BuildContext context) {
     int contador = 0;
     createNewAccount();
-    final String copy = AppLocalizations.of(context)!.copiar;
+    final String copy = AppLocalizations.of(context)?.copiar ?? 'Copy to clipboard';
 
     Widget createTextFieldWithSeed(String word) {
       contador++;
       return Expanded(
         child: TextFormField(
           enabled: false,
-          style: const TextStyle(fontSize: 6),
+          style: const TextStyle(fontSize: 6, color: rootstockCream),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.fromLTRB(2, 2, 2, 1),
             labelText: "$contador. $word",
+            labelStyle: const TextStyle(color: rootstockCream),
+            disabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: rootstockCream),
+            ),
           ),
         ),
       );
     }
-
-    final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-      minimumSize: const Size(88, 36),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(2)),
-      ),
-    );
 
     sentToDetail() {
       processing = false;
@@ -100,7 +112,7 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
     }
 
     return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: rootstockBlack,
         appBar: AppBar(
           title: const Padding(
             padding: EdgeInsets.all(20),
@@ -120,7 +132,7 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
               ],
             ),
           ),
-          backgroundColor: const Color.fromRGBO(158, 118, 255, 1),
+          backgroundColor: purple(),
         ),
         body: ClipRRect(
           borderRadius: BorderRadius.circular(5),
@@ -222,40 +234,73 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                 ),
                                 Padding(
                                   padding: createPaddingBetweenDifferentRows(),
-                                  child: !processing
-                                      ? ElevatedButton(
-                                          onPressed: () async {
-                                            await Clipboard.setData(ClipboardData(
-                                                text: splittedMnemonic
-                                                    .toString()
-                                                    .replaceAll("[", "")
-                                                    .replaceAll("]", "")));
-                                            showMessage("Copied to the clipboard", context);
+                                  child: _creationFailed
+                                      ? Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Could not generate a new wallet seed. Please try again.',
+                                              style: TextStyle(color: Colors.red),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Center(
+                                              child: SizedBox(
+                                                width: 200,
+                                                child: ElevatedButton(
+                                                  style: greenButton,
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _creationFailed = false;
+                                                    });
+                                                  },
+                                                  child: const Text('Retry', style: smallWhiteBoldText),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : !processing
+                                      ? Center(
+                                          child: SizedBox(
+                                            width: 240,
+                                            child: ElevatedButton(
+                                              onPressed: () async {
+                                                copyWithTimeout(
+                                                    splittedMnemonic
+                                                        .toString()
+                                                        .replaceAll("[", "")
+                                                        .replaceAll("]", ""),
+                                                    timeout: const Duration(seconds: 30));
+                                                showMessage(
+                                                    AppLocalizations.of(context)!.copiedMessage,
+                                                    context);
 
-                                            setState(() {
-                                              processing = true;
-                                              delay(context, 5).whenComplete(() {
-                                                processing = false;
-                                                sentToDetail();
-                                              });
-                                            });
-                                          },
-                                          style: raisedButtonStyle,
-                                          child: Row(
-                                            children: <Widget>[
-                                              Row(
+                                                setState(() {
+                                                  processing = true;
+                                                  delay(context, 5).whenComplete(() {
+                                                    processing = false;
+                                                    sentToDetail();
+                                                  });
+                                                });
+                                              },
+                                              style: greenButton,
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 children: <Widget>[
-                                                  const Icon(Icons.copy),
+                                                  const Icon(Icons.copy, color: Colors.white),
                                                   const SizedBox(
                                                     width: 10,
                                                   ),
                                                   Text(
                                                     copy,
-                                                    style: const TextStyle(fontSize: 20),
+                                                    style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white),
                                                   ),
                                                 ],
                                               ),
-                                            ],
+                                            ),
                                           ),
                                         )
                                       : const Row(

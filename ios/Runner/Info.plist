@@ -53,5 +53,7 @@
       <string>tel</string>
       <string>https</string>
     </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Camera access is used to scan QR codes for wallet addresses.</string>
 </dict>
 </plist>

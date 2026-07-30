@@ -1,14 +1,22 @@
-import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:maniva_wallet/pages/wallet/central_widgets_content.dart';
 import 'package:maniva_wallet/pages/wallet/my_dots_app.dart';
-import 'package:maniva_wallet/util/util.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../entities/user_helper.dart';
 import '../entities/wallet_helper.dart';
-import 'details/create_send_transaction.dart';
+import '../util/app_theme.dart';
+import '../util/util.dart';
 import 'menu/menu_app.dart';
 import 'menu/my_app_bar.dart';
+
+// Manual drag bounds for the wallet card's top position, as fractions of
+// screen height. Kept apart so CentralWidgetsContent can clamp its own
+// height against _restingTopFraction without overflowing past the
+// MyDotsApp indicator at .85.
+const double _kCardTopMin = .12;
+const double _kCardTopMax = .45;
+const double _kCardTopDefault = .27;
 
 class HomePage extends StatefulWidget {
   final SimpleUser user;
@@ -25,6 +33,8 @@ class _HomePageState extends State<HomePage> {
   late int _currentIndex;
   late double _yPosition = 0;
   late int _walletQuantity;
+  String _appVersion = '';
+  double _restingTopFraction = _kCardTopDefault;
 
   _HomePageState();
 
@@ -34,6 +44,23 @@ class _HomePageState extends State<HomePage> {
     _showMenu = false;
     _currentIndex = 0;
     _walletQuantity = 0;
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) {
+        setState(() {
+          _appVersion = 'v${info.version}';
+        });
+      }
+    });
+    getWalletCardTopFraction().then((saved) {
+      if (mounted && saved != null) {
+        setState(() {
+          _restingTopFraction = saved;
+          if (!_showMenu) {
+            _yPosition = MediaQuery.of(context).size.height * _restingTopFraction;
+          }
+        });
+      }
+    });
   }
 
   loadWallets() async {
@@ -50,11 +77,10 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     loadWallets();
     double heightScreen = MediaQuery.of(context).size.height;
-    double distanciaParaTopo = .15;
     double distanciaParaTopoComMenuExpandido = .55;
 
     if (_yPosition == 0) {
-      _yPosition = heightScreen * distanciaParaTopo;
+      _yPosition = heightScreen * _restingTopFraction;
     }
     return Scaffold(
       backgroundColor: Colors.black,
@@ -69,55 +95,43 @@ class _HomePageState extends State<HomePage> {
                 _showMenu = !_showMenu;
                 _yPosition = _showMenu
                     ? heightScreen * distanciaParaTopoComMenuExpandido
-                    : heightScreen * distanciaParaTopo;
+                    : heightScreen * _restingTopFraction;
               });
             },
           ),
           MenuApp(
             top: heightScreen * .200,
             showMenu: _showMenu,
+            user: widget.user,
+            wallets: widget.wallets,
           ),
           CentralWidgetsContent(
             user: widget.user,
             showMenu: _showMenu,
             top: _yPosition,
+            restingTopFraction: _restingTopFraction,
             wallets: widget.wallets,
             onChanged: (index) {
               setState(() {
                 _currentIndex = index;
               });
             },
-            onPanUpdated: (details) {
-              double positionBottonLimit = heightScreen * .75;
-              double positionTopLimit = heightScreen * .24;
-              double middlePosition = positionBottonLimit - positionTopLimit;
-              middlePosition = middlePosition / 2;
-
+            // Free-form manual drag for the card's resting position (via the
+            // handle bar CentralWidgetsContent renders), clamped to
+            // [_kCardTopMin, _kCardTopMax] — separate from the menu tap
+            // toggle above, which snaps to two fixed positions instead.
+            onManualDrag: (deltaDy) {
+              if (_showMenu) {
+                return;
+              }
               setState(() {
-                _yPosition += details.delta.dy;
-
-                _yPosition = _yPosition < positionTopLimit ? positionTopLimit : _yPosition;
-
-                _yPosition = _yPosition > positionBottonLimit ? positionBottonLimit : _yPosition;
-
-                if (_yPosition != positionBottonLimit && details.delta.dy > 0) {
-                  _yPosition = _yPosition > positionTopLimit + middlePosition - 50
-                      ? positionBottonLimit
-                      : _yPosition;
-                }
-
-                if (_yPosition != positionTopLimit && details.delta.dy < 0) {
-                  _yPosition = _yPosition < positionBottonLimit - middlePosition
-                      ? positionTopLimit
-                      : _yPosition;
-                }
-
-                if (_yPosition == positionBottonLimit) {
-                  _showMenu = true;
-                } else if (_yPosition == positionTopLimit) {
-                  _showMenu = false;
-                }
+                _restingTopFraction += deltaDy / heightScreen;
+                _restingTopFraction = _restingTopFraction.clamp(_kCardTopMin, _kCardTopMax);
+                _yPosition = heightScreen * _restingTopFraction;
               });
+            },
+            onManualDragEnd: () {
+              setWalletCardTopFraction(_restingTopFraction);
             },
           ),
           MyDotsApp(
@@ -128,59 +142,18 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      bottomNavigationBar: CurvedNavigationBar(
-          color: orange()!,
-          backgroundColor: Colors.black,
-          buttonBackgroundColor: orange(),
-          items: [
-            GestureDetector(
-              child: const Icon(Icons.home, color: Colors.white),
-              onTap: () => {
-                Navigator.of(context).push(PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      HomePage(user: widget.user, wallets: widget.wallets),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    var begin = const Offset(0.0, 1.0);
-                    var end = Offset.zero;
-                    var curve = Curves.ease;
-
-                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                    return SlideTransition(
-                      position: animation.drive(tween),
-                      child: child,
-                    );
-                  },
-                ))
-              },
+      bottomNavigationBar: SizedBox(
+        height: 32,
+        child: SafeArea(
+          top: false,
+          child: Center(
+            child: Text(
+              _appVersion,
+              style: const TextStyle(color: rootstockCream, fontSize: 11),
             ),
-            _walletQuantity > 0
-                ? GestureDetector(
-                    child: const Icon(Icons.call_made, color: Colors.white),
-                    onTap: () => {
-                      Navigator.of(context).push(PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            CreateSendTransaction(user: widget.user),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          var begin = const Offset(0.0, 1.0);
-                          var end = Offset.zero;
-                          var curve = Curves.ease;
-
-                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                          return SlideTransition(
-                            position: animation.drive(tween),
-                            child: child,
-                          );
-                        },
-                      ))
-                    },
-                  )
-                : const SizedBox(),
-            _walletQuantity > 0
-                ? const Icon(Icons.call_received, color: Colors.white)
-                : const SizedBox(),
-          ]),
+          ),
+        ),
+      ),
     );
   }
 }

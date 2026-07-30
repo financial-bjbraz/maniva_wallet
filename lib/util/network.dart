@@ -37,7 +37,7 @@ enum Network {
         return formatTextWithParameter(wallet.btcAddress, 11);
       case Network.ROOTSTOCK_MAINNET:
         return formatAddressWithParameter(
-            toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_TESTNET.networkId),
+            toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_MAINNET.networkId),
             11);
       case Network.ROOTSTOCK_TESTNET:
         return formatAddressWithParameter(
@@ -55,7 +55,7 @@ enum Network {
         return BitcoinWallet.generateCompressedAddress(
             wallet.privateKey, Network.BITCOIN_MAINNET.networkByte);
       case Network.ROOTSTOCK_MAINNET:
-        return toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_TESTNET.networkId);
+        return toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_MAINNET.networkId);
       case Network.ROOTSTOCK_TESTNET:
         return toChecksumAddress(wallet.publicKey.toString(), Network.ROOTSTOCK_TESTNET.networkId);
     }
@@ -77,11 +77,15 @@ enum Network {
         return Image.asset(
           'assets/icons/rbtc.png',
           width: 48,
+          cacheWidth: 96,
+          cacheHeight: 96,
         );
       case Network.ROOTSTOCK_TESTNET:
         return Image.asset(
           'assets/icons/rbtc.png',
           width: 48,
+          cacheWidth: 96,
+          cacheHeight: 96,
         );
     }
   }
@@ -105,14 +109,46 @@ enum Network {
           'assets/icons/rbtc.png',
           color: Colors.grey,
           width: 48,
+          cacheWidth: 96,
+          cacheHeight: 96,
         );
       case Network.ROOTSTOCK_TESTNET:
         return Image.asset(
           'assets/icons/rbtc.png',
           color: Colors.grey,
           width: 48,
+          cacheWidth: 96,
+          cacheHeight: 96,
         );
     }
+  }
+
+  /// Validates a Bitcoin address's format AND that its prefix matches
+  /// [isMainnet]. Mainnet and testnet addresses look superficially similar
+  /// (base58/bech32 strings), so a purely-format-only check would happily
+  /// accept a mainnet address while the wallet is in testnet mode or vice
+  /// versa — sending there is not what the user intended and can result in
+  /// funds effectively going to the wrong network/recipient.
+  static bool isValidBitcoinAddress(String address, {required bool isMainnet}) {
+    final trimmed = address.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+    if (isMainnet) {
+      final bech32 = RegExp(r'^bc1[0-9a-zA-Z]{11,71}$');
+      final base58 = RegExp(r'^[13][1-9A-HJ-NP-Za-km-z]{25,39}$');
+      return bech32.hasMatch(trimmed) || base58.hasMatch(trimmed);
+    }
+    final bech32Testnet = RegExp(r'^tb1[0-9a-zA-Z]{11,71}$');
+    final base58Testnet = RegExp(r'^[mn2][1-9A-HJ-NP-Za-km-z]{25,39}$');
+    return bech32Testnet.hasMatch(trimmed) || base58Testnet.hasMatch(trimmed);
+  }
+
+  /// EVM addresses (Rootstock/Ethereum) don't differ in format between
+  /// mainnet/testnet — only the chainId used when signing differs — so this
+  /// only needs to validate the hex format itself.
+  static bool isValidEvmAddress(String address) {
+    return RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(address.trim());
   }
 
   final int networkByte;

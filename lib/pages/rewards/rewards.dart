@@ -15,15 +15,6 @@ class Rewards extends StatefulWidget {
 class _RewardsState extends State<Rewards> with AutomaticKeepAliveClientMixin {
   var randon = Random();
 
-  final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-    minimumSize: const Size(88, 36),
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(2)),
-    ),
-    elevation: 0,
-  );
-
   _RewardsState();
 
   @override

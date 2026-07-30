@@ -50,15 +50,17 @@ const shimmerGradient = LinearGradient(
 );
 
 void showMessage(String message, BuildContext context) {
-  final snackBar = SnackBar(
-    content: Text(message),
-    action: SnackBarAction(
-      label: 'Ok',
-      onPressed: () {},
+  // Clear any snackbar already showing/queued first — otherwise repeated
+  // taps (e.g. tapping "Copy" a few times) queue up one snackbar per tap,
+  // each waiting its turn, which reads as "the message never goes away".
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.clearSnackBars();
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(message),
+      duration: const Duration(seconds: 3),
     ),
   );
-
-  ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 
 final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
@@ -69,12 +71,22 @@ final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
   ),
 );
 
+/// Same as [raisedButtonStyle] but flat (no elevation) — used by menu/reward
+/// buttons that sit on already-decorated containers.
+final ButtonStyle raisedButtonStyleFlat = ElevatedButton.styleFrom(
+  minimumSize: const Size(88, 36),
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.all(Radius.circular(2)),
+  ),
+  elevation: 0,
+);
+
 final ButtonStyle orangeButton = ElevatedButton.styleFrom(
   minimumSize: const Size(85, 36),
   backgroundColor: orange(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle yellowButton = ElevatedButton.styleFrom(
@@ -82,7 +94,6 @@ final ButtonStyle yellowButton = ElevatedButton.styleFrom(
   backgroundColor: yellow(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle lightBlueButton = ElevatedButton.styleFrom(
@@ -90,7 +101,6 @@ final ButtonStyle lightBlueButton = ElevatedButton.styleFrom(
   backgroundColor: lightBlue(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle pinkButton = ElevatedButton.styleFrom(
@@ -98,7 +108,6 @@ final ButtonStyle pinkButton = ElevatedButton.styleFrom(
   backgroundColor: pink(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle greenButton = ElevatedButton.styleFrom(
@@ -106,7 +115,13 @@ final ButtonStyle greenButton = ElevatedButton.styleFrom(
   backgroundColor: green(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
+);
+
+final ButtonStyle purpleButton = ElevatedButton.styleFrom(
+  minimumSize: const Size(85, 36),
+  backgroundColor: purple(),
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  shape: const StadiumBorder(),
 );
 
 final ButtonStyle pinkButtonStyle = ElevatedButton.styleFrom(
@@ -114,7 +129,6 @@ final ButtonStyle pinkButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: pink(),
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 final ButtonStyle blackWhiteButton = ElevatedButton.styleFrom(
@@ -122,7 +136,6 @@ final ButtonStyle blackWhiteButton = ElevatedButton.styleFrom(
   backgroundColor: Colors.white,
   padding: const EdgeInsets.symmetric(horizontal: 16),
   shape: const StadiumBorder(),
-  side: const BorderSide(width: 2, color: Colors.black),
 );
 
 const whiteText = TextStyle(fontWeight: FontWeight.normal, fontSize: 20, color: Colors.white);
@@ -130,6 +143,15 @@ const whiteText = TextStyle(fontWeight: FontWeight.normal, fontSize: 20, color: 
 const blackText = TextStyle(fontWeight: FontWeight.normal, fontSize: 20, color: Colors.black);
 
 const smallBlackText = TextStyle(fontWeight: FontWeight.normal, fontSize: 12, color: Colors.black);
+
+/// Matches the bold-white label style used on the login page's pill buttons
+/// (pinkButton/greenButton/lightBlueButton), sized for smaller inline buttons.
+const smallWhiteBoldText =
+    TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white);
+
+/// Shared style for helper/caption text under a field or amount (e.g. "USD
+/// 0.00" previews, "Paste or Scan" hints).
+const mutedCaptionText = TextStyle(color: Colors.grey, fontSize: 13);
 
 Future<void> delay(BuildContext context, int seconds) {
   return Future.delayed(Duration(seconds: seconds), () {});
@@ -234,6 +256,84 @@ Future<int> getLastUsdPrice() async {
 
 openDataBase() async {
   await EntityHelper().setUp();
+}
+
+/// Persisted manual position/size of the wallet card on the home screen,
+/// as fractions of screen height, so a user's manual drag/resize survives
+/// app restarts.
+Future<double?> getWalletCardTopFraction() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getDouble("walletCardTopFraction");
+}
+
+Future<void> setWalletCardTopFraction(double fraction) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setDouble("walletCardTopFraction", fraction);
+}
+
+Future<double?> getWalletCardHeightFraction() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getDouble("walletCardHeightFraction");
+}
+
+Future<void> setWalletCardHeightFraction(double fraction) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setDouble("walletCardHeightFraction", fraction);
+}
+
+/// Persisted testnet/mainnet toggle. Defaults to testnet (false) so a fresh
+/// install never accidentally starts pointed at mainnet.
+Future<bool> getIsMainnet() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool("isMainnet") ?? false;
+}
+
+Future<void> setIsMainnet(bool isMainnet) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool("isMainnet", isMainnet);
+}
+
+/// Persisted language override (an ISO 639-1 code like "en"/"pt"/"es"). Null
+/// means "follow the system language" — the default, since there's no stored
+/// value until the user explicitly picks one in Settings.
+Future<String?> getLanguageCode() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString("languageCode");
+}
+
+Future<void> setLanguageCode(String? languageCode) async {
+  final prefs = await SharedPreferences.getInstance();
+  if (languageCode == null) {
+    await prefs.remove("languageCode");
+  } else {
+    await prefs.setString("languageCode", languageCode);
+  }
+}
+
+/// Persisted per-network custom node/API URL overrides (Settings > custom
+/// node URLs). [key] is one of the constants below — kept separate per
+/// testnet/mainnet so switching network mode can never silently point at the
+/// wrong network's node. Null/absent means "use the .env default".
+const String customBitcoinNodeUrlTestnetKey = "customBitcoinNodeUrlTestnet";
+const String customBitcoinNodeUrlMainnetKey = "customBitcoinNodeUrlMainnet";
+const String customBitcoinEsploraUrlTestnetKey = "customBitcoinEsploraUrlTestnet";
+const String customBitcoinEsploraUrlMainnetKey = "customBitcoinEsploraUrlMainnet";
+const String customRootstockNodeUrlTestnetKey = "customRootstockNodeUrlTestnet";
+const String customRootstockNodeUrlMainnetKey = "customRootstockNodeUrlMainnet";
+
+Future<String?> getCustomNodeUrl(String key) async {
+  final prefs = await SharedPreferences.getInstance();
+  final value = prefs.getString(key);
+  return (value == null || value.trim().isEmpty) ? null : value.trim();
+}
+
+Future<void> setCustomNodeUrlPref(String key, String? value) async {
+  final prefs = await SharedPreferences.getInstance();
+  if (value == null || value.trim().isEmpty) {
+    await prefs.remove(key);
+  } else {
+    await prefs.setString(key, value.trim());
+  }
 }
 
 testEncriptData() {

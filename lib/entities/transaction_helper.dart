@@ -13,6 +13,8 @@ class TransactionHelper extends EntityHelper {
   static const status = 'status';
   static const type = 'type';
   static const destination = 'destination';
+  static const network = 'network';
+  static const timestampMs = 'timestampMs';
 
   static final TransactionHelper _instance = TransactionHelper._internal();
 
@@ -33,7 +35,9 @@ class TransactionHelper extends EntityHelper {
             $ddateTime TEXT NOT NULL,
             $status TEXT NOT NULL,
             $type INTEGER NOT NULL,
-            $destination TEXT NOT NULL
+            $destination TEXT NOT NULL,
+            $network TEXT NOT NULL DEFAULT '',
+            $timestampMs INTEGER NOT NULL DEFAULT 0
           )
           ''';
     return createTable;
@@ -49,10 +53,25 @@ class TransactionHelper extends EntityHelper {
     return inserted;
   }
 
-  Future<List<SimpleTransaction>> fetchItems(final String walletId) async {
+  Future<bool> transactionExists(String txId) async {
     final db = await database;
-    final List<Map<String, Object?>> walletMaps =
-        await db.query(table); //, where: 'walletId = ? ', whereArgs: [walletId]);
+    final rows = await db.query(table, where: '$transactionId = ?', whereArgs: [txId], limit: 1);
+    return rows.isNotEmpty;
+  }
+
+  /// Fetches transactions for [walletId], optionally filtered to a single
+  /// [networkFilter] (a Network enum's .name, e.g. "BITCOIN_TESTNET"),
+  /// ordered newest-first by [timestampMs].
+  Future<List<SimpleTransaction>> fetchItems(final String walletId, {String? networkFilter}) async {
+    final db = await database;
+    final where = networkFilter == null ? 'walletId = ?' : 'walletId = ? AND network = ?';
+    final whereArgs = networkFilter == null ? [walletId] : [walletId, networkFilter];
+    final List<Map<String, Object?>> walletMaps = await db.query(
+      table,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'timestampMs DESC',
+    );
     if (walletMaps.isNotEmpty) {
       var list = [
         for (final {
@@ -65,6 +84,8 @@ class TransactionHelper extends EntityHelper {
               'status': status as String?,
               'type': type as int,
               'destination': destination as String?,
+              'network': txNetwork as String?,
+              'timestampMs': txTimestampMs as int?,
             } in walletMaps)
           SimpleTransaction(
             status: status ?? "",
@@ -76,6 +97,8 @@ class TransactionHelper extends EntityHelper {
             valueInWeiFormatted: valueInWeiFormatted,
             type: type,
             destination: destination,
+            network: txNetwork ?? '',
+            timestampMs: txTimestampMs ?? 0,
           ),
       ];
       return list;
@@ -89,12 +112,14 @@ class SimpleTransaction {
   late String amountInWeis;
   late String valueInUsdFormatted;
   late String valueInWeiFormatted;
-  late bool? transactionSent;
+  bool? transactionSent;
   String ddateTime = '';
   int type = 0; // TransactionType
   final String walletId;
   final String? status;
   final String? destination;
+  final String network;
+  final int timestampMs;
 
   SimpleTransaction(
       {this.status,
@@ -105,7 +130,10 @@ class SimpleTransaction {
       required this.valueInUsdFormatted,
       required this.valueInWeiFormatted,
       required this.type,
-      required this.destination});
+      required this.destination,
+      this.transactionSent,
+      this.network = '',
+      this.timestampMs = 0});
 
   Map<String, Object?> toMap() {
     return {
@@ -117,12 +145,14 @@ class SimpleTransaction {
       'valueInWeiFormatted': valueInWeiFormatted,
       'status': status,
       'type': type,
-      'destination': destination
+      'destination': destination,
+      'network': network,
+      'timestampMs': timestampMs,
     };
   }
 
   @override
   String toString() {
-    return 'SimpleTransaction{transactionId: $transactionId, amountInWeis: $amountInWeis, ddateTime: $ddateTime,  walletId: $walletId}, valueInUsdFormatted: ${valueInUsdFormatted}, valueInWeiFormatted: ${valueInWeiFormatted},  status: ${status} type: $type destination: $destination';
+    return 'SimpleTransaction{transactionId: $transactionId, amountInWeis: $amountInWeis, ddateTime: $ddateTime,  walletId: $walletId}, valueInUsdFormatted: ${valueInUsdFormatted}, valueInWeiFormatted: ${valueInWeiFormatted},  status: ${status} type: $type destination: $destination network: $network timestampMs: $timestampMs';
   }
 }

@@ -1,12 +1,13 @@
 // dart
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dartsv/dartsv.dart' as dartsv;
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
-import '../entities/bitcoin_address_details.dart';
 import '../entities/bitcoin_utxo.dart';
 
 class BitcoinNodeClient {
@@ -20,8 +21,8 @@ class BitcoinNodeClient {
 
   BitcoinNodeClient({
     required String rpcUrl,
-    required this.rpcUser,
-    required this.rpcPassword,
+    this.rpcUser = '',
+    this.rpcPassword = '',
     this.rpcCallOverride,
   }) : rpcUri = Uri.parse(rpcUrl);
 
@@ -33,15 +34,11 @@ class BitcoinNodeClient {
     final body =
         jsonEncode({'jsonrpc': '1.0', 'id': 'dart', 'method': method, 'params': params ?? []});
 
-    final auth = base64Encode(utf8.encode('$rpcUser:$rpcPassword'));
-    final resp = await http.post(
-      rpcUri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Basic $auth',
-      },
-      body: body,
-    );
+    final headers = {'Content-Type': 'application/json'};
+    if (rpcUser.isNotEmpty || rpcPassword.isNotEmpty) {
+      headers['Authorization'] = 'Basic ${base64Encode(utf8.encode('$rpcUser:$rpcPassword'))}';
+    }
+    final resp = await http.post(rpcUri, headers: headers, body: body);
 
     if (resp.statusCode != 200) {
       throw StateError('RPC HTTP ${resp.statusCode}: ${resp.body}');
@@ -55,6 +52,9 @@ class BitcoinNodeClient {
     return decoded['result'];
   }
 
+  /// Returns the confirmed BTC balance for [address] by scanning the UTXO set
+  /// via RPC `scantxoutset`. Only available on self-hosted nodes; public RPC
+  /// providers reject this method — prefer [fetchBalanceFromEsplora] instead.
   Future<double> getBalanceForAddress(String address) async {
     try {
       final result = await _callRpc('scantxoutset', [
@@ -119,8 +119,8 @@ class BitcoinNodeClient {
       return 'p2sh-p2wpkh';
     }
 
-    // Legacy P2PKH (mainnet: 1)
-    if (a.startsWith('1')) {
+    // Legacy P2PKH (mainnet: 1, testnet: m or n)
+    if (a.startsWith('1') || a.startsWith('m') || a.startsWith('n')) {
       return 'p2pkh';
     }
 
@@ -200,29 +200,28 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
         'conservative estimate or compute exact vsize from script details.'
   };
 
+  /// Estimates the transaction fee in BTC given a list of [utxos] as inputs.
+  ///
+  /// Infers the script type per UTXO from its address (falling back to
+  /// [inputScript]) to compute per-input vsize. Calls `estimatesmartfee` RPC
+  /// for the current fee rate, then the Esplora `/fee-estimates` endpoint
+  /// ([esploraBaseUrl] override, else `BITCOIN_ESPLORA_URL`) if the RPC is
+  /// unavailable; falls back to [fallbackRateSatsPerVbyte] only if both fail.
   Future<double> estimateFeeByInputs({
     int numOutputs = 2,
     int confTarget = 6,
     String inputScript = 'p2wpkh', // 'p2pkh', 'p2wpkh', 'p2sh-p2wpkh', 'p2tr'
     double fallbackRateSatsPerVbyte = 50.0,
     List<Utxo>? utxos,
+    String? esploraBaseUrl,
   }) async {
     // Determine inputs and compute total input vsize (infer from utxos if provided)
     int inputs = (utxos != null && utxos.isNotEmpty) ? utxos.length : 1;
 
     try {
-      final result = await _callRpc('estimatesmartfee', [confTarget]);
-
-      double feeRateSatsPerVbyte;
-      if (result is Map && result.containsKey('feerate')) {
-        final feerate = result['feerate'];
-        final feerateBtcPerKb =
-            feerate is num ? feerate.toDouble() : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
-        feeRateSatsPerVbyte =
-            feerateBtcPerKb > 0 ? feerateBtcPerKb * 1e8 / 1000.0 : fallbackRateSatsPerVbyte;
-      } else {
-        feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
-      }
+      final feeRateSatsPerVbyte = await _getFeeRateSatsPerVbyte(
+          confTarget, fallbackRateSatsPerVbyte,
+          esploraBaseUrl: esploraBaseUrl);
 
       final Map<String, int> perInputVsize = {
         'p2pkh': 148,
@@ -238,24 +237,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
 
       if (utxos != null && utxos.isNotEmpty) {
         for (final u in utxos) {
-          String chosenScript = inputScript;
-          try {
-            final addr = (u as dynamic).address as String?;
-            if (addr != null) {
-              final a = addr.toLowerCase();
-              if (a.startsWith('bc1p') || a.startsWith('tb1p')) {
-                chosenScript = 'p2tr';
-              } else if (a.startsWith('bc1q') || a.startsWith('tb1q')) {
-                chosenScript = 'p2wpkh';
-              } else if (a.startsWith('3') || a.startsWith('2')) {
-                chosenScript = 'p2sh-p2wpkh';
-              } else if (a.startsWith('1')) {
-                chosenScript = 'p2pkh';
-              }
-            }
-          } catch (_) {
-            // fallback to provided inputScript
-          }
+          final chosenScript = inferInputScriptFromAddress(u.address, defaultScript: inputScript);
           totalInputVsize += perInputVsize[chosenScript] ?? perInputVsize[inputScript]!;
         }
       } else {
@@ -280,22 +262,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       int totalInputVsize = 0;
       if (utxos != null && utxos.isNotEmpty) {
         for (final u in utxos) {
-          String chosenScript = inputScript;
-          try {
-            final addr = (u as dynamic).address as String?;
-            if (addr != null) {
-              final a = addr.toLowerCase();
-              if (a.startsWith('bc1p') || a.startsWith('tb1p')) {
-                chosenScript = 'p2tr';
-              } else if (a.startsWith('bc1q') || a.startsWith('tb1q')) {
-                chosenScript = 'p2wpkh';
-              } else if (a.startsWith('3') || a.startsWith('2')) {
-                chosenScript = 'p2sh-p2wpkh';
-              } else if (a.startsWith('1')) {
-                chosenScript = 'p2pkh';
-              }
-            }
-          } catch (_) {}
+          final chosenScript = inferInputScriptFromAddress(u.address, defaultScript: inputScript);
           totalInputVsize += perInputVsize[chosenScript] ?? perInputVsize[inputScript]!;
         }
       } else {
@@ -309,35 +276,30 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     }
   }
 
+  /// Estimates the transaction fee in BTC for a transaction with [numInputs]
+  /// inputs and [numOutputs] outputs of type [inputScript].
+  ///
+  /// Calls `estimatesmartfee` RPC for [confTarget] blocks, then the Esplora
+  /// `/fee-estimates` endpoint ([esploraBaseUrl] override, else
+  /// `BITCOIN_ESPLORA_URL`) if the RPC is unavailable; falls back to
+  /// [fallbackRateSatsPerVbyte] only if both fail.
+  /// Throws [ArgumentError] if [numInputs] is not positive.
   Future<double> estimateFee({
     required int numInputs,
     int numOutputs = 2,
     int confTarget = 6,
     String inputScript = 'p2wpkh', // 'p2pkh', 'p2wpkh', 'p2sh-p2wpkh', 'p2tr'
     double fallbackRateSatsPerVbyte = 50.0,
+    String? esploraBaseUrl,
   }) async {
     if (numInputs <= 0) {
       throw ArgumentError('numInputs must be > 0');
     }
 
     try {
-      // Call Bitcoin Core RPC estimatesmartfee
-      final result = await _callRpc('estimatesmartfee', [confTarget]);
-
-      // estimatesmartfee returns a map with 'feerate' in BTC/kB when available
-      double feeRateSatsPerVbyte;
-      if (result is Map && result.containsKey('feerate')) {
-        final feerate = result['feerate'];
-        final feerateBtcPerKb =
-            feerate is num ? feerate.toDouble() : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
-        if (feerateBtcPerKb > 0) {
-          feeRateSatsPerVbyte = feerateBtcPerKb * 1e8 / 1000.0;
-        } else {
-          feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
-        }
-      } else {
-        feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
-      }
+      final feeRateSatsPerVbyte = await _getFeeRateSatsPerVbyte(
+          confTarget, fallbackRateSatsPerVbyte,
+          esploraBaseUrl: esploraBaseUrl);
 
       // Typical vsize per input by script type (approximate)
       final Map<String, int> perInputVsize = {
@@ -414,23 +376,6 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     return utxos;
   }
 
-  Future<String> sendToAddress(String address, double amount) async {
-    final result = await _callRpc('sendtoaddress', [address, amount]);
-
-    if (result is String) {
-      return result;
-    }
-
-    if (result is Map<String, dynamic> && result.containsKey('txid')) {
-      final txid = result['txid'];
-      if (txid is String) {
-        return txid;
-      }
-    }
-
-    throw Exception('Failed to send to address: $result');
-  }
-
   /// Uses the provided list of `Utxo` objects as inputs for the created transaction.
   Future<String> sendTransferUsingUtxos(
     String toAddress,
@@ -438,26 +383,19 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     List<Utxo> utxos, {
     List<String>? privKeysWif,
     double fee = 0.0001,
-    String? changeAddress,
+    required String changeAddress,
   }) async {
     if (utxos.isEmpty) {
       throw ArgumentError('UTXOs list must not be empty');
+    }
+    if (changeAddress.isEmpty) {
+      throw ArgumentError('changeAddress must not be empty');
     }
 
     // Build inputs array and sum input amounts using Utxo model
     final List<Map<String, dynamic>> inputs = utxos.map((u) => u.toRpcInput()).toList();
     final double totalIn = utxos.fold(0.0, (double sum, Utxo u) => sum + u.amount);
-
-    // Resolve change address if not provided
-    String changeAddr = changeAddress ?? '';
-    if (changeAddr.isEmpty) {
-      final rawChange = await _callRpc('getrawchangeaddress');
-      if (rawChange is String && rawChange.isNotEmpty) {
-        changeAddr = rawChange;
-      } else {
-        throw Exception('Failed to obtain change address from wallet');
-      }
-    }
+    final String changeAddr = changeAddress;
 
     // Compute change and handle dust
     // Use integer arithmetic (satoshis) to avoid floating point rounding issues
@@ -547,78 +485,17 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
   /// This method attempts to support common input types (P2PKH, P2WPKH, P2SH-P2WPKH)
   /// using the bundled `dartsv`/`bitcoin_base` helpers. It is intentionally
   /// best-effort: if signing cannot be completed the method throws.
+  ///
+  /// The actual EC signing math is CPU-heavy (ECDSA sign per input) and runs on
+  /// a background isolate via [compute] so it doesn't freeze the UI thread.
   Future<String> _signRawTransactionOffline(
       String rawHex, List<Utxo> utxos, List<String> wifs) async {
-    // Attempt a best-effort offline signing using dartsv library which is
-    // available in this project. We use dynamic typing to keep the code
-    // resilient to small API differences, but rely on dartsv providing
-    // Transaction.fromHex and KeyPair.fromWIF.
     try {
-      final tx = dartsv.Transaction.fromHex(rawHex);
-
-      // Parse WIF keys into SVPrivateKey objects and wrap them into TransactionSigner
-      final List<dartsv.TransactionSigner> signers = [];
-      for (final w in wifs) {
-        try {
-          final svPriv = dartsv.SVPrivateKey.fromWIF(w);
-          // SIGHASH_ALL (1) is the common default
-          final signer = dartsv.TransactionSigner(1, svPriv);
-          signers.add(signer);
-        } catch (e) {
-          log.warning('Invalid WIF provided, skipping: $e');
-        }
-      }
-
-      if (signers.isEmpty) {
-        throw Exception('No valid WIF keys provided');
-      }
-
-      // For each input, find the matching UTXO and sign using any available signer
-      for (var i = 0; i < tx.inputs.length; i++) {
-        final input = tx.inputs[i];
-
-        Utxo? match;
-        for (final u in utxos) {
-          // dartsv TransactionInput stores prevTxnId and prevTxnOutputIndex
-          final prevId = input.prevTxnId.toLowerCase();
-          final prevIndex = input.prevTxnOutputIndex;
-          if (u.txid.toLowerCase() == prevId && u.vout == prevIndex) {
-            match = u;
-            break;
-          }
-        }
-
-        if (match == null) {
-          throw Exception('Missing UTXO information for input index $i');
-        }
-
-        final valueSats = (match.amount * 1e8).round();
-        final scriptHex = match.scriptPubKey ?? '';
-        final outScript = scriptHex.isNotEmpty ? dartsv.SVScript.fromHex(scriptHex) : null;
-
-        bool signed = false;
-        for (final signer in signers) {
-          try {
-            // Build a TransactionOutput representing the UTXO being spent
-            if (outScript == null) {
-              // Need script to sign properly
-              continue;
-            }
-            final utxoOutput = dartsv.TransactionOutput(BigInt.from(valueSats), outScript);
-            signer.sign(tx, utxoOutput, i);
-            signed = true;
-            break;
-          } catch (e) {
-            // try next signer
-          }
-        }
-
-        if (!signed) {
-          throw Exception('Failed to sign input $i with provided keys');
-        }
-      }
-
-      return tx.serialize();
+      return await compute(_signRawTransactionOfflineIsolate, {
+        'rawHex': rawHex,
+        'utxos': utxos.map((u) => u.toMap()).toList(),
+        'wifs': wifs,
+      });
     } catch (e) {
       throw Exception('Offline signing failed: $e');
     }
@@ -727,8 +604,11 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
 
   /// Calculate fee for a given confirmation target (number of blocks).
   ///
-  /// Calls `estimatesmartfee` RPC to obtain a fee rate for `confTarget` (blocks).
-  /// Then computes an estimated transaction vsize and fee (in BTC and sats).
+  /// Calls `estimatesmartfee` RPC to obtain a fee rate for `confTarget`
+  /// (blocks), then the Esplora `/fee-estimates` endpoint ([esploraBaseUrl]
+  /// override, else `BITCOIN_ESPLORA_URL`) if the RPC is unavailable, then
+  /// [fallbackRateSatsPerVbyte] only if both fail. Then computes an estimated
+  /// transaction vsize and fee (in BTC and sats).
   ///
   /// Returns a map with keys:
   /// - `feeBtc` (double): estimated fee in BTC
@@ -742,6 +622,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     String inputScript = 'p2wpkh',
     double fallbackRateSatsPerVbyte = 50.0,
     List<Utxo>? utxos,
+    String? esploraBaseUrl,
   }) async {
     if (confTarget <= 0) {
       throw ArgumentError('confTarget must be > 0');
@@ -750,22 +631,12 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
       throw ArgumentError('Provide numInputs > 0 or a non-empty utxos list');
     }
 
-    // Determine fee rate (sats/vbyte) using estimatesmartfee RPC, fallback on provided rate
-    double feeRateSatsPerVbyte;
-    try {
-      final result = await _callRpc('estimatesmartfee', [confTarget]);
-      if (result is Map && result.containsKey('feerate')) {
-        final feerate = result['feerate'];
-        final feerateBtcPerKb =
-            feerate is num ? feerate.toDouble() : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
-        feeRateSatsPerVbyte =
-            feerateBtcPerKb > 0 ? feerateBtcPerKb * 1e8 / 1000.0 : fallbackRateSatsPerVbyte;
-      } else {
-        feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
-      }
-    } catch (e) {
-      feeRateSatsPerVbyte = fallbackRateSatsPerVbyte;
-    }
+    // Determine fee rate (sats/vbyte): estimatesmartfee RPC, then Esplora
+    // /fee-estimates, then the provided fallback rate — see
+    // _getFeeRateSatsPerVbyte.
+    final feeRateSatsPerVbyte = await _getFeeRateSatsPerVbyte(
+        confTarget, fallbackRateSatsPerVbyte,
+        esploraBaseUrl: esploraBaseUrl);
 
     // Input size inference
     final Map<String, int> perInputVsize = {
@@ -780,22 +651,7 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     int totalInputVsize = 0;
     if (utxos != null && utxos.isNotEmpty) {
       for (final u in utxos) {
-        String chosenScript = inputScript;
-        try {
-          final addr = (u as dynamic).address as String?;
-          if (addr != null) {
-            final a = addr.toLowerCase();
-            if (a.startsWith('bc1p') || a.startsWith('tb1p')) {
-              chosenScript = 'p2tr';
-            } else if (a.startsWith('bc1q') || a.startsWith('tb1q')) {
-              chosenScript = 'p2wpkh';
-            } else if (a.startsWith('3') || a.startsWith('2')) {
-              chosenScript = 'p2sh-p2wpkh';
-            } else if (a.startsWith('1')) {
-              chosenScript = 'p2pkh';
-            }
-          }
-        } catch (_) {}
+        final chosenScript = inferInputScriptFromAddress(u.address, defaultScript: inputScript);
         totalInputVsize += perInputVsize[chosenScript] ?? perInputVsize[inputScript]!;
       }
     } else {
@@ -814,302 +670,328 @@ final perInputVsize = perInputVsizeMap[script] ?? perInputVsizeMap['p2wpkh'];
     };
   }
 
-  /// Fetch vouts from a Blockbook-compatible REST API for a specific transaction (txid)
-  /// and return them as a list of `Utxo` objects. This extracts `scriptPubKey` (hex when
-  /// available) and an `address` from each vout when present.
+  /// Determines the current fee rate in sats/vbyte for [confTarget] blocks.
   ///
-  /// Parameters:
-  /// - txid: transaction id to fetch
-  /// - blockbookBaseUrl: optional base URL for blockbook (e.g. https://blockbook.example). If not
-  ///   provided the method will throw (to avoid adding dotenv dependency here).
-  /// - extraHeaders: optional HTTP headers to include
-  Future<List<Utxo>> fetchUtxosFromTransaction(String txid,
-      {Map<String, String>? extraHeaders}) async {
-    if (txid.isEmpty) {
-      throw ArgumentError('txid must not be empty');
-    }
-
-    String? blockbookBaseUrl = dotenv.env['BLOCK_BOOK_URL'];
-    final base = (blockbookBaseUrl ?? '').trim();
-    if (base.isEmpty) {
-      throw ArgumentError('blockbookBaseUrl must be provided');
-    }
-
-    String normalizedBase = base;
-    if (normalizedBase.endsWith('/')) {
-      normalizedBase = normalizedBase.substring(0, normalizedBase.length - 1);
-    }
-
-    final uri = Uri.parse('$normalizedBase/api/v2/tx-specific/$txid');
-    final headers = <String, String>{'Accept': 'application/json', ...?extraHeaders};
-
-    final resp = await http.get(uri, headers: headers);
-    if (resp.statusCode != 200) {
-      throw Exception('Blockbook HTTP ${resp.statusCode}: ${resp.body}');
-    }
-
-    final body = jsonDecode(resp.body);
-    Map<String, dynamic>? tx;
-    if (body is Map<String, dynamic>) {
-      tx = body;
-    } else if (body is Map && body.containsKey('data') && body['data'] is Map) {
-      tx = body['data'] as Map<String, dynamic>;
-    } else {
-      return <Utxo>[];
-    }
-
-    final vouts = tx['vout'];
-    if (vouts is! List) {
-      return <Utxo>[];
-    }
-
-    final List<Utxo> utxos = [];
-    for (var idx = 0; idx < vouts.length; idx++) {
-      final v = vouts[idx];
-      if (v is! Map<String, dynamic>) {
-        continue;
-      }
-
-      final Map<String, dynamic> normalized = {};
-      normalized['txid'] = txid;
-
-      // vout index
-      if (v.containsKey('n')) {
-        normalized['vout'] = v['n'];
-      } else if (v.containsKey('vout')) {
-        normalized['vout'] = v['vout'];
-      } else {
-        normalized['vout'] = idx;
-      }
-
-      // amount: try 'value' (BTC or sats string), 'valueSat', or 'amount'
-      if (v.containsKey('value')) {
-        final raw = v['value'];
-        if (raw is num) {
-          normalized['amount'] = raw.toDouble();
-        } else if (raw is String) {
-          if (RegExp(r'^\d+$').hasMatch(raw)) {
-            final sats = int.tryParse(raw) ?? 0;
-            normalized['amount'] = sats / 1e8;
-          } else {
-            normalized['amount'] = double.tryParse(raw) ?? 0.0;
-          }
+  /// Tries Bitcoin Core RPC `estimatesmartfee` first. If that errors, times
+  /// out, or returns no usable `feerate` (e.g. the node has insufficient
+  /// mempool data and reports `errors` instead), falls back to the
+  /// Esplora-compatible `/fee-estimates` REST endpoint — Esplora is already a
+  /// hard dependency for balance/UTXO discovery, so this keeps fee estimation
+  /// working even when the RPC endpoint alone is degraded or unreachable.
+  /// Only falls back to the hardcoded [fallbackRateSatsPerVbyte] if both
+  /// sources fail.
+  Future<double> _getFeeRateSatsPerVbyte(
+    int confTarget,
+    double fallbackRateSatsPerVbyte, {
+    String? esploraBaseUrl,
+  }) async {
+    try {
+      final result = await _callRpc('estimatesmartfee', [confTarget]);
+      if (result is Map && result.containsKey('feerate')) {
+        final feerate = result['feerate'];
+        final feerateBtcPerKb = feerate is num
+            ? feerate.toDouble()
+            : double.tryParse(feerate?.toString() ?? '') ?? 0.0;
+        if (feerateBtcPerKb > 0) {
+          return feerateBtcPerKb * 1e8 / 1000.0;
         }
-      } else if (v.containsKey('valueSat')) {
-        final raw = v['valueSat'];
-        if (raw is num) {
-          normalized['amount'] = raw.toInt() / 1e8;
-        } else if (raw is String) {
-          normalized['amount'] = (int.tryParse(raw) ?? 0) / 1e8;
-        }
-      } else if (v.containsKey('amount')) {
-        final raw = v['amount'];
-        if (raw is num) {
-          normalized['amount'] = raw.toDouble();
-        } else if (raw is String) {
-          normalized['amount'] = double.tryParse(raw) ?? 0.0;
+      } else if (result is Map && result.containsKey('errors')) {
+        final errs = result['errors'];
+        if (errs is List && errs.isNotEmpty) {
+          log.warning('estimatesmartfee returned errors: $errs — trying Esplora fallback');
         }
       }
-
-      // scriptPubKey
-      String? scriptHex;
-      if (v.containsKey('scriptPubKey')) {
-        final spk = v['scriptPubKey'];
-        if (spk is Map<String, dynamic>) {
-          if (spk.containsKey('hex')) {
-            scriptHex = spk['hex'] as String?;
-          } else if (spk.containsKey('asm')) {
-            scriptHex = spk['asm'] as String?;
-          }
-
-          if (spk.containsKey('addresses') &&
-              spk['addresses'] is List &&
-              (spk['addresses'] as List).isNotEmpty) {
-            final addr = (spk['addresses'] as List).firstWhere((_) => true, orElse: () => null);
-            if (addr is String) {
-              normalized['address'] = addr;
-            }
-          } else if (spk.containsKey('address') && spk['address'] is String) {
-            normalized['address'] = spk['address'];
-          }
-        } else if (spk is String) {
-          scriptHex = spk;
-        }
-      }
-
-      if (scriptHex == null) {
-        if (v.containsKey('hex') && v['hex'] is String) {
-          scriptHex = v['hex'] as String?;
-        } else if (v.containsKey('script') && v['script'] is String) {
-          scriptHex = v['script'] as String?;
-        }
-      }
-
-      if (scriptHex != null) {
-        normalized['scriptPubKey'] = scriptHex;
-      }
-
-      // addresses directly on vout
-      if (!normalized.containsKey('address')) {
-        if (v.containsKey('addresses') &&
-            v['addresses'] is List &&
-            (v['addresses'] as List).isNotEmpty) {
-          final addr = (v['addresses'] as List).firstWhere((_) => true, orElse: () => null);
-          if (addr is String) {
-            normalized['address'] = addr;
-          }
-        }
-      }
-
-      try {
-        utxos.add(Utxo.fromMap(normalized));
-      } catch (e) {
-        log.warning('Skipping malformed vout for tx $txid: $e');
-      }
+    } catch (e) {
+      log.warning('estimatesmartfee RPC failed: $e — trying Esplora fallback');
     }
 
-    return utxos;
+    final esploraRate = await _fetchEsploraFeeRate(confTarget, baseUrl: esploraBaseUrl);
+    if (esploraRate != null && esploraRate > 0) {
+      return esploraRate;
+    }
+
+    return fallbackRateSatsPerVbyte;
   }
 
-  /// Fetch address info from a Blockbook-compatible REST API endpoint
-  /// `GET {blockbookBaseUrl}/api/v2/address/{address}`.
-  ///
-  /// Returns a Map with keys:
-  /// - `balance` (double, BTC)
-  /// - `balanceSats` (int, satoshis)
-  /// - `txs` (List<dynamic>) : raw tx objects or txids as returned by Blockbook
-  /// - `txids` (List<String>) : extracted txids (if available)
-  /// - `raw` (Map<String,dynamic>) : the original parsed response (or its `data` wrapper)
-  Future<BitcoinAddressDetails> fetchAddressInfoFromBlockbook(String address,
-      {Map<String, String>? extraHeaders}) async {
+  /// Fetches a fee rate (sats/vbyte) for [confTarget] blocks from the
+  /// Esplora-compatible `/fee-estimates` endpoint (mempool.space /
+  /// blockstream.info format: `{"1": 87.1, "2": 65.4, ..., "144": 1.0}`,
+  /// keyed by confirmation target in blocks). Returns null on any error or if
+  /// Esplora isn't configured, so [_getFeeRateSatsPerVbyte] can fall back
+  /// further rather than throwing.
+  Future<double?> _fetchEsploraFeeRate(int confTarget, {String? baseUrl}) async {
+    try {
+      final envValue = dotenv.isInitialized ? dotenv.env['BITCOIN_ESPLORA_URL'] : null;
+      final base = (baseUrl ?? envValue ?? '').trim();
+      if (base.isEmpty) {
+        return null;
+      }
+      final normalizedBase = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+      final resp = await http.get(Uri.parse('$normalizedBase/fee-estimates'),
+          headers: const {'Accept': 'application/json'});
+      // mempool.space returns 203 (Non-Authoritative Information) rather than
+      // 200 for this specific endpoint — accept any 2xx, not just exactly 200.
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        return null;
+      }
+      final decoded = jsonDecode(resp.body);
+      if (decoded is! Map) {
+        return null;
+      }
+      // Not every confirmation target is present — pick the closest available
+      // target that is >= confTarget (prefer a slightly slower confirmation
+      // over a faster/pricier one the caller didn't ask for), or the largest
+      // available target otherwise.
+      final targets = decoded.keys.map((k) => int.tryParse(k.toString())).whereType<int>().toList()
+        ..sort();
+      if (targets.isEmpty) {
+        return null;
+      }
+      final chosenTarget = targets.firstWhere((t) => t >= confTarget, orElse: () => targets.last);
+      final rate = decoded[chosenTarget.toString()];
+      return rate is num ? rate.toDouble() : double.tryParse(rate?.toString() ?? '');
+    } catch (e) {
+      log.warning('Esplora fee-estimates fallback failed: $e');
+      return null;
+    }
+  }
+
+  String _resolveEsploraBaseUrl(String? override) {
+    final envValue = dotenv.isInitialized ? dotenv.env['BITCOIN_ESPLORA_URL'] : null;
+    final base = (override ?? envValue ?? '').trim();
+    if (base.isEmpty) {
+      throw ArgumentError('BITCOIN_ESPLORA_URL must be configured '
+          '(Esplora-compatible REST API base URL, e.g. mempool.space or blockstream.info)');
+    }
+    return base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+  }
+
+  /// Fetch the UTXO set for [address] from an Esplora-compatible REST API
+  /// (mempool.space / blockstream.info format): `GET {base}/address/{address}/utxo`.
+  /// Unlike a raw transaction scan, this endpoint is already filtered to this
+  /// address's unspent outputs, so every entry returned is safe to spend.
+  Future<List<Utxo>> fetchUtxosFromEsplora(String address, {String? baseUrl}) async {
     if (address.isEmpty) {
       throw ArgumentError('address must not be empty');
     }
 
-    String? blockbookBaseUrl = dotenv.env['BLOCK_BOOK_URL'];
-    final base = (blockbookBaseUrl ?? '').trim();
-    if (base.isEmpty) {
-      throw ArgumentError('blockbookBaseUrl must be provided');
-    }
-
-    String normalizedBase = base;
-    if (normalizedBase.endsWith('/')) {
-      normalizedBase = normalizedBase.substring(0, normalizedBase.length - 1);
-    }
-
-    final uri = Uri.parse('$normalizedBase/api/v2/address/$address');
-    final headers = <String, String>{'Accept': 'application/json', ...?extraHeaders};
-
-    final resp = await http.get(uri, headers: headers);
+    final base = _resolveEsploraBaseUrl(baseUrl);
+    final uri = Uri.parse('$base/address/$address/utxo');
+    final resp = await http.get(uri, headers: const {'Accept': 'application/json'});
     if (resp.statusCode != 200) {
-      throw Exception('Blockbook HTTP ${resp.statusCode}: ${resp.body}');
+      throw Exception('Esplora HTTP ${resp.statusCode}: ${resp.body}');
     }
 
     final body = jsonDecode(resp.body);
-    Map<String, dynamic>? data;
-    if (body is Map<String, dynamic>) {
-      data = body;
-    } else if (body is Map && body.containsKey('data') && body['data'] is Map) {
-      data = body['data'] as Map<String, dynamic>;
-    } else {
-      // Unexpected shape
-      data = <String, dynamic>{};
+    if (body is! List) {
+      return <Utxo>[];
     }
 
-    // Normalize balance (prefer 'balance', fallback to totalReceived - totalSent)
-    double balanceBtc = 0.0;
-    int balanceSats = 0;
-
-    dynamic balRaw = data['balance'] ?? data['balanceSat'] ?? data['balanceSatoshi'];
-    if (balRaw == null) {
-      // try compute from totals
-      final tr = data['totalReceived'] ?? data['total_received'] ?? data['totalReceivedBTC'];
-      final ts = data['totalSent'] ?? data['total_sent'] ?? data['totalSentBTC'];
-      if (tr != null || ts != null) {
-        double recv = 0.0;
-        double sent = 0.0;
-        if (tr != null) {
-          if (tr is num) {
-            recv = (tr > 1e6) ? tr.toDouble() / 1e8 : tr.toDouble();
-          } else if (tr is String) {
-            recv = RegExp(r'^\d+$').hasMatch(tr)
-                ? (int.tryParse(tr) ?? 0) / 1e8
-                : double.tryParse(tr) ?? 0.0;
-          }
-        }
-        if (ts != null) {
-          if (ts is num) {
-            sent = (ts > 1e6) ? ts.toDouble() / 1e8 : ts.toDouble();
-          } else if (ts is String) {
-            sent = RegExp(r'^\d+$').hasMatch(ts)
-                ? (int.tryParse(ts) ?? 0) / 1e8
-                : double.tryParse(ts) ?? 0.0;
-          }
-        }
-        balanceBtc = recv - sent;
-        balanceSats = (balanceBtc * 1e8).round();
+    // Esplora's UTXO entries only carry the block height they confirmed in,
+    // not a confirmation count — fetch the current tip once so real
+    // confirmation counts (not just a confirmed/unconfirmed flag) can be
+    // shown to help the user pick which UTXO to spend.
+    int? tipHeight;
+    try {
+      final tipResp = await http.get(Uri.parse('$base/blocks/tip/height'));
+      if (tipResp.statusCode == 200) {
+        tipHeight = int.tryParse(tipResp.body.trim());
       }
-    } else {
-      if (balRaw is num) {
-        // Heuristic: if value > 1e6 treat as sats
-        if (balRaw > 1e6) {
-          balanceSats = balRaw.toInt();
-          balanceBtc = balanceSats / 1e8;
-        } else {
-          balanceBtc = balRaw.toDouble();
-          balanceSats = (balanceBtc * 1e8).round();
-        }
-      } else if (balRaw is String) {
-        if (RegExp(r'^\d+$').hasMatch(balRaw)) {
-          // integer string -> sats
-          balanceSats = int.tryParse(balRaw) ?? 0;
-          balanceBtc = balanceSats / 1e8;
-        } else {
-          balanceBtc = double.tryParse(balRaw) ?? 0.0;
-          balanceSats = (balanceBtc * 1e8).round();
-        }
-      }
+    } catch (_) {
+      // Fall back to the confirmed/unconfirmed flag below if this fails.
     }
 
-    // Extract txs / txids
-    List<dynamic> txs = [];
-    List<String> txids = [];
+    return body
+        .whereType<Map<String, dynamic>>()
+        .where((item) => item.containsKey('txid') && item['txid'] is String)
+        .map((item) {
+      final rawValue = item['value'];
+      final int sats = rawValue is num ? rawValue.toInt() : int.tryParse('$rawValue') ?? 0;
+      final statusRaw = item['status'];
+      final Map<String, dynamic>? status = statusRaw is Map<String, dynamic> ? statusRaw : null;
+      final bool confirmed = status?['confirmed'] == true;
+      final int? blockHeight =
+          status?['block_height'] is int ? status!['block_height'] as int : null;
+      final int? blockTimeSec = status?['block_time'] is int ? status!['block_time'] as int : null;
 
-    if (data.containsKey('txs') && data['txs'] is List) {
-      txs = data['txs'] as List<dynamic>;
-    } else if (data.containsKey('transactions') && data['transactions'] is List) {
-      txs = data['transactions'] as List<dynamic>;
-    } else if (data.containsKey('txids') && data['txids'] is List) {
-      // sometimes txids returned directly
-      final items = data['txids'] as List<dynamic>;
-      txids = items.whereType<String>().toList();
-    }
+      final int confirmations = !confirmed
+          ? 0
+          : (tipHeight != null && blockHeight != null ? tipHeight - blockHeight + 1 : 1);
 
-    // If txs are present, try to extract txids from their contents
-    if (txs.isNotEmpty) {
-      for (final t in txs) {
-        if (t is String) {
-          txids.add(t);
-        } else if (t is Map<String, dynamic>) {
-          final tid = t['txid'] ?? t['tx_hash'] ?? t['id'];
-          if (tid is String) {
-            txids.add(tid);
-          }
-        }
-      }
-    }
-
-    // Deduplicate txids
-    txids = txids.toSet().toList();
-
-    final details = BitcoinAddressDetails(
-      balance: balanceBtc,
-      balanceSats: balanceSats,
-      txs: txs,
-      txids: txids,
-      raw: data,
-    );
-
-    return details;
+      return Utxo(
+        txid: item['txid'] as String,
+        vout: item['vout'] is int ? item['vout'] as int : int.parse('${item['vout']}'),
+        amount: sats / 1e8,
+        address: address,
+        scriptPubKey: _p2pkhScriptPubKeyHexFromAddress(address),
+        confirmations: confirmations,
+        spendable: true,
+        confirmedAt:
+            blockTimeSec != null ? DateTime.fromMillisecondsSinceEpoch(blockTimeSec * 1000) : null,
+      );
+    }).toList();
   }
+
+  /// Derives the P2PKH scriptPubKey hex (`76a914<hash160>88ac`) from a
+  /// base58check legacy address. Esplora's UTXO endpoint doesn't return
+  /// scriptPubKey, but offline signing needs it to build the output being
+  /// spent. Returns null for bech32 addresses (not produced by this wallet).
+  String? _p2pkhScriptPubKeyHexFromAddress(String address) {
+    if (address.startsWith('bc1') || address.startsWith('tb1')) {
+      return null;
+    }
+    try {
+      final decoded = _base58Decode(address);
+      if (decoded.length != 25) {
+        return null;
+      }
+      final hash160 = decoded.sublist(1, 21);
+      final hash160Hex = hash160.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      return '76a914${hash160Hex}88ac';
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static const _base58Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+  Uint8List _base58Decode(String input) {
+    BigInt num = BigInt.zero;
+    for (final rune in input.runes) {
+      final char = String.fromCharCode(rune);
+      final index = _base58Alphabet.indexOf(char);
+      if (index == -1) {
+        throw FormatException('Invalid base58 character: $char');
+      }
+      num = num * BigInt.from(58) + BigInt.from(index);
+    }
+
+    final bytes = <int>[];
+    while (num > BigInt.zero) {
+      bytes.insert(0, (num % BigInt.from(256)).toInt());
+      num = num ~/ BigInt.from(256);
+    }
+
+    for (final rune in input.runes) {
+      if (String.fromCharCode(rune) == '1') {
+        bytes.insert(0, 0);
+      } else {
+        break;
+      }
+    }
+
+    return Uint8List.fromList(bytes);
+  }
+
+  /// Fetch the current balance (confirmed + unconfirmed) for [address] from an
+  /// Esplora-compatible REST API: `GET {base}/address/{address}`.
+  Future<double> fetchBalanceFromEsplora(String address, {String? baseUrl}) async {
+    if (address.isEmpty) {
+      throw ArgumentError('address must not be empty');
+    }
+
+    final base = _resolveEsploraBaseUrl(baseUrl);
+    final uri = Uri.parse('$base/address/$address');
+    final resp = await http.get(uri, headers: const {'Accept': 'application/json'});
+    if (resp.statusCode != 200) {
+      throw Exception('Esplora HTTP ${resp.statusCode}: ${resp.body}');
+    }
+
+    final data = jsonDecode(resp.body);
+    if (data is! Map<String, dynamic>) {
+      throw FormatException(
+          'Esplora /address response is not a JSON object: ${resp.body.substring(0, resp.body.length.clamp(0, 200))}');
+    }
+    final chain = data['chain_stats'] as Map<String, dynamic>? ?? const {};
+    final mempool = data['mempool_stats'] as Map<String, dynamic>? ?? const {};
+
+    int sats(Map<String, dynamic> m, String key) => (m[key] is num) ? (m[key] as num).toInt() : 0;
+
+    final int balanceSats = sats(chain, 'funded_txo_sum') -
+        sats(chain, 'spent_txo_sum') +
+        sats(mempool, 'funded_txo_sum') -
+        sats(mempool, 'spent_txo_sum');
+
+    return balanceSats / 1e8;
+  }
+}
+
+/// Runs the actual offline-signing CPU work (ECDSA sign per input) for
+/// [BitcoinNodeClient._signRawTransactionOffline]. Must be a top-level
+/// function so it can be dispatched to a background isolate via [compute].
+String _signRawTransactionOfflineIsolate(Map<String, dynamic> args) {
+  final rawHex = args['rawHex'] as String;
+  final utxos =
+      (args['utxos'] as List).cast<Map<String, dynamic>>().map((m) => Utxo.fromMap(m)).toList();
+  final wifs = (args['wifs'] as List).cast<String>();
+
+  final tx = dartsv.Transaction.fromHex(rawHex);
+
+  final List<dartsv.TransactionSigner> signers = [];
+  for (final w in wifs) {
+    try {
+      final svPriv = dartsv.SVPrivateKey.fromWIF(w);
+      signers.add(dartsv.TransactionSigner(1, svPriv));
+    } catch (_) {
+      // Invalid WIF, skip it.
+    }
+  }
+
+  if (signers.isEmpty) {
+    throw Exception('No valid WIF keys provided');
+  }
+
+  for (var i = 0; i < tx.inputs.length; i++) {
+    final input = tx.inputs[i];
+
+    Utxo? match;
+    for (final u in utxos) {
+      if (u.txid.toLowerCase() == input.prevTxnId.toLowerCase() &&
+          u.vout == input.prevTxnOutputIndex) {
+        match = u;
+        break;
+      }
+    }
+
+    if (match == null) {
+      throw Exception('Missing UTXO information for input index $i');
+    }
+
+    final valueSats = (match.amount * 1e8).round();
+    final scriptHex = match.scriptPubKey ?? '';
+    if (scriptHex.isEmpty) {
+      throw Exception('Missing scriptPubKey for input $i; cannot sign offline');
+    }
+    final outScript = dartsv.SVScript.fromHex(scriptHex);
+
+    bool signed = false;
+    for (final signer in signers) {
+      try {
+        // dartsv's default input unlock builder just echoes back whatever
+        // script it last saw (including the sighash preimage's temporary
+        // subscript), so it never produces a real `<sig><pubkey>` scriptSig.
+        // Attach a P2PKHUnlockBuilder *before* signing so the signature
+        // actually gets assembled into the final scriptSig.
+        tx.inputs[i] = dartsv.TransactionInput(
+          input.prevTxnId,
+          input.prevTxnOutputIndex,
+          input.sequenceNumber,
+          scriptBuilder: dartsv.P2PKHUnlockBuilder(signer.signingKey.publicKey),
+        );
+
+        final utxoOutput = dartsv.TransactionOutput(BigInt.from(valueSats), outScript);
+        signer.sign(tx, utxoOutput, i);
+        signed = true;
+        break;
+      } catch (_) {
+        // try next signer
+      }
+    }
+
+    if (!signed) {
+      throw Exception('Failed to sign input $i with provided keys');
+    }
+  }
+
+  return tx.serialize();
 }

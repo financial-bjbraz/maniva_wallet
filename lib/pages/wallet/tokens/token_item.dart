@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:hux/hux.dart';
 import 'package:logging/logging.dart';
+
+import '../../../util/clipboard_guard.dart';
 
 class TokenItem extends StatelessWidget {
   final String tokenName;
@@ -22,23 +23,10 @@ class TokenItem extends StatelessWidget {
 
   static final _log = Logger('TokenItem');
 
-  static Future<bool> _assetExists(String path) async {
-    try {
-      await rootBundle.load(path);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    var tokenIcon = "assets/icons/${networkId}.png";
-    _assetExists(tokenIcon).then((iconeExiste) {
-      if (!iconeExiste) {
-        tokenIcon = "assets/contracts/${tokenSymbol}.png";
-      }
-    });
+    final tokenIcon = "assets/icons/${networkId}.png";
+    final fallbackIcon = "assets/contracts/${tokenSymbol}.png";
 
     return HuxContextMenu(
       menuItems: [
@@ -46,7 +34,7 @@ class TokenItem extends StatelessWidget {
             text: 'Copy',
             icon: FeatherIcons.copy,
             onTap: () {
-              Clipboard.setData(ClipboardData(text: tokenAddress));
+              copyWithTimeout(tokenAddress);
               if (kDebugMode) {
                 _log.info('Token address copied to clipboard: $tokenAddress');
               }
@@ -73,6 +61,18 @@ class TokenItem extends StatelessWidget {
             child: Image.asset(
               tokenIcon,
               fit: BoxFit.cover,
+              width: 40,
+              height: 40,
+              cacheWidth: 80,
+              cacheHeight: 80,
+              errorBuilder: (context, error, stackTrace) => Image.asset(
+                fallbackIcon,
+                fit: BoxFit.cover,
+                width: 40,
+                height: 40,
+                cacheWidth: 80,
+                cacheHeight: 80,
+              ),
             ),
           ), // Icon on the left
           title: Text(

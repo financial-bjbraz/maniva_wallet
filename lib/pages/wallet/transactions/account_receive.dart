@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hux/hux.dart';
 import 'package:maniva_wallet/entities/wallet_dto.dart';
 import 'package:maniva_wallet/util/network.dart';
@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../entities/user_helper.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/clipboard_guard.dart';
 import '../../../util/util.dart';
 
 class Receive extends StatefulWidget {
@@ -77,7 +78,7 @@ class _Receive extends State<Receive> {
             ],
           ),
         ),
-        backgroundColor: const Color.fromRGBO(158, 118, 255, 1),
+        backgroundColor: purple(),
       ),
       body: Center(
           child:
@@ -218,6 +219,13 @@ class CopyButton extends StatefulWidget {
 class _CopyButton extends State<CopyButton> {
   bool checkingFlight = false;
   bool success = false;
+  Timer? _clearTimer;
+
+  @override
+  void dispose() {
+    _clearTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +233,8 @@ class _CopyButton extends State<CopyButton> {
         ? ElevatedButton(
             style: blackWhiteButton,
             onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: widget.completeAddress));
+              _clearTimer?.cancel();
+              _clearTimer = copyWithTimeout(widget.completeAddress);
 
               setState(() {
                 checkingFlight = true;

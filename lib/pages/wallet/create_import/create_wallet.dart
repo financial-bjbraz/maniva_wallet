@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../util/util.dart';
+
 /// Box component on the first page
 class CreateWallet extends StatelessWidget {
   const CreateWallet({super.key});
@@ -9,7 +11,7 @@ class CreateWallet extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(5),
-      child: const Column(
+      child: Column(
         children: [
           Expanded(
             child: Column(
@@ -17,12 +19,12 @@ class CreateWallet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Padding(
-                  padding: EdgeInsets.only(left: 20, bottom: 20),
+                  padding: const EdgeInsets.only(left: 20, bottom: 20),
                   child: Row(
                     children: [
                       Icon(
                         Icons.add_circle,
-                        color: Color.fromRGBO(158, 118, 255, 1),
+                        color: purple(),
                         size: 48,
                       ),
                       Text(
@@ -30,7 +32,7 @@ class CreateWallet extends StatelessWidget {
                         textAlign: TextAlign.start,
                         style: TextStyle(
                             color: Colors.black,
-                            backgroundColor: Color.fromRGBO(158, 118, 255, 1),
+                            backgroundColor: purple(),
                             fontSize: 28,
                             fontWeight: FontWeight.bold),
                       ),

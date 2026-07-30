@@ -313,13 +313,13 @@ abstract class AppLocalizations {
   /// No description provided for @txSent.
   ///
   /// In en, this message translates to:
-  /// **'New tranasction sent'**
+  /// **'New transaction sent'**
   String get txSent;
 
   /// No description provided for @txReceived.
   ///
   /// In en, this message translates to:
-  /// **'New tranasction received'**
+  /// **'New transaction received'**
   String get txReceived;
 
   /// No description provided for @amount.
@@ -364,6 +364,12 @@ abstract class AppLocalizations {
   /// **'Exit'**
   String get exit;
 
+  /// No description provided for @exitWebMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Close this browser tab to exit'**
+  String get exitWebMessage;
+
   /// No description provided for @createNewWallet.
   ///
   /// In en, this message translates to:
@@ -393,6 +399,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste'**
   String get paste;
+
+  /// No description provided for @accountOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Overview'**
+  String get accountOverviewTitle;
+
+  /// No description provided for @bitcoinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin'**
+  String get bitcoinLabel;
+
+  /// No description provided for @rootstockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rootstock'**
+  String get rootstockLabel;
+
+  /// No description provided for @subtotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotalLabel;
+
+  /// No description provided for @grandTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand total'**
+  String get grandTotalLabel;
+
+  /// No description provided for @mainnetBannerConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'MAINNET — real funds, transactions are irreversible'**
+  String get mainnetBannerConfigured;
+
+  /// No description provided for @mainnetBannerNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'MAINNET selected but not configured — add ROOTSTOCK_NODE_MAIN / BITCOIN_NODE_MAIN / TOKENS_MAIN to .env'**
+  String get mainnetBannerNotConfigured;
+
+  /// No description provided for @accountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountLabel;
+
+  /// No description provided for @walletsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallets'**
+  String get walletsLabel;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// No description provided for @networkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get networkLabel;
+
+  /// No description provided for @aboutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutLabel;
+
+  /// No description provided for @appVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get appVersionLabel;
+
+  /// No description provided for @languageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageLabel;
+
+  /// No description provided for @systemDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get systemDefaultLabel;
+
+  /// No description provided for @logOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get logOut;
+
+  /// No description provided for @switchToMainnetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Mainnet?'**
+  String get switchToMainnetTitle;
+
+  /// No description provided for @switchToMainnetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mainnet uses real BTC/RBTC. Transactions are irreversible — double-check addresses and amounts before sending. Make sure mainnet RPC endpoints are configured before relying on balances shown here.'**
+  String get switchToMainnetBody;
+
+  /// No description provided for @cancelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelLabel;
+
+  /// No description provided for @switchToMainnetButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Mainnet'**
+  String get switchToMainnetButton;
+
+  /// No description provided for @testnetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Testnet'**
+  String get testnetLabel;
+
+  /// No description provided for @mainnetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mainnet'**
+  String get mainnetLabel;
+
+  /// No description provided for @customNodeUrlsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom node URLs ({network})'**
+  String customNodeUrlsLabel(String network);
+
+  /// No description provided for @customNodeUrlsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Override the default node/API endpoints for the currently selected network. Leave a field empty to use the app default.'**
+  String get customNodeUrlsHint;
+
+  /// No description provided for @bitcoinNodeUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin RPC node URL'**
+  String get bitcoinNodeUrlLabel;
+
+  /// No description provided for @bitcoinEsploraUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin Esplora API URL'**
+  String get bitcoinEsploraUrlLabel;
+
+  /// No description provided for @rootstockNodeUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rootstock RPC node URL'**
+  String get rootstockNodeUrlLabel;
+
+  /// No description provided for @saveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveLabel;
+
+  /// No description provided for @resetToDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get resetToDefaultLabel;
+
+  /// No description provided for @nodeUrlSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Node URL saved'**
+  String get nodeUrlSavedMessage;
+
+  /// No description provided for @nodeUrlResetMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverted to default node URL'**
+  String get nodeUrlResetMessage;
+
+  /// No description provided for @invalidUrlMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid http(s) URL'**
+  String get invalidUrlMessage;
+
+  /// No description provided for @noTransactionsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions yet'**
+  String get noTransactionsYet;
+
+  /// No description provided for @receivedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get receivedLabel;
+
+  /// No description provided for @sentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get sentLabel;
+
+  /// No description provided for @atTheTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'At the time'**
+  String get atTheTimeLabel;
+
+  /// No description provided for @nowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get nowLabel;
+
+  /// No description provided for @networkTransactionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{network} transactions'**
+  String networkTransactionsTitle(String network);
+
+  /// No description provided for @faq1Q.
+  ///
+  /// In en, this message translates to:
+  /// **'What is Rootstock (RSK)?'**
+  String get faq1Q;
+
+  /// No description provided for @faq1A.
+  ///
+  /// In en, this message translates to:
+  /// **'Rootstock is a smart contract platform secured by the Bitcoin network through merge-mining. RBTC, the coin used to pay for transactions on Rootstock, is pegged 1:1 with BTC.'**
+  String get faq1A;
+
+  /// No description provided for @faq2Q.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I send Bitcoin or Rootstock funds?'**
+  String get faq2Q;
+
+  /// No description provided for @faq2A.
+  ///
+  /// In en, this message translates to:
+  /// **'Open your wallet, pick the Bitcoin or Rootstock section, tap Send, then enter the destination address and amount. You can use the Max button to send your full balance minus the estimated network fee.'**
+  String get faq2A;
+
+  /// No description provided for @faq3Q.
+  ///
+  /// In en, this message translates to:
+  /// **'How does the BTC ↔ RBTC peg work?'**
+  String get faq3Q;
+
+  /// No description provided for @faq3A.
+  ///
+  /// In en, this message translates to:
+  /// **'The powpeg protocol lets you move BTC into Rootstock (peg-in) and back out to Bitcoin (peg-out). Both your Bitcoin and Rootstock accounts are derived from the same private key, so they are always available side by side in this wallet.'**
+  String get faq3A;
+
+  /// No description provided for @faq4Q.
+  ///
+  /// In en, this message translates to:
+  /// **'Where are my keys stored?'**
+  String get faq4Q;
+
+  /// No description provided for @faq4A.
+  ///
+  /// In en, this message translates to:
+  /// **'Your private key and seed phrase are stored only on this device. Nobody else, including the app\'s developers, has access to them — write your seed phrase down and keep it safe, since it cannot be recovered if lost.'**
+  String get faq4A;
+
+  /// No description provided for @faq5Q.
+  ///
+  /// In en, this message translates to:
+  /// **'What tokens are supported on Rootstock?'**
+  String get faq5Q;
+
+  /// No description provided for @faq5A.
+  ///
+  /// In en, this message translates to:
+  /// **'Alongside RBTC, this wallet shows your balances of RIF, USDRIF, DOC, RIFPRO and tBRZ tokens.'**
+  String get faq5A;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

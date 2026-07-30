@@ -36,7 +36,7 @@ class EntityHelper {
       log.info("Database persisted at ${path}");
     }
 
-    return openDatabase(path, password: dbKey, version: DATA_BASE_VERSION,
+    final db = await openDatabase(path, password: dbKey, version: DATA_BASE_VERSION,
         onCreate: (db, int version) {
       try {
         if (kDebugMode) {
@@ -92,6 +92,25 @@ class EntityHelper {
         }
       }
 
+      // Mainnet token list for the testnet/mainnet toggle, seeded the same
+      // way as TOKENS above. Left empty by default (no real mainnet contract
+      // addresses configured) — the mainnet token section simply shows
+      // nothing until TOKENS_MAIN is filled in.
+      final String rawJsonStringMain = dotenv.env['TOKENS_MAIN'] ?? '';
+      if (rawJsonStringMain.isNotEmpty) {
+        List<dynamic> jsonMapMain = jsonDecode(rawJsonStringMain) as List<dynamic>;
+        for (int i = 0; i < jsonMapMain.length; i++) {
+          db.insert(
+            TokenHelper.table,
+            jsonMapMain[i] as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+        if (kDebugMode) {
+          log.info("${jsonMapMain.length} mainnet tokens added to database");
+        }
+      }
+
       final String transactionsList = dotenv.env['TRANSACTIONS'] ?? '';
       if (transactionsList.isNotEmpty) {
         List<dynamic> transactionsMap = jsonDecode(transactionsList) as List<dynamic>;
@@ -107,5 +126,26 @@ class EntityHelper {
         log.info("Initial available data inserted");
       }
     });
+
+    // Defensive migration for the transactions table's network/timestampMs
+    // columns: existing DB files (already at this version) never re-run
+    // onCreate, so add these columns in place instead of bumping
+    // DATA_BASE_VERSION (which would create a brand new, empty DB file per
+    // this scheme's "$DATA_BASE_VERSION+$DATA_BASE_NAME" path pattern,
+    // wiping out existing wallets/transactions).
+    try {
+      await db.execute(
+          "ALTER TABLE ${TransactionHelper.table} ADD COLUMN ${TransactionHelper.network} TEXT NOT NULL DEFAULT ''");
+    } catch (_) {
+      // Column already exists.
+    }
+    try {
+      await db.execute(
+          "ALTER TABLE ${TransactionHelper.table} ADD COLUMN ${TransactionHelper.timestampMs} INTEGER NOT NULL DEFAULT 0");
+    } catch (_) {
+      // Column already exists.
+    }
+
+    return db;
   }
 }
