@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch: {}
+  release:
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build-linux:
@@ -27,7 +32,16 @@ jobs:
           # libcurl4-openssl-dev: sentry_flutter's Linux native build (sentry-native,
           # vendored via CMake FetchContent) requires libcurl's dev headers -
           # without it, CMake configure fails with "Could NOT find CURL".
-          sudo apt-get install -y libgtk-3-dev clang cmake libgl1-mesa-dev libglu1-mesa-dev libcurl4-openssl-dev
+          # ruby/rubygems: needed to install fpm, which packages the .deb/.rpm below.
+          sudo apt-get install -y libgtk-3-dev clang cmake libgl1-mesa-dev libglu1-mesa-dev libcurl4-openssl-dev ruby ruby-dev rubygems build-essential rpm
+
+      - name: Install fpm
+        # fpm ("effing package management") packages a plain directory into
+        # .deb and .rpm from the same input - no separate Ubuntu/RHEL build
+        # environment needed, since the Flutter Linux bundle itself is the
+        # same binary either way (it only depends on GTK3/glib, present on
+        # both).
+        run: sudo gem install --no-document fpm
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -56,8 +70,14 @@ jobs:
 
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings .
       - run: flutter test
+      # RELEASE_NAME (shown in Settings > About) is only non-empty when this
+      # run was triggered by an actual published GitHub Release - passed via
+      # env, not interpolated directly into the shell command, since
+      # github.event.release.name is untrusted user input.
       - name: Build Linux app (release)
-        run: flutter build linux --release
+        env:
+          RELEASE_NAME: ${{ github.event.release.name }}
+        run: flutter build linux --release --dart-define=RELEASE_NAME="$RELEASE_NAME"
 
       - name: Show build output (debug)
         run: ls -la build/linux/x64/release/bundle || true
@@ -79,3 +99,77 @@ jobs:
         with:
           name: linux-bundle
           path: build/artifacts/${{ github.run_number }}-maniva-app.tar.gz
+
+      # Same Flutter Linux bundle, wrapped as .deb (Ubuntu/Debian) and .rpm
+      # (RHEL/Fedora) with fpm from one shared staging directory - the
+      # bundle only depends on GTK3/glib, present on both families, so no
+      # separate per-distro build is needed. Installs to /opt (side-by-side
+      # with other vendor apps) with a /usr/bin launcher and a desktop
+      # entry, matching normal Linux packaging conventions.
+      - name: Package .deb and .rpm
+        run: |
+          set -e
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)
+          BUNDLE_DIR="build/linux/x64/release/bundle"
+          PKG_ROOT="build/pkgroot"
+          APP_DIR="$PKG_ROOT/opt/maniva-wallet"
+
+          mkdir -p "$APP_DIR" "$PKG_ROOT/usr/bin" "$PKG_ROOT/usr/share/applications" \
+            "$PKG_ROOT/usr/share/icons/hicolor/256x256/apps"
+          cp -r "$BUNDLE_DIR"/. "$APP_DIR/"
+
+          cat > "$PKG_ROOT/usr/bin/maniva-wallet" <<'EOF'
+          #!/bin/sh
+          exec /opt/maniva-wallet/my_rootstock_wallet "$@"
+          EOF
+          chmod +x "$PKG_ROOT/usr/bin/maniva-wallet"
+
+          cp assets/images/maniva_logo.png \
+            "$PKG_ROOT/usr/share/icons/hicolor/256x256/apps/maniva-wallet.png"
+
+          cat > "$PKG_ROOT/usr/share/applications/maniva-wallet.desktop" <<EOF
+          [Desktop Entry]
+          Type=Application
+          Name=Maniva Wallet
+          Comment=Bitcoin and Rootstock wallet
+          Exec=/usr/bin/maniva-wallet
+          Icon=maniva-wallet
+          Categories=Finance;
+          Terminal=false
+          EOF
+
+          mkdir -p build/artifacts
+          fpm -s dir -t deb -n maniva-wallet -v "$VERSION" \
+            --description "Bitcoin and Rootstock wallet" \
+            --license "See repository" \
+            -p "build/artifacts/${{ github.run_number }}-maniva-wallet.deb" \
+            -C "$PKG_ROOT" usr opt
+
+          fpm -s dir -t rpm -n maniva-wallet -v "$VERSION" \
+            --description "Bitcoin and Rootstock wallet" \
+            --license "See repository" \
+            -p "build/artifacts/${{ github.run_number }}-maniva-wallet.rpm" \
+            -C "$PKG_ROOT" usr opt
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: build/artifacts/${{ github.run_number }}-maniva-wallet.deb
+
+      - name: Upload .rpm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: build/artifacts/${{ github.run_number }}-maniva-wallet.rpm
+
+      # Only on an actual GitHub Release being published (not on every push
+      # or manual dispatch) - attaches all 3 Linux packaging formats.
+      - name: Upload Linux builds to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/artifacts/${{ github.run_number }}-maniva-app.tar.gz
+            build/artifacts/${{ github.run_number }}-maniva-wallet.deb
+            build/artifacts/${{ github.run_number }}-maniva-wallet.rpm

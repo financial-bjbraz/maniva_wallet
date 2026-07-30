@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch: {}
+  release:
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build-web:
@@ -49,8 +54,14 @@ jobs:
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings .
       - run: flutter test
 
+      # RELEASE_NAME (shown in Settings > About) is only non-empty when this
+      # run was triggered by an actual published GitHub Release - passed via
+      # env, not interpolated directly into the shell command, since
+      # github.event.release.name is untrusted user input.
       - name: Build web (release)
-        run: flutter build web --release
+        env:
+          RELEASE_NAME: ${{ github.event.release.name }}
+        run: flutter build web --release --dart-define=RELEASE_NAME="$RELEASE_NAME"
 
       - name: Show build output (debug)
         run: ls -la build/web || true
@@ -72,3 +83,11 @@ jobs:
         with:
           name: web-bundle
           path: build/artifacts/${{ github.run_number }}-maniva-web-app.tar.gz
+
+      # Only on an actual GitHub Release being published (not on every push
+      # or manual dispatch) - attaches the web bundle as a release asset.
+      - name: Upload web build to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/artifacts/${{ github.run_number }}-maniva-web-app.tar.gz
