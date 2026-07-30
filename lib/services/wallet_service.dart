@@ -74,8 +74,6 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   /// Sanitizes and validates an owner email.
   /// Returns the sanitized (trimmed & lowercased) email, or `null` if invalid.
   static String? sanitizeOwnerEmail(String ownerEmail) {
-    if (ownerEmail == null) return null; // defensive, though String param is non-nullable
-
     final sanitized = ownerEmail.trim().toLowerCase();
     if (sanitized.isEmpty) {
       return null;
@@ -219,7 +217,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     Wei lastBalanceReceivedInWei = Wei(src: BigInt.zero, currency: "wei");
     try {
       final node = rootstockNodeUrl;
-      final client = web3.Web3Client(node!, http.Client());
+      final client = web3.Web3Client(node, http.Client());
       final lastBalanceReceivedInEtherAmount =
           await client.getBalance(web3.EthereumAddress.fromHex(address.toLowerCase()));
       lastBalanceReceivedInWei =
@@ -493,9 +491,10 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     web3.Web3Client? client;
     try {
       client = web3.Web3Client(node, httpClientOverride ?? http.Client());
-      final contract = ERC20(address: web3.EthereumAddress.fromHex(tokenAddress.toLowerCase()), client: client);
-      final balance =
-          await contract.balanceOf((account: web3.EthereumAddress.fromHex(walletAddress.toLowerCase())));
+      final contract =
+          ERC20(address: web3.EthereumAddress.fromHex(tokenAddress.toLowerCase()), client: client);
+      final balance = await contract
+          .balanceOf((account: web3.EthereumAddress.fromHex(walletAddress.toLowerCase())));
       if (balance == BigInt.zero) {
         return 0;
       }
@@ -519,7 +518,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     web3.Web3Client? client;
     try {
       client = web3.Web3Client(node, httpClientOverride ?? http.Client());
-      final contract = ERC20(address: web3.EthereumAddress.fromHex(tokenAddress.toLowerCase()), client: client);
+      final contract =
+          ERC20(address: web3.EthereumAddress.fromHex(tokenAddress.toLowerCase()), client: client);
       final decimals = await contract.decimals();
       return decimals.toInt();
     } catch (e) {
@@ -549,7 +549,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     web3.Web3Client? client;
     try {
       client = web3.Web3Client(node, httpClientOverride ?? http.Client());
-      final balance = await client.getBalance(web3.EthereumAddress.fromHex(fromAddress.toLowerCase()));
+      final balance =
+          await client.getBalance(web3.EthereumAddress.fromHex(fromAddress.toLowerCase()));
       final gasPrice = await client.getGasPrice();
       final requiredWei = gasPrice.getInWei * BigInt.from(estimatedGasLimit);
       return balance.getInWei >= requiredWei;
@@ -596,7 +597,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     try {
       client = web3.Web3Client(node, httpClientOverride ?? http.Client());
       final credentials = web3.EthPrivateKey.fromHex(wallet.privateKey);
-      final contract = ERC20(address: web3.EthereumAddress.fromHex(tokenAddress.toLowerCase()), client: client);
+      final contract =
+          ERC20(address: web3.EthereumAddress.fromHex(tokenAddress.toLowerCase()), client: client);
       final txHash = await contract.transfer(
         (to: web3.EthereumAddress.fromHex(destinationAddress.toLowerCase()), value: amount),
         credentials: credentials,
@@ -930,10 +932,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     _customNodeUrls = {
       customBitcoinNodeUrlTestnetKey: await getCustomNodeUrl(customBitcoinNodeUrlTestnetKey),
       customBitcoinNodeUrlMainnetKey: await getCustomNodeUrl(customBitcoinNodeUrlMainnetKey),
-      customBitcoinEsploraUrlTestnetKey:
-          await getCustomNodeUrl(customBitcoinEsploraUrlTestnetKey),
-      customBitcoinEsploraUrlMainnetKey:
-          await getCustomNodeUrl(customBitcoinEsploraUrlMainnetKey),
+      customBitcoinEsploraUrlTestnetKey: await getCustomNodeUrl(customBitcoinEsploraUrlTestnetKey),
+      customBitcoinEsploraUrlMainnetKey: await getCustomNodeUrl(customBitcoinEsploraUrlMainnetKey),
       customRootstockNodeUrlTestnetKey: await getCustomNodeUrl(customRootstockNodeUrlTestnetKey),
       customRootstockNodeUrlMainnetKey: await getCustomNodeUrl(customRootstockNodeUrlMainnetKey),
     };
@@ -951,8 +951,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
     notifyListeners();
   }
 
-  String? get customBitcoinNodeUrlForCurrentMode => _customNodeUrls[
-      isMainnet ? customBitcoinNodeUrlMainnetKey : customBitcoinNodeUrlTestnetKey];
+  String? get customBitcoinNodeUrlForCurrentMode =>
+      _customNodeUrls[isMainnet ? customBitcoinNodeUrlMainnetKey : customBitcoinNodeUrlTestnetKey];
 
   String? get customBitcoinEsploraUrlForCurrentMode => _customNodeUrls[
       isMainnet ? customBitcoinEsploraUrlMainnetKey : customBitcoinEsploraUrlTestnetKey];
