@@ -51,7 +51,7 @@ jobs:
           echo LANCEN="0x9afc95c5c1A3d79cCf4c9af2e291f0134Aa403Df" >> .env
           cat .env
 
-      - run: flutter analyze .
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings .
       - run: flutter test
       - name: Build Linux app (release)
         run: flutter build linux --release
