@@ -55,10 +55,16 @@ O DAO (`wallet_helper.dart`, `transaction_helper.dart`, `user_helper.dart`, `tok
 
 ## Checklist de validação restante (Fase 3)
 
-- [ ] Rodar `linux.yml` via `workflow_dispatch` contra a branch da implementação e confirmar build verde em `ubuntu-latest`.
-- [ ] Rodar `web.yml` via `workflow_dispatch` contra a branch da implementação (não dispara em PR — só `push` em `main` e `workflow_dispatch`).
-- [ ] Testar manualmente em Linux real e no Chrome: criar wallet, ver saldo, enviar transação mock.
+- [x] Rodar `linux.yml` via `workflow_dispatch` contra a branch da implementação — verde (`build-linux` ✓, run 30557232460, contra o commit final da branch).
+- [x] Rodar `web.yml` via `workflow_dispatch` contra a branch da implementação — verde (`build-web` ✓, run 30557235501, contra o commit final da branch).
+- [x] `macOS Build` (via PR) — verde (run 30554187351).
+- [x] `Android` (via PR) — o job `build` (analyze + test + `flutter build apk`) está verde (run 30554190507). O job `release` (que cria uma GitHub Release a partir do artefato) continua falhando por um bug pré-existente e não relacionado: espera o APK em `build/app/outputs/apk/release/maniva-release.apk`, mas o nome real gerado pelo Gradle é `app-release.apk` — nunca foi corrigido, e além disso esse job dispara em qualquer PR (sem guard de branch/evento), o que parece não ser intencional. Fora do escopo deste PR; registrado aqui para decisão futura.
+- [ ] Testar manualmente em Linux real e no Chrome: criar wallet, ver saldo, enviar transação mock — não feito nesta sessão.
 - [x] Documentar a divisão de storage no `CLAUDE.md` do projeto — feito.
+
+Durante essa validação em CI real, duas causas raiz adicionais (não visíveis localmente, mascaradas por configuração da máquina local) foram encontradas e corrigidas:
+- **Linux**: `sentry_flutter`'s native build (`sentry-native` via CMake) precisa de `libcurl` dev headers, ausente no step de instalação de dependências do `linux.yml`. Adicionado `libcurl4-openssl-dev`.
+- **Android**: `android/local.properties` (gitignored, específico de máquina) tinha `flutter.minSdkVersion=29` configurado localmente, mascarando dois bugs que só apareciam em CI (que gera um `local.properties` limpo, sem esse override): (a) o fallback hardcoded de `minSdkVersion` em `android/app/build.gradle` era 23, abaixo do mínimo 24 exigido por `url_launcher_android`; (b) o `compileSdkVersion` hardcoded do `flutter_windowmanager` vendorizado (28, valor original do pacote abandonado) era baixo demais para resolver `android:attr/lStar` (API 31+), usado por recursos AndroidX/Material mais novos mesclados no módulo. Ambos corrigidos.
 
 ## Achados verificados nesta sessão (evidência)
 
