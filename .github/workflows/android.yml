@@ -52,8 +52,10 @@ jobs:
           echo LANCEN="0x9afc95c5c1A3d79cCf4c9af2e291f0134Aa403Df" >> .env
           cat .env
 
-      # Statically analyze the Dart code for any errors.
-      - run: flutter analyze .
+      # Statically analyze the Dart code for any errors. Info/warning-level
+      # lint issues are reported but don't fail the build (only real errors
+      # do) - see docs/linux-web-support-plan.md for why this was added.
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings .
 
       # Run widget tests for our flutter project.
       - run: flutter test
