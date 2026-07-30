@@ -1,6 +1,4 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -10,7 +8,7 @@ import '../../../util/app_theme.dart';
 /// macOS, and Web are all supported) — callers should hide/disable the
 /// scan entry point on Linux rather than navigating to [QrScannerPage],
 /// which would otherwise throw a MissingPluginException there.
-bool get isQrScannerSupported => kIsWeb || !Platform.isLinux;
+bool get isQrScannerSupported => kIsWeb || defaultTargetPlatform != TargetPlatform.linux;
 
 /// Full-screen QR scanner. Pops with the scanned string as soon as a code is
 /// detected, or with null if the user backs out.
