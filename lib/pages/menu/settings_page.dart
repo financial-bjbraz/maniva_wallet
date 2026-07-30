@@ -21,6 +21,12 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   String _appVersion = '';
 
+  // Set at build time via --dart-define=RELEASE_NAME=... by the CI workflows
+  // (only when triggered by an actual published GitHub Release, from
+  // github.event.release.name) - empty for regular push/PR/dispatch builds,
+  // in which case it's simply not shown.
+  static const String _releaseName = String.fromEnvironment('RELEASE_NAME', defaultValue: '');
+
   final _bitcoinNodeController = TextEditingController();
   final _bitcoinEsploraController = TextEditingController();
   final _rootstockNodeController = TextEditingController();
@@ -40,7 +46,8 @@ class _SettingsPageState extends State<SettingsPage> {
     PackageInfo.fromPlatform().then((info) {
       if (mounted) {
         setState(() {
-          _appVersion = 'v${info.version}';
+          final suffix = _releaseName.isNotEmpty ? ' ($_releaseName)' : '';
+          _appVersion = 'v${info.version}$suffix';
         });
       }
     });
@@ -79,8 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return uri != null && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
   }
 
-  Future<void> _saveNodeUrl(
-      String key, String value, WalletServiceImpl walletService) async {
+  Future<void> _saveNodeUrl(String key, String value, WalletServiceImpl walletService) async {
     if (!_isValidUrlOrEmpty(value)) {
       showMessage(AppLocalizations.of(context)!.invalidUrlMessage, context);
       return;
@@ -233,9 +239,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-                t.customNodeUrlsLabel(
-                    walletService.isMainnet ? t.mainnetLabel : t.testnetLabel),
+            Text(t.customNodeUrlsLabel(walletService.isMainnet ? t.mainnetLabel : t.testnetLabel),
                 style: const TextStyle(
                     color: rootstockCream, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),

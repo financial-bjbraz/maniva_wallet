@@ -9,6 +9,11 @@ on:
   pull_request:
     branches:
       - main
+  release:
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -60,47 +65,36 @@ jobs:
       # Run widget tests for our flutter project.
       - run: flutter test
 
-      # Build apk.
-      - run: flutter build apk
+      # Build apk. RELEASE_NAME (shown in Settings > About) is only
+      # non-empty when this run was triggered by an actual published GitHub
+      # Release - passed via env, not interpolated directly into the shell
+      # command, since github.event.release.name is untrusted user input.
+      - name: Build apk
+        env:
+          RELEASE_NAME: ${{ github.event.release.name }}
+        run: flutter build apk --dart-define=RELEASE_NAME="$RELEASE_NAME"
 
-      # Upload generated apk to the artifacts. Gradle's actual output
-      # filename is app-release.apk (not maniva-release.apk - there's no
-      # archivesBaseName override anywhere that would rename it).
+      # Gradle's actual output filename is app-release.apk (not
+      # maniva-release.apk - there's no archivesBaseName override anywhere
+      # that would rename it). Copy it under a stable, descriptive name
+      # shared by the artifact upload and the release-asset upload below.
+      - name: Archive APK
+        run: |
+          mkdir -p build/artifacts
+          cp build/app/outputs/apk/release/app-release.apk build/artifacts/${{ github.run_number }}-maniva-android.apk
+
       - uses: actions/upload-artifact@v4
         with:
           name: apk
-          path: build/app/outputs/apk/release/app-release.apk
+          path: build/artifacts/${{ github.run_number }}-maniva-android.apk
 
-  release:
-    name: Release APK
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download APK from build
-        uses: actions/download-artifact@v4
+      # Only on an actual GitHub Release being published (not on every push/
+      # PR) - attaches the APK as a release asset. Replaces the old
+      # always-on `release` job, which created a *new* GitHub Release
+      # tagged by run number on every push/PR to main, unrelated to any
+      # release the user actually created.
+      - name: Upload APK to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
         with:
-          name: apk
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.run_number }}
-          release_name: ${{ github.event.repository.name }} v${{ github.run_number }}
-      - name: Upload Release APK
-        id: upload_release_asset
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # download-artifact restores the file under its uploaded basename
-          # (app-release.apk, matching the build job's upload path above),
-          # not the run-number-suffixed name this previously assumed - that
-          # file never existed, so this step always failed. asset_name is
-          # just the display name in the Release and can still include the
-          # run number.
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./app-release.apk
-          asset_name: maniva-release-${{ github.run_number }}.apk
-          asset_content_type: application/vnd.android.package-archive
+          files: build/artifacts/${{ github.run_number }}-maniva-android.apk
