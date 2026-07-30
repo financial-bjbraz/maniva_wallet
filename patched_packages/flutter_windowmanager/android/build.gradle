@@ -23,7 +23,13 @@ apply plugin: 'com.android.library'
 
 android {
     namespace 'io.adaptant.labs.flutter_windowmanager'
-    compileSdkVersion 28
+    // Was hardcoded to 28 (the plugin's original, abandoned-since-2021
+    // value) - too old to resolve android:attr/lStar (API 31+), which gets
+    // pulled into this module's merged resources from newer AndroidX/
+    // Material libraries elsewhere in the app, failing
+    // verifyReleaseResources. Match the app's own compileSdk instead of
+    // hardcoding a second, independently-stale number.
+    compileSdkVersion flutter.compileSdkVersion
 
     defaultConfig {
         minSdkVersion 16
