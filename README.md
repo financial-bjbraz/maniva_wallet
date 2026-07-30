@@ -79,9 +79,11 @@ Edit `.env` and fill in your node endpoints:
 | Variable | Description |
 |----------|-------------|
 | `ROOTSTOCK_NODE` | Rootstock/RSK JSON-RPC endpoint (testnet) |
-| `BITCOIN_NODE` | Bitcoin Core JSON-RPC endpoint — for fee estimation and broadcast only |
-| `BITCOIN_ESPLORA_URL` | Esplora REST endpoint for UTXO/balance (default: `https://mempool.space/testnet/api`) |
+| `BITCOIN_NODE` | Bitcoin Core JSON-RPC endpoint — for fee estimation and broadcast only (testnet) |
+| `BITCOIN_ESPLORA_URL` | Esplora REST endpoint for UTXO/balance (testnet default: `https://mempool.space/testnet/api`) |
 | `ROOTSTOCK_NODE_MAIN` | Mainnet RSK RPC endpoint (required to enable mainnet mode) |
+| `BITCOIN_NODE_MAIN` | Mainnet Bitcoin Core JSON-RPC endpoint — for fee estimation and broadcast |
+| `BITCOIN_ESPLORA_URL_MAIN` | Mainnet Esplora REST endpoint for UTXO/balance (recommended for mainnet mode) |
 | `TOKENS_MAIN` | Mainnet ERC20 token contract addresses (required to enable mainnet mode) |
 
 > ⚠️ **Security**: `.env` is bundled into the app binary via Flutter assets. Never put a funded private key or production secrets in this file — anyone who unpacks the app binary can read it. The `PRIVATE_KEY` field in `.env` is for testnet-only integration tests and must never hold mainnet funds.
