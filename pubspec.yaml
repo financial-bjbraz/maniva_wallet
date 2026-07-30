@@ -1,5 +1,5 @@
 name: maniva_wallet
-description: "A new Flutter project."
+description: "Multi-platform Flutter wallet supporting Bitcoin (BTC/testnet3) and Rootstock (RBTC + ERC20 tokens). Single private key produces both BTC and RSK addresses for PowPeg bridge compatibility."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
