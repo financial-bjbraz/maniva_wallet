@@ -65,7 +65,8 @@ http.Client _mockRpc({
         result = '0x1';
         break;
       case 'eth_call':
-        final callParams = (params.isNotEmpty ? params[0] : {}) as Map<String, dynamic>;
+        final callParams =
+            (params.isNotEmpty ? params[0] : <String, dynamic>{}) as Map<String, dynamic>;
         final data = (callParams['data'] as String?) ?? '';
         if (data.startsWith('0x70a08231')) {
           // balanceOf(address)
@@ -89,8 +90,7 @@ http.Client _mockRpc({
             headers: {'content-type': 'application/json'},
           );
         }
-        result =
-            '0x1111111111111111111111111111111111111111111111111111111111111111';
+        result = '0x1111111111111111111111111111111111111111111111111111111111111111';
         break;
       default:
         result = null;
@@ -113,10 +113,10 @@ void main() {
 
   group('Network.isValidBitcoinAddress', () {
     test('accepts mainnet formats only when isMainnet: true', () {
-      expect(Network.isValidBitcoinAddress('1BoatSLRHtKNngkdXEeobR76b53LETtpyT',
-          isMainnet: true), isTrue);
-      expect(Network.isValidBitcoinAddress('3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy',
-          isMainnet: true), isTrue);
+      expect(Network.isValidBitcoinAddress('1BoatSLRHtKNngkdXEeobR76b53LETtpyT', isMainnet: true),
+          isTrue);
+      expect(Network.isValidBitcoinAddress('3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy', isMainnet: true),
+          isTrue);
       expect(
           Network.isValidBitcoinAddress('bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq',
               isMainnet: true),
@@ -124,8 +124,8 @@ void main() {
     });
 
     test('rejects mainnet-formatted addresses when isMainnet: false', () {
-      expect(Network.isValidBitcoinAddress('1BoatSLRHtKNngkdXEeobR76b53LETtpyT',
-          isMainnet: false), isFalse);
+      expect(Network.isValidBitcoinAddress('1BoatSLRHtKNngkdXEeobR76b53LETtpyT', isMainnet: false),
+          isFalse);
       expect(
           Network.isValidBitcoinAddress('bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq',
               isMainnet: false),
@@ -133,20 +133,21 @@ void main() {
     });
 
     test('accepts testnet formats only when isMainnet: false', () {
-      expect(Network.isValidBitcoinAddress('mfjKbRTeJMMsn9EY1Do9B4yj8qAYnA7P6p',
-          isMainnet: false), isTrue);
-      expect(Network.isValidBitcoinAddress('n2yGXrAPUg8YMg4cA5wSsi9MEkEAMqd1c1',
-          isMainnet: false), isTrue);
+      expect(Network.isValidBitcoinAddress('mfjKbRTeJMMsn9EY1Do9B4yj8qAYnA7P6p', isMainnet: false),
+          isTrue);
+      expect(Network.isValidBitcoinAddress('n2yGXrAPUg8YMg4cA5wSsi9MEkEAMqd1c1', isMainnet: false),
+          isTrue);
       expect(
           Network.isValidBitcoinAddress('tb1q53fg23u5tfzvxewcewfdhdjyl7402y8jfs0546',
               isMainnet: false),
           isTrue);
     });
 
-    test('rejects testnet-formatted addresses when isMainnet: true — the '
+    test(
+        'rejects testnet-formatted addresses when isMainnet: true — the '
         'exact cross-network mix-up this validation exists to prevent', () {
-      expect(Network.isValidBitcoinAddress('n2yGXrAPUg8YMg4cA5wSsi9MEkEAMqd1c1',
-          isMainnet: true), isFalse);
+      expect(Network.isValidBitcoinAddress('n2yGXrAPUg8YMg4cA5wSsi9MEkEAMqd1c1', isMainnet: true),
+          isFalse);
       expect(
           Network.isValidBitcoinAddress('tb1q53fg23u5tfzvxewcewfdhdjyl7402y8jfs0546',
               isMainnet: true),
@@ -172,7 +173,8 @@ void main() {
   });
 
   group('WalletServiceImpl network-mode getters', () {
-    test('currentBitcoinNetwork/currentRootstockNetwork/rootstockTokenChainId '
+    test(
+        'currentBitcoinNetwork/currentRootstockNetwork/rootstockTokenChainId '
         'follow isMainnet', () {
       final service = WalletServiceImpl();
 
@@ -192,8 +194,8 @@ void main() {
     test('returns 0 without hitting the network when a token has zero balance', () async {
       final service = WalletServiceImpl();
       final client = _mockRpc(balanceOfResult: BigInt.zero);
-      final balance =
-          await service.getErc20Balance(_kTokenAddress, _kWalletAddress, httpClientOverride: client);
+      final balance = await service.getErc20Balance(_kTokenAddress, _kWalletAddress,
+          httpClientOverride: client);
       expect(balance, 0);
     });
 
@@ -204,8 +206,8 @@ void main() {
         balanceOfResult: BigInt.parse('2500000000000000000'),
         decimalsResult: 18,
       );
-      final balance =
-          await service.getErc20Balance(_kTokenAddress, _kWalletAddress, httpClientOverride: client);
+      final balance = await service.getErc20Balance(_kTokenAddress, _kWalletAddress,
+          httpClientOverride: client);
       expect(balance, closeTo(2.5, 0.0000001));
     });
 
@@ -222,8 +224,7 @@ void main() {
     test('returns the contract\'s decimals()', () async {
       final service = WalletServiceImpl();
       final client = _mockRpc(decimalsResult: 6);
-      final decimals =
-          await service.getErc20Decimals(_kTokenAddress, httpClientOverride: client);
+      final decimals = await service.getErc20Decimals(_kTokenAddress, httpClientOverride: client);
       expect(decimals, 6);
     });
 

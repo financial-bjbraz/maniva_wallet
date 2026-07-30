@@ -424,7 +424,7 @@ class _BitcoinAccountSendSend extends State<BitcoinAccountSendSend> {
                     )),
                     ElevatedButton(
                       style: lightBlueButton,
-                      onPressed: _scanAddress,
+                      onPressed: isQrScannerSupported ? _scanAddress : null,
                       child: const Row(
                         children: <Widget>[
                           Row(

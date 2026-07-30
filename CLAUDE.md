@@ -37,6 +37,22 @@ Ao estender a assinatura offline além de P2PKH (ex. adicionar suporte a P2WPKH/
 
 ---
 
+## Armazenamento local — por que é dividido por plataforma
+
+`lib/entities/entity_helper.dart` (`EntityHelper._initDatabase`) escolhe o `DatabaseFactory` em runtime por plataforma — não simplificar de volta para um único `sqflite_sqlcipher.openDatabase(...)` incondicional:
+
+- **Android/iOS/macOS**: `sqflite_sqlcipher` — banco criptografado com a `PRIVATE_KEY` do `.env` como senha (comportamento original, inalterado).
+- **Linux**: `sqflite_common_ffi` (`databaseFactoryFfi`), com o arquivo do banco em `getApplicationSupportDirectory()` (via `path_provider`) em vez de `getDatabasesPath()` (conceito Android-específico que não existe em desktop).
+- **Web**: `sqflite_common_ffi_web` (`databaseFactoryFfiWeb`), que persiste em IndexedDB via um shared worker. Precisa de `web/sqlite3.wasm` e `web/sqflite_sw.js` no repo (compilado de `web/sqflite_sw.dart` com `dart compile js`, já que a ferramenta oficial `dart run sqflite_common_ffi_web:setup` depende do `webdev`/`build_runner`, que falhou neste ambiente com "Unable to start build daemon" — se precisar regenerar após atualizar a versão do pacote, tentar o `setup` oficial primeiro e cair para `dart compile js -o web/sqflite_sw.js web/sqflite_sw.dart` se ele falhar de novo).
+
+**Motivo**: `sqflite_sqlcipher` só declara implementação de plataforma para `android`/`ios`/`macos` (confirmado no `pubspec.yaml` do pacote) — não existe para `linux` nem `web`. Sem essa divisão, `getDatabasesPath()`/`openDatabase()` lançam `MissingPluginException` em runtime nessas duas plataformas assim que a wallet tenta ler/gravar qualquer dado (carteiras, transações, usuário, tokens).
+
+**Tradeoff de segurança conhecido, não descuido**: em Linux e Web o banco **não é criptografado em repouso** — não existe hoje um pacote maduro equivalente ao SQLCipher para essas duas plataformas (a rota "correta" seria `sqlite3` + build "SQLite3MultipleCiphers", mas isso depende de build hooks de native assets ainda experimentais no Flutter e de um asset wasm de cipher à parte — ver `docs/linux-web-support-plan.md` para os detalhes e a decisão explícita de adiar isso). Isso significa que a chave privada da wallet fica em texto plano no arquivo sqlite local (Linux) ou no IndexedDB do navegador (Web) nessas duas plataformas. Se isso mudar de tradeoff aceitável para bloqueador, essa é a única linha de código que precisa mudar (`EntityHelper._initDatabase`), já que o resto do DAO (`wallet_helper.dart`, `transaction_helper.dart`, `user_helper.dart`, `token_helper.dart`) só depende da interface comum `sqflite_common`'s `Database`, não do `sqflite_sqlcipher` diretamente.
+
+O `mobile_scanner` (QR) também não tem implementação Linux (Android/iOS/macOS/Web sim) — o botão "Scan" em `bitcoin_account_send.dart`/`account_send.dart` é desabilitado (`onPressed: null`) nessa plataforma via `isQrScannerSupported` (`qr_scanner_page.dart`), mantendo colar/digitar o endereço manualmente como única opção lá.
+
+---
+
 ## Testes — cuidado com rede real
 
 O grupo `'Integração – transferência real testnet3'` vive em `test/integration/bitcoin_transfer_integration_test.dart` e **agora é bloqueado por `@Tags(['integration'])`** no topo do arquivo — `flutter test` (sem argumentos) pula esse grupo automaticamente; só roda com `flutter test --tags integration`. (Antes ficava em `test/bitcoin_transfer_test.dart` sem gating real, apenas documentado em comentário — corrigido em algum commit antes de 2026-07-29, confirmado ao rodar a suíte completa e ver `Skip: Hits live testnet3 network...`.) Quando executado deliberadamente com a tag, o teste deriva um endereço da `PRIVATE_KEY` do `.env`, busca UTXOs reais via Esplora e faz broadcast de uma transação real de 1000 sats na testnet3 (pula graciosamente via `markTestSkipped` se não houver saldo).

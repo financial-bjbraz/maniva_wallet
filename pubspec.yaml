@@ -57,6 +57,13 @@ dependencies:
   ed25519_hd_key: ^2.2.1
   provider: ^6.1.2
   sqflite: ^2.3.3
+  # sqflite_sqlcipher (above) has no Linux/Web platform implementation, so
+  # those two platforms use these instead — see
+  # docs/linux-web-support-plan.md and lib/entities/entity_helper.dart for
+  # why, and the known at-rest-encryption tradeoff this implies for them.
+  sqflite_common_ffi: ^2.3.4+4
+  sqflite_common_ffi_web: ^1.0.0
+  path_provider: ^2.1.5
   path: ^1.9.0
   curved_navigation_bar: ^1.0.3
   cool_dropdown: ^2.1.0
@@ -93,6 +100,18 @@ dev_dependencies:
   build_runner: ^2.1.8
   flutter_launcher_icons: "^0.14.4"
   web3dart_builders: ^0.1.2
+
+# flutter_windowmanager 0.2.0 (pub.dev) is abandoned since ~2021 and its
+# Android source still calls the v1-embedding `PluginRegistry.Registrar`
+# API, which no longer exists in the current Flutter engine — it fails to
+# compile as-is. patched_packages/flutter_windowmanager is a local copy with
+# only that dead (already-@Deprecated, never-called under v2 embedding) code
+# removed and an explicit Gradle `namespace` added; no behavior change.
+# Remove this override if the plugin is ever replaced (see
+# docs/linux-web-support-plan.md).
+dependency_overrides:
+  flutter_windowmanager:
+    path: patched_packages/flutter_windowmanager
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

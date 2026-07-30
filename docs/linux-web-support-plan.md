@@ -1,6 +1,6 @@
 # Plano: suporte funcional a Linux e Web
 
-Status: proposta (não implementado). Verificação feita em 2026-07-30 a partir da `main` (commit `dc5b136`).
+Status: **implementado** (Fases 0, 1 e 2) na branch `feature/linux-web-storage-and-ci-fixes`, a partir da decisão explícita do usuário de seguir com a Opção B da Fase 1 (funcional agora, sem criptografia em repouso em Linux/Web). Fase 3 parcialmente feita — ver checklist no final do documento.
 
 ## Resumo executivo
 
@@ -19,50 +19,45 @@ Verificado localmente nesta sessão (macOS, sem host Linux disponível):
 
 ## Escopo do plano
 
-### Fase 0 — Desbloquear CI (prioridade imediata, pequeno e isolado)
+### Fase 0 — Desbloquear CI ✅ implementado
 
-Isso desbloqueia as 4 pipelines ao mesmo tempo e não depende do resto do plano.
+- **0.1** ✅ Corrigidos os 3 warnings do analyzer (`wallet_service.dart:77` check morto removido, `wallet_service.dart:222` `!` redundante removido, `wallet_service_rsk_test.dart` `Map` anotado). `flutter analyze` local voltou a exit code 0 (0 errors/warnings, só `info` pré-existentes).
+- **0.2** ✅ Causa raiz do Android era mais profunda do que um `namespace` ausente: o Java do `flutter_windowmanager` 0.2.0 ainda chama a API de embedding v1 (`PluginRegistry.Registrar`), removida do engine Flutter atual — não compila de jeito nenhum, nem só com o `namespace` corrigido. Decisão do usuário: patch mínimo, não substituição. Implementado como `patched_packages/flutter_windowmanager/` (cópia local só com o método `registerWith(Registrar)` morto removido — nunca chamado sob embedding v2, que é o único usado aqui — e `namespace` adicionado ao `android/build.gradle`), referenciado via `dependency_overrides` no `pubspec.yaml`. `flutter build apk --debug` volta a funcionar.
 
-- **0.1** Corrigir os 3 warnings do analyzer:
-  - `lib/services/wallet_service.dart:77` — `if (ownerEmail == null)` é morto (parâmetro é `String` não-nulável). Remover o check morto.
-  - `lib/services/wallet_service.dart:222` — `rootstockNodeUrl!` com `!` redundante (receiver não pode ser nulo). Remover o `!`.
-  - `test/wallet_service_rsk_test.dart:68` — `Map` sem argumento de tipo inferível. Anotar o tipo explicitamente.
-- **0.2** Decidir a causa raiz do Android: patchear `flutter_windowmanager` (via override de `namespace` nos subprojects do `android/build.gradle` raiz — solução comum para plugins legados) OU substituí-lo por uma alternativa mantida (`no_screenshot`, `secure_application`, `screen_protector`) — dado que essa lib está abandonada há anos, e é usada para uma proteção de segurança real (bloquear screenshot de tela de seed/chave privada), a substituição é a opção mais robusta a médio prazo, mas o patch de namespace é o fix mais rápido para desbloquear o CI hoje.
+Depois da Fase 0: `flutter analyze`, `flutter test` (104 passed, 1 skipped), `flutter build macos --debug`, `flutter build apk --debug` e `flutter build web` todos verificados localmente com sucesso. `linux.yml` ainda precisa validação em CI real (sem host Linux nesta sessão) — ver checklist no final.
 
-Depois da Fase 0, esperado: `android.yml` e `macos.yml` verdes; `linux.yml` e `web.yml` compilam (job verde), mas o app ainda quebra em runtime ao tocar no banco de dados — ver Fase 1.
+### Fase 1 — Armazenamento local em Linux e Web ✅ implementado (Opção B)
 
-### Fase 1 — Armazenamento local em Linux e Web (bloqueador arquitetural principal)
+Decisão explícita do usuário: **Opção B** — funcional agora, sem criptografia em repouso em Linux/Web (não a migração completa para `sqlite3` + SQLite3MultipleCiphers, que dependeria de build hooks de native assets ainda experimentais e não seria verificável nesta sessão sem host Linux/testes reais de persistência no browser).
 
-O ponto central: `sqflite_sqlcipher` não existe para linux/web. Não dá para "instalar mais uma dependência" — é preciso decidir uma estratégia de storage por plataforma.
+Implementado em `lib/entities/entity_helper.dart` (`EntityHelper._initDatabase`):
+- **Android/iOS/macOS**: inalterado — `sqflite_sqlcipher`, criptografado com a `PRIVATE_KEY` como senha.
+- **Linux**: `sqflite_common_ffi` (`databaseFactoryFfi`), arquivo em `getApplicationSupportDirectory()` via `path_provider`. **Sem criptografia em repouso.**
+- **Web**: `sqflite_common_ffi_web` (`databaseFactoryFfiWeb`), persistido em IndexedDB via shared worker. **Sem criptografia em repouso.** Precisou de `web/sqlite3.wasm` + `web/sqflite_sw.js` (compilados manualmente com `dart compile js`, já que a ferramenta oficial `dart run sqflite_common_ffi_web:setup` falhou neste ambiente por causa do `webdev`/build daemon — ver CLAUDE.md).
 
-Opções a avaliar (a decidir antes de implementar, não durante):
+O DAO (`wallet_helper.dart`, `transaction_helper.dart`, `user_helper.dart`, `token_helper.dart`) não precisou de nenhuma mudança — já usava só a interface comum `sqflite_common`'s `Database`/`insert`/`query`/`update`, nunca `sqflite_sqlcipher` diretamente. Isso reduziu bastante o escopo real da migração frente ao estimado inicialmente.
 
-- **Opção A — abstrair o banco atrás de uma interface e trocar a implementação por plataforma** (recomendado): manter `sqflite_sqlcipher` em Android/iOS/macOS (já funciona, já testado, sem regressão) e usar imports condicionais (`if (dart.library.io)` / `if (dart.library.html)`, ou um `DatabaseFactory` alternativo) para escolher a implementação em tempo de build:
-  - **Linux**: `sqflite_common_ffi` (SQLite puro via FFI) + camada de criptografia própria no nível da aplicação (já que não é SQLCipher nativo), ou investigar bindings FFI de SQLCipher para Linux.
-  - **Web**: não existe SQLite real no browser. Alternativas: `sqflite_common_ffi_web` (ainda experimental/instável), ou trocar o modelo de persistência para algo web-nativo como `sembast_web`/IndexedDB via `idb_shim`, reimplementando o schema atual (tabelas wallet/transaction/user/token) em um "document store".
-  - Implica: `lib/entities/entity_helper.dart` precisa de um `DatabaseFactory` plugável, e o schema/queries em `wallet_helper.dart`, `transaction_helper.dart`, `user_helper.dart`, `token_helper.dart` precisam ser auditados para SQL específico de SQLCipher que não exista no engine substituto.
-- **Opção B — aceitar armazenamento sem criptografia de banco em desktop/web**, confiando em outra camada (ex.: criptografar cada blob antes de gravar, independente do engine) — reduz esforço de migração de schema, mas muda o modelo de ameaça (decisão de produto/segurança, não só técnica) e precisa ser validada com quem é dono da decisão de segurança da wallet.
-- **Opção C — não oferecer Linux/Web ainda**: publicar os artefatos de CI só como builds experimentais (`workflow_dispatch` manual, não gate de release) até a Opção A ou B ser resolvida.
+**Tradeoff de segurança em aberto, documentado, não escondido**: a chave privada da wallet fica em texto plano no arquivo sqlite (Linux) / IndexedDB (Web). Ver CLAUDE.md para os detalhes e para onde mudar (`EntityHelper._initDatabase`) se isso precisar virar criptografado no futuro.
 
-**Este plano não escolhe entre A/B/C** — é a decisão que precisa de aprovação antes de qualquer código ser escrito.
+### Fase 2 — Funcionalidades com suporte parcial de plugin ✅ implementado
 
-### Fase 2 — Funcionalidades com suporte parcial de plugin
+- **2.1 QR scanner em Linux** ✅ — `qr_scanner_page.dart` agora expõe `isQrScannerSupported` (`kIsWeb || !Platform.isLinux`); o botão "Scan" em `bitcoin_account_send.dart` e `account_send.dart` usa `onPressed: isQrScannerSupported ? _scanAddress : null` (desabilitado, não escondido, em Linux). Colar/digitar o endereço manualmente já existia como caminho principal nesses formulários.
+- **2.2 Revisão de outros plugins** — confirmado sem gaps (`share_plus`, `url_launcher`, `package_info_plus`, `sentry_flutter` já declaram linux/web); teste manual em dispositivo real continua pendente (não feito nesta sessão).
+- **2.3 `SecureScreen`/`app_exit.dart`** — confirmado já correto, nenhuma mudança necessária.
 
-- **2.1 QR scanner em Linux**: `mobile_scanner` não suporta Linux. Adicionar gate de plataforma (`!Platform.isLinux` ou `defaultTargetPlatform`) em `qr_scanner_page.dart` e no botão que abre essa tela, escondendo a opção de câmera em Linux e mantendo apenas colar/digitar o endereço manualmente (já deve existir como alternativa — confirmar no fluxo de envio).
-- **2.2 Revisão geral de plugins nativos usados no app** (`share_plus`, `url_launcher`, `package_info_plus`, `flutter_secure_storage` se vier a ser adicionado, `sentry_flutter`) — já têm implementação linux/web declarada (confirmado nesta sessão), não são bloqueadores, mas testar manualmente pelo menos uma vez por plataforma (share/link/versão) depois da Fase 0/1.
-- **2.3 `SecureScreen`/`app_exit.dart`**: já corretamente no-op em Linux e Web (confirmado — nenhuma mudança necessária).
+## O que este plano NÃO inclui / ainda está pendente
 
-### Fase 3 — Validação
-
-- **3.1** Rodar `linux.yml` via `workflow_dispatch` (ou abrir PR de teste) depois da Fase 0 para confirmar que o build Linux realmente compila em `ubuntu-latest` com as deps GTK já configuradas no workflow — não foi possível validar localmente nesta sessão (sem host Linux).
-- **3.2** Depois da Fase 1, testar manualmente em uma VM/máquina Linux real e no Chrome (web): criar wallet, ver saldo, enviar transação mock — os três fluxos que tocam o banco local.
-- **3.3** Adicionar ao `CLAUDE.md` do projeto uma seção equivalente à de Bitcoin/RSK explicando a divisão de storage por plataforma, para não ser reintroduzido incorretamente no futuro (mesmo padrão já usado para a separação Esplora/RPC do Bitcoin).
-
-## O que este plano NÃO inclui
-
-- Nenhuma alteração de código foi feita. Este documento é só o plano.
-- Não decide entre as opções A/B/C da Fase 1 — isso precisa de uma decisão explícita antes da implementação.
+- Criptografia em repouso real para Linux/Web (a rota `sqlite3` + SQLite3MultipleCiphers) — deliberadamente adiada, ver Fase 1.
+- Teste manual em uma máquina Linux real e no Chrome (criar wallet, ver saldo, enviar transação mock) — não foi possível nesta sessão.
+- Validação do `linux.yml` via `workflow_dispatch` em CI — a fazer antes de mergear (ver checklist).
 - Não cobre Windows (fora do escopo pedido).
+
+## Checklist de validação restante (Fase 3)
+
+- [ ] Rodar `linux.yml` via `workflow_dispatch` contra a branch da implementação e confirmar build verde em `ubuntu-latest`.
+- [ ] Rodar `web.yml` via `workflow_dispatch` contra a branch da implementação (não dispara em PR — só `push` em `main` e `workflow_dispatch`).
+- [ ] Testar manualmente em Linux real e no Chrome: criar wallet, ver saldo, enviar transação mock.
+- [x] Documentar a divisão de storage no `CLAUDE.md` do projeto — feito.
 
 ## Achados verificados nesta sessão (evidência)
 

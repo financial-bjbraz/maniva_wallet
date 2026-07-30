@@ -358,7 +358,7 @@ class _Send extends State<Send> {
                     ),
                     ElevatedButton(
                       style: lightBlueButton,
-                      onPressed: _scanAddress,
+                      onPressed: isQrScannerSupported ? _scanAddress : null,
                       child: const Row(
                         children: <Widget>[
                           Row(
