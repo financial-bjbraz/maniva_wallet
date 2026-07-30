@@ -56,7 +56,9 @@ class EntityHelper {
       return _runPostCreateMigrations(db);
     }
 
-    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
       String path = join(await sqlcipher.getDatabasesPath(), fileName);
       if (kDebugMode) {
         log.info("Database persisted at $path");
