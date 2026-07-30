@@ -46,6 +46,8 @@ jobs:
       - run: |
           touch .env
           echo ROOTSTOCK_NODE=${{ secrets.ROOTSTOCK_NODE }} >> .env
+          echo BITCOIN_NODE=https://bitcoin-testnet-rpc.publicnode.com >> .env
+          echo BITCOIN_ESPLORA_URL=https://mempool.space/testnet/api >> .env
           echo BLOCK_EXPLORER_URL=${{ secrets.BLOCK_EXPLORER_URL }} >> .env
           echo BTC_BLOCK_EXPLORER_URL=https://mempool.space/testnet >> .env
           echo SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} >> .env
