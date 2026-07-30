@@ -1,94 +1,180 @@
 # Maniva Wallet
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rsksmart/2wp-app/badge)](https://scorecard.dev/viewer/?uri=github.com/financial-bjbraz/rootstock_wallet)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/financial-bjbraz/maniva_wallet/badge)](https://scorecard.dev/viewer/?uri=github.com/financial-bjbraz/maniva_wallet)
 
-[Releases](github.com/financial-bjbraz/maniva_wallet/releases/latest)
+An open-source, multi-platform Flutter wallet supporting **Bitcoin** (BTC / testnet3) and **Rootstock** (RBTC + ERC20 tokens). A single private key produces both a Bitcoin address and an RSK/EVM address, enabling native PowPeg BTC↔RBTC bridge compatibility.
 
-## Attention this is an unofficial wallet that supports Rootstock accounts
+> **Unofficial wallet** — not affiliated with or endorsed by Rootstock/IOVlabs.
 
-Unofficial wallet that supports Rootstock accounts
+[Releases](https://github.com/financial-bjbraz/maniva_wallet/releases/latest)
+
+---
+
+## Screenshots
+
+![Wallet home](./assets/screens/1.png)
+![Balance view](./assets/screens/2.png)
+![Send transaction](./assets/screens/3.png)
+![Receive](./assets/screens/4.png)
+![Transaction history](./assets/screens/5.png)
+![Token list](./assets/screens/6.png)
+![Settings](./assets/screens/7.png)
+![Create wallet](./assets/screens/8.png)
+![Import wallet](./assets/screens/9.png)
+
+---
+
+## Features
+
+- **Bitcoin** — send and receive BTC on mainnet and testnet3; UTXO-based, offline signing via `dartsv`
+- **Rootstock** — send and receive RBTC and ERC20 tokens via `web3dart`
+- **Supported tokens**: RBTC, RIF, USDRIF, DOC, RIFPRO, tBRZ (testnet counterparts available)
+- **PowPeg bridge** — single private key derives consistent BTC and RSK addresses for BTC↔RBTC bridge use
+- **Multi-platform**: iOS, Android, macOS, Linux, web
+- **Localization**: English, Portuguese, Spanish
+
+---
+
+## Architecture
+
+### Bitcoin — dual-source design
+
+Bitcoin operations are intentionally split across two backends. Do not merge them back into a single source:
+
+| Operation | Backend | Why |
+|-----------|---------|-----|
+| UTXO discovery + balance | Esplora REST (`BITCOIN_ESPLORA_URL`) | Public nodes reject wallet-loaded RPC methods (`listunspent`, `scantxoutset`) |
+| Fee estimation + broadcast | Bitcoin Core JSON-RPC (`BITCOIN_NODE`) | `estimatesmartfee` and `sendrawtransaction` work on public nodes |
+| Transaction signing | Offline, client-side via `dartsv` | Never routed through RPC |
+
+### Single-key dual-chain
+
+One private key generates both the Bitcoin address/WIF and the RSK/EVM address. This is required for [PowPeg](https://dev.rootstock.io/rsk/architecture/powpeg/) BTC↔RBTC bridge compatibility — the bridge depends on the same key pair producing consistent addresses on both networks.
+
+---
 
 ## Getting Started
 
-This is an open source project in flutter to create a crypto wallet compatible with Rootstock accounts.
+### Prerequisites
 
-![image](./assets/screens/1.png)
-![image](./assets/screens/2.png)
-![image](./assets/screens/3.png)
-![image](./assets/screens/4.png)
-![image](./assets/screens/5.png)
-![image](./assets/screens/6.png)
-![image](./assets/screens/7.png)
-![image](./assets/screens/8.png)
-![image](./assets/screens/9.png)
+- Flutter SDK ≥ 3.5.0 — [install guide](https://docs.flutter.dev/get-started/install)
+- For iOS/macOS: Xcode + CocoaPods (`brew install cocoapods`)
 
-### Generate launcher icon
-``` 
+### 1. Clone and install dependencies
+
+```bash
+git clone https://github.com/financial-bjbraz/maniva_wallet.git
+cd maniva_wallet
+flutter pub get
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in your node endpoints:
+
+| Variable | Description |
+|----------|-------------|
+| `ROOTSTOCK_NODE` | Rootstock/RSK JSON-RPC endpoint (testnet) |
+| `BITCOIN_NODE` | Bitcoin Core JSON-RPC endpoint — for fee estimation and broadcast only |
+| `BITCOIN_ESPLORA_URL` | Esplora REST endpoint for UTXO/balance (default: `https://mempool.space/testnet/api`) |
+| `ROOTSTOCK_NODE_MAIN` | Mainnet RSK RPC endpoint (required to enable mainnet mode) |
+| `TOKENS_MAIN` | Mainnet ERC20 token contract addresses (required to enable mainnet mode) |
+
+> ⚠️ **Security**: `.env` is bundled into the app binary via Flutter assets. Never put a funded private key or production secrets in this file — anyone who unpacks the app binary can read it. The `PRIVATE_KEY` field in `.env` is for testnet-only integration tests and must never hold mainnet funds.
+
+### 3. Run
+
+```bash
+flutter run
+```
+
+---
+
+## Building
+
+### iOS
+
+```bash
+rm -rf ./ios/Podfile.lock ./ios/Pods
+flutter clean && flutter pub get && cd ios/ && pod install && cd ../
+flutter run -d <ios-device>
+```
+
+### macOS
+
+```bash
+rm -rf ./macos/Podfile.lock ./macos/Pods
+flutter clean && flutter pub get && cd macos/ && pod install && cd ../
+flutter run -d macos
+```
+
+### Android / Linux / Web
+
+```bash
+flutter run -d <device>
+```
+
+---
+
+## Code Generation
+
+After modifying ERC20 ABI files or localization strings, regenerate derived code:
+
+```bash
+# Full regeneration (contracts + localization)
+flutter clean && flutter pub get && dart run build_runner clean && \
+  dart run build_runner build --delete-conflicting-outputs && flutter gen-l10n
+```
+
+Regenerate the launcher icon after changing `icons.yaml`:
+
+```bash
 dart run flutter_launcher_icons -f icons.yaml
 ```
 
-### Generate Smart Contract wrappers
-```
-flutter pub run build_runner build
+---
+
+## Testing
+
+```bash
+# Unit tests only — safe, no network access
+flutter test
+
+# Run only the integration tests (hits live testnet3, spends testnet funds)
+flutter test --tags integration --run-skipped test/integration/
 ```
 
+> ⚠️ **Integration tests** broadcast a real 1000-sat transaction on Bitcoin testnet3. They require a funded testnet address in `PRIVATE_KEY` (`.env`) and depend on live external services (mempool.space, a public Bitcoin RPC node). If the testnet balance is empty, refill it at https://coinfaucet.eu/en/btc-testnet/.
 
-## Building IOS
-```
-rm -rf ./ios/Podfile.lock   
-rm -rf ./ios/Pods
-flutter clean && flutter pub get && cd ios/ && pod install && cd ../
-```
+---
 
-## Building MACOS
-```
-rm -rf ./macos/Podfile.lock   
-rm -rf ./macos/Pods
-flutter clean && flutter pub get && cd macos/ && pod install && cd ../
+## Localization
+
+Localization strings live in `lib/l10n/app_*.arb` (English, Portuguese, Spanish). After editing an ARB file:
+
+```bash
+flutter gen-l10n
 ```
 
-## Cleanning and generating dependencies
-```
-flutter clean && flutter pub get && dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs && flutter gen-l10n
-```
-### Creating Bitcoin raw transaction
-## List Unspent
-```
-./src/bitcoin-cli -regtest listunspent 1 99999999 '["bcrt1qf0vka0d60t9ua83k8mgf7p7uxa2xgsnetkrynv"]'
-```
-```
-[
-  {
-    "txid": "1f9f332b64679eb2d1cff1fc730ded28c921b7e99e7a41041fd36856ccdc84b3",
-    "vout": 0,
-    "address": "bcrt1qf0vka0d60t9ua83k8mgf7p7uxa2xgsnetkrynv",
-    "label": "",
-    "scriptPubKey": "00144bd96ebdba7acbce9e363ed09f07dc3754644279",
-    "amount": 50.00000000,
-    "confirmations": 101,
-    "spendable": true,
-    "solvable": true,
-    "desc": "wpkh([2dc798fa/84h/1h/0h/0/0]022aa947554dd848ef5eb414c1c763f1d31fc06233167c7b5c3302f4ee9613212c)#t7dj5dfp",
-    "parent_descs": [
-      "wpkh(tpubD6NzVbkrYhZ4WneTb2XQmFUmiXAjcAHEecZxrCY3zi5E6NtwyPwiLRgRmRhENfwzEkDmwKCi3wkD8kyP84nCwHEYoVhQXoPAnJHefZ1o4bN/84h/1h/0h/0/*)#jn6s08jj"
-    ],
-    "safe": true
-  }
-]
-```
+---
 
+## Contributing
 
-```
-./src/bitcoin-cli -regtest createrawtransaction "[{\"txid\":\"a13abc39243912d54edcf7e0a128d2105449bbde464debd6eaff1a5e84661b2c\",\"vout\":0}]" "[{\"mfjKbRTeJMMsn9EY1Do9B4yj8qAYnA7P6p\":48.00}]"
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-```
-02000000012c1b66845e1affead6eb4d46debb495410d228a1e0f7dc4ed512392439bc3aa10000000000fdffffff0100301a1e010000001976a9140256c57c9f26e7db4d04b2126880e8fa9176f15088ac00000000
-```
-./src/bitcoin-cli signrawtransaction 02000000012c1b66845e1affead6eb4d46debb495410d228a1e0f7dc4ed512392439bc3aa10000000000fdffffff0100301a1e010000001976a9140256c57c9f26e7db4d04b2126880e8fa9176f15088ac00000000
+- Open an issue before submitting a large change
+- Run `flutter analyze` and `dart format .` before opening a PR — zero warnings policy
+- Do not commit `.env` files containing real private keys or funded addresses
 
-```
+---
 
-### Support this project
-If you like this project and want to support it, you can buy me a coffee:
+## Related
 
-![image](./assets/images/rootstock.png = 150x150)
+- [Rootstock developer docs](https://dev.rootstock.io)
+- [PowPeg bridge](https://dev.rootstock.io/rsk/architecture/powpeg/)
+- [Esplora API](https://github.com/Blockstream/esplora/blob/master/API.md)
+- [mempool.space](https://mempool.space)
