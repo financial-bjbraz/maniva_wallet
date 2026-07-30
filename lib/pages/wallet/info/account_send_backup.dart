@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -7,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/clipboard_guard.dart';
 import '../../../util/util.dart';
 
 class AccountSendBackup extends StatefulWidget {
@@ -30,6 +33,7 @@ class _AccountSendBackup extends State<AccountSendBackup> {
   late String balance = "0";
   late String balanceInUsd = "0";
   final TextEditingController addressController = TextEditingController();
+  Timer? _clearTimer;
 
   _AccountSendBackup();
 
@@ -40,6 +44,7 @@ class _AccountSendBackup extends State<AccountSendBackup> {
 
   @override
   void dispose() {
+    _clearTimer?.cancel();
     if (address.isEmpty) {
       address = widget.walletDto.getAddress();
     }
@@ -75,7 +80,7 @@ class _AccountSendBackup extends State<AccountSendBackup> {
               ],
             ),
           ),
-          backgroundColor: const Color.fromRGBO(158, 118, 255, 1),
+          backgroundColor: purple(),
         ),
         body: ClipRRect(
           borderRadius: BorderRadius.circular(5),
@@ -100,9 +105,9 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                   size: 48,
                                 ),
                                 TextField(
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    backgroundColor: Color.fromRGBO(7, 255, 208, 1),
+                                    backgroundColor: lightBlue(),
                                     fontSize: 20,
                                   ),
                                   decoration: const InputDecoration(labelText: "Enter your number"),
@@ -148,7 +153,8 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                 GestureDetector(
                                   child: Icon(Icons.camera_alt_outlined, color: lightBlue()),
                                   onTap: () async {
-                                    await Clipboard.setData(ClipboardData(text: address));
+                                    _clearTimer?.cancel();
+                                    _clearTimer = copyWithTimeout(address);
                                     showMessage("Copied to the clipboard", context);
                                   },
                                 ),
@@ -185,8 +191,8 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                   },
                                   child: SvgPicture.asset(
                                       _showSaldo
-                                          ? "assets/icons/eye-off-svgrepo-com.svg"
-                                          : "assets/icons/eye-svgrepo-com.svg",
+                                          ? "assets/icons/eye-outline.svg"
+                                          : "assets/icons/eye-off-outline.svg",
                                       semanticsLabel: "view",
                                       width: 40,
                                       color: orange()),
@@ -199,17 +205,17 @@ class _AccountSendBackup extends State<AccountSendBackup> {
                                 const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.monetization_on_rounded,
-                                  color: Color.fromRGBO(121, 198, 0, 1),
+                                  color: green(),
                                   size: 48,
                                 ),
                                 Text.rich(
                                   TextSpan(
                                       text: balanceInUsd,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          backgroundColor: Color.fromRGBO(121, 198, 0, 1))),
+                                          backgroundColor: green())),
                                   textAlign: TextAlign.start,
                                   style: const TextStyle(
                                     color: Colors.white,

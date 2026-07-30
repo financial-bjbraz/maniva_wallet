@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:maniva_wallet/entities/wallet_dto.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../entities/user_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/clipboard_guard.dart';
 import '../../../util/util.dart';
 
 /// Essa classe pode ser adaptada para mostrar em uma tela completa todas as transacoes de uma wallet, ou podemos colocar filtros
@@ -75,7 +75,7 @@ class _AccountTransactions extends State<AccountTransactions> {
               ],
             ),
           ),
-          backgroundColor: const Color.fromRGBO(158, 118, 255, 1),
+          backgroundColor: purple(),
         ),
         body: ClipRRect(
           borderRadius: BorderRadius.circular(5),
@@ -103,9 +103,9 @@ class _AccountTransactions extends State<AccountTransactions> {
                                     ? Text.rich(
                                         addressText(address),
                                         textAlign: TextAlign.start,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white,
-                                          backgroundColor: Color.fromRGBO(7, 255, 208, 1),
+                                          backgroundColor: lightBlue(),
                                           fontSize: 20,
                                         ),
                                       )
@@ -116,8 +116,9 @@ class _AccountTransactions extends State<AccountTransactions> {
                                 GestureDetector(
                                   child: Icon(Icons.copy, color: lightBlue()),
                                   onTap: () async {
-                                    await Clipboard.setData(ClipboardData(text: address));
-                                    showMessage("Copied to the clipboard", context);
+                                    copyWithTimeout(address);
+                                    showMessage(
+                                        AppLocalizations.of(context)!.copiedMessage, context);
                                   },
                                 ),
                               ],
@@ -155,8 +156,8 @@ class _AccountTransactions extends State<AccountTransactions> {
                                   },
                                   child: SvgPicture.asset(
                                       _showSaldo
-                                          ? "assets/icons/eye-off-svgrepo-com.svg"
-                                          : "assets/icons/eye-svgrepo-com.svg",
+                                          ? "assets/icons/eye-outline.svg"
+                                          : "assets/icons/eye-off-outline.svg",
                                       semanticsLabel: "view",
                                       width: 40,
                                       color: orange()),
@@ -169,18 +170,18 @@ class _AccountTransactions extends State<AccountTransactions> {
                                 const EdgeInsets.only(left: 10, top: 10, bottom: 10, right: 10),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.monetization_on_rounded,
-                                  color: Color.fromRGBO(121, 198, 0, 1),
+                                  color: green(),
                                   size: 48,
                                 ),
                                 _showSaldo
                                     ? Text.rich(
                                         TextSpan(
                                             text: balanceInUsd,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                backgroundColor: Color.fromRGBO(121, 198, 0, 1))),
+                                                backgroundColor: green())),
                                         textAlign: TextAlign.start,
                                         style: const TextStyle(
                                           color: Colors.white,

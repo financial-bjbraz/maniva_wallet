@@ -40,7 +40,18 @@ dependencies:
   intl: any
   flutter_svg: ^2.0.10+1
   shared_preferences: ^2.2.2
-  web3dart: ^2.7.3
+  # Pinned exactly (no caret) rather than ^-ranged: these packages perform
+  # cryptographic signing, key derivation, or handle the encrypted wallet
+  # database, so an unreviewed transitive minor/patch bump on `pub upgrade`
+  # could silently change wallet-security-critical behavior. Bump
+  # deliberately, one at a time, with a diff review of the release notes.
+  web3dart: 2.7.3
+  pointycastle: 3.9.1
+  dartsv: 2.1.0
+  bitcoin_base: 6.9.0
+  encrypt: 5.0.3
+  sqflite_sqlcipher: 3.4.0
+
   bip39: ^1.0.6
   hex: ^0.2.0
   ed25519_hd_key: ^2.2.1
@@ -58,16 +69,14 @@ dependencies:
   mobile_scanner: ^6.0.3
   big_dart: ^1.0.1
   convert: ^3.0.1
-  pointycastle: ^3.9.1
-  dartsv: ^2.1.0
-  bitcoin_base: ^6.1.0
-  encrypt: ^5.0.3
-  sqflite_sqlcipher: ^3.1.0+1
   stac: ^1.0.1
   hux: ^0.17.0
   flutter_exit_app: ^2.0.0
   flutter_feather_icons: ^2.0.0+1
   decimal: ^2.3.3
+  google_fonts: ^6.2.1
+  package_info_plus: ^8.1.2
+  flutter_windowmanager: ^0.2.0
 
 
 dev_dependencies:

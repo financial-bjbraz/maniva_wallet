@@ -5,6 +5,7 @@ import '../../../entities/user_helper.dart';
 import '../../../entities/wallet_helper.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/wallet_service.dart';
+import '../../../util/app_theme.dart';
 import '../../../util/util.dart';
 import '../../home_page.dart';
 
@@ -28,7 +29,7 @@ class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail
     final TextEditingController mailController = TextEditingController();
 
     return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: rootstockBlack,
         appBar: AppBar(
           title: const Padding(
             padding: EdgeInsets.all(20),
@@ -103,66 +104,71 @@ class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail
                                   const SizedBox(
                                     height: 20,
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      var privateKey = mailController.text;
+                                  Center(
+                                    child: SizedBox(
+                                      width: 260,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          var privateKey = mailController.text;
 
-                                      if (privateKey.isEmpty) {
-                                        showMessage("Invalid privateKey", context);
-                                      } else {
-                                        var publicKey =
-                                            await walletService.getPublicKeyString(privateKey);
-                                        var btcAdress =
-                                            walletService.getBtcAddressFromPrivateKey(privateKey);
-                                        var btcWif =
-                                            walletService.getBtcWifFromPrivateKey(privateKey);
-                                        var walletId = await getIndex();
-                                        WalletEntity wallet = WalletEntity(
-                                          amount: BigInt.zero.toDouble(),
-                                          btcAmount: BigInt.zero.toDouble(),
-                                          privateKey: privateKey,
-                                          publicKey: publicKey,
-                                          btcAddress: btcAdress,
-                                          walletId: walletId,
-                                          walletName: "Wallet #",
-                                          ownerEmail: widget.user.email,
-                                          btcWif: btcWif,
-                                        );
+                                          if (privateKey.isEmpty) {
+                                            showMessage("Invalid privateKey", context);
+                                          } else {
+                                            var publicKey =
+                                                await walletService.getPublicKeyString(privateKey);
+                                            var btcAdress = walletService
+                                                .getBtcAddressFromPrivateKey(privateKey);
+                                            var btcWif =
+                                                walletService.getBtcWifFromPrivateKey(privateKey);
+                                            var walletId = await getIndex();
+                                            WalletEntity wallet = WalletEntity(
+                                              amount: BigInt.zero.toDouble(),
+                                              btcAmount: BigInt.zero.toDouble(),
+                                              privateKey: privateKey,
+                                              publicKey: publicKey,
+                                              btcAddress: btcAdress,
+                                              walletId: walletId,
+                                              walletName: "Wallet #",
+                                              ownerEmail: widget.user.email,
+                                              btcWif: btcWif,
+                                            );
 
-                                        walletService.persistNewWallet(wallet);
-                                        showMessage(
-                                            "Account ${wallet.walletName} Created", context);
-                                        final user = SimpleUser(
-                                            name: AppLocalizations.of(context)!.anonimus,
-                                            email:
-                                                "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
-                                            password: "");
-                                        final List<WalletEntity> wallets =
-                                            await walletService.getWallets(user.email);
+                                            walletService.persistNewWallet(wallet);
+                                            showMessage(
+                                                "Account ${wallet.walletName} Created", context);
+                                            final user = SimpleUser(
+                                                name: AppLocalizations.of(context)!.anonimus,
+                                                email:
+                                                    "${AppLocalizations.of(context)!.passwordField}@${AppLocalizations.of(context)!.passwordField}.com",
+                                                password: "");
+                                            final List<WalletEntity> wallets =
+                                                await walletService.getWallets(user.email);
 
-                                        Navigator.of(context).pushReplacement(MaterialPageRoute(
-                                            builder: (context) => HomePage(
-                                                  wallets: wallets,
-                                                  user: user,
-                                                )));
-                                      }
-                                    },
-                                    style: raisedButtonStyle,
-                                    child: const Row(
-                                      children: <Widget>[
-                                        Row(
+                                            Navigator.of(context).pushReplacement(MaterialPageRoute(
+                                                builder: (context) => HomePage(
+                                                      wallets: wallets,
+                                                      user: user,
+                                                    )));
+                                          }
+                                        },
+                                        style: purpleButton,
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: <Widget>[
-                                            Icon(Icons.key),
+                                            Icon(Icons.key, color: Colors.white),
                                             SizedBox(
                                               width: 10,
                                             ),
                                             Text(
                                               "Validate and Import",
-                                              style: TextStyle(fontSize: 20),
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
                                             ),
                                           ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 ],

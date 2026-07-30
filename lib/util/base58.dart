@@ -1,9 +1,6 @@
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
-import 'bitcoin.dart';
-import 'network.dart';
-
 String base58Encode(String hex) {
   const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   const base = chars.length;
@@ -63,16 +60,6 @@ String hash256(String hex) {
 //   final publicKeyBytes = publicKey?.getEncoded(false);
 //   return hex.encode(publicKeyBytes!.toList());
 // }
-
-void main() {
-  String privateKey = "bbe55fc1379fed1e783054ef4dd7f666367413087e1eb2ab22cce0f89e386708";
-  print(testCompress(privateKey));
-  print(hexToWif(privateKey));
-}
-
-String testCompress(String privateKey) {
-  return BitcoinWallet.generateCompressedAddress(privateKey, Network.BITCOIN_TESTNET.networkByte);
-}
 
 String hexToWif(String hexKey, {bool testnet = true, bool compressed = true}) {
   final keyBytes = _hexToBytes(hexKey);

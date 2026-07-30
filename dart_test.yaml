@@ -1,0 +1,8 @@
+# Integration tests hit live testnet3 network endpoints and broadcast a real
+# (though worthless) transaction on every run. Skip them by default so a
+# plain `flutter test` doesn't spend testnet funds or depend on network
+# access — run them explicitly with:
+#   flutter test --tags integration --run-skipped test/integration/
+tags:
+  integration:
+    skip: "Hits live testnet3 network and spends testnet funds — run explicitly with --tags integration --run-skipped"

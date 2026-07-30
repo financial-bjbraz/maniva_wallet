@@ -118,10 +118,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transactions => 'Transactions';
 
   @override
-  String get txSent => 'New tranasction sent';
+  String get txSent => 'New transaction sent';
 
   @override
-  String get txReceived => 'New tranasction received';
+  String get txReceived => 'New transaction received';
 
   @override
   String get amount => 'Enter amount';
@@ -145,6 +145,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exit => 'Exit';
 
   @override
+  String get exitWebMessage => 'Close this browser tab to exit';
+
+  @override
   String get createNewWallet => 'Create New Wallet';
 
   @override
@@ -158,4 +161,160 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paste => 'Paste';
+
+  @override
+  String get accountOverviewTitle => 'Account Overview';
+
+  @override
+  String get bitcoinLabel => 'Bitcoin';
+
+  @override
+  String get rootstockLabel => 'Rootstock';
+
+  @override
+  String get subtotalLabel => 'Subtotal';
+
+  @override
+  String get grandTotalLabel => 'Grand total';
+
+  @override
+  String get mainnetBannerConfigured => 'MAINNET — real funds, transactions are irreversible';
+
+  @override
+  String get mainnetBannerNotConfigured =>
+      'MAINNET selected but not configured — add ROOTSTOCK_NODE_MAIN / BITCOIN_NODE_MAIN / TOKENS_MAIN to .env';
+
+  @override
+  String get accountLabel => 'Account';
+
+  @override
+  String get walletsLabel => 'Wallets';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get networkLabel => 'Network';
+
+  @override
+  String get aboutLabel => 'About';
+
+  @override
+  String get appVersionLabel => 'App version';
+
+  @override
+  String get languageLabel => 'Language';
+
+  @override
+  String get systemDefaultLabel => 'System default';
+
+  @override
+  String get logOut => 'Log out';
+
+  @override
+  String get switchToMainnetTitle => 'Switch to Mainnet?';
+
+  @override
+  String get switchToMainnetBody =>
+      'Mainnet uses real BTC/RBTC. Transactions are irreversible — double-check addresses and amounts before sending. Make sure mainnet RPC endpoints are configured before relying on balances shown here.';
+
+  @override
+  String get cancelLabel => 'Cancel';
+
+  @override
+  String get switchToMainnetButton => 'Switch to Mainnet';
+
+  @override
+  String get testnetLabel => 'Testnet';
+
+  @override
+  String get mainnetLabel => 'Mainnet';
+
+  @override
+  String customNodeUrlsLabel(String network) {
+    return 'Custom node URLs ($network)';
+  }
+
+  @override
+  String get customNodeUrlsHint =>
+      'Override the default node/API endpoints for the currently selected network. Leave a field empty to use the app default.';
+
+  @override
+  String get bitcoinNodeUrlLabel => 'Bitcoin RPC node URL';
+
+  @override
+  String get bitcoinEsploraUrlLabel => 'Bitcoin Esplora API URL';
+
+  @override
+  String get rootstockNodeUrlLabel => 'Rootstock RPC node URL';
+
+  @override
+  String get saveLabel => 'Save';
+
+  @override
+  String get resetToDefaultLabel => 'Reset to default';
+
+  @override
+  String get nodeUrlSavedMessage => 'Node URL saved';
+
+  @override
+  String get nodeUrlResetMessage => 'Reverted to default node URL';
+
+  @override
+  String get invalidUrlMessage => 'Enter a valid http(s) URL';
+
+  @override
+  String get noTransactionsYet => 'No transactions yet';
+
+  @override
+  String get receivedLabel => 'Received';
+
+  @override
+  String get sentLabel => 'Sent';
+
+  @override
+  String get atTheTimeLabel => 'At the time';
+
+  @override
+  String get nowLabel => 'Now';
+
+  @override
+  String networkTransactionsTitle(String network) {
+    return '$network transactions';
+  }
+
+  @override
+  String get faq1Q => 'What is Rootstock (RSK)?';
+
+  @override
+  String get faq1A =>
+      'Rootstock is a smart contract platform secured by the Bitcoin network through merge-mining. RBTC, the coin used to pay for transactions on Rootstock, is pegged 1:1 with BTC.';
+
+  @override
+  String get faq2Q => 'How do I send Bitcoin or Rootstock funds?';
+
+  @override
+  String get faq2A =>
+      'Open your wallet, pick the Bitcoin or Rootstock section, tap Send, then enter the destination address and amount. You can use the Max button to send your full balance minus the estimated network fee.';
+
+  @override
+  String get faq3Q => 'How does the BTC ↔ RBTC peg work?';
+
+  @override
+  String get faq3A =>
+      'The powpeg protocol lets you move BTC into Rootstock (peg-in) and back out to Bitcoin (peg-out). Both your Bitcoin and Rootstock accounts are derived from the same private key, so they are always available side by side in this wallet.';
+
+  @override
+  String get faq4Q => 'Where are my keys stored?';
+
+  @override
+  String get faq4A =>
+      'Your private key and seed phrase are stored only on this device. Nobody else, including the app\'s developers, has access to them — write your seed phrase down and keep it safe, since it cannot be recovered if lost.';
+
+  @override
+  String get faq5Q => 'What tokens are supported on Rootstock?';
+
+  @override
+  String get faq5A =>
+      'Alongside RBTC, this wallet shows your balances of RIF, USDRIF, DOC, RIFPRO and tBRZ tokens.';
 }

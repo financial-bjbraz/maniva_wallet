@@ -3,7 +3,7 @@ import '../entities/transaction_helper.dart';
 abstract class CreateTransactionService {
   Future<int> createOrUpdateTransaction(SimpleTransaction transaction);
 
-  Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId);
+  Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId, {String? network});
 }
 
 class CreateTransactionServiceImpl implements CreateTransactionService {
@@ -16,8 +16,13 @@ class CreateTransactionServiceImpl implements CreateTransactionService {
   }
 
   @override
-  Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId) async {
-    var list = await helper.fetchItems(walletId);
+  Future<List<SimpleTransaction>> listTransactionsOnDataBase(String walletId,
+      {String? network}) async {
+    var list = await helper.fetchItems(walletId, networkFilter: network);
     return list;
+  }
+
+  Future<bool> transactionExists(String transactionId) {
+    return helper.transactionExists(transactionId);
   }
 }

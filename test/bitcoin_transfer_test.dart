@@ -22,12 +22,10 @@
 // Use um faucet, por exemplo: https://coinfaucet.eu/en/btc-testnet/
 // ─────────────────────────────────────────────────────────────────────────────
 
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:maniva_wallet/entities/bitcoin_utxo.dart';
 import 'package:maniva_wallet/services/bitcoin_service.dart';
 import 'package:maniva_wallet/util/bitcoin.dart';
@@ -42,16 +40,22 @@ const _kPrivKeyHex = 'd55cc123c161da6c85f6d65ec33fb6c53cc2d22da3b637f3ad275fc0ce
 /// Corresponde ao scriptPubKey 0014a4528547945a44c365d8cb92dbb644ffaaf510f2 (P2WPKH).
 const _kAddrTestnet = 'tb1q53fg23u5tfzvxewcewfdhdjyl7402y8jfs0546';
 
+/// Segundo endereço testnet3, usado como `changeAddress` em testes que
+/// precisam diferenciar o output de troco do output de destino.
+const _kChangeAddrTestnet = 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx';
+
 /// Endereço mainnet fornecido pelo usuário (apenas para referência – não pode
 /// ser usado em testnet3).
 const _kAddrMainnetRef = 'bc1qdse2pw0avfh200at0phyhqm8fq3hespa8ehf5y';
 
-/// Valor da transação de integração real: 0.00001 BTC (1000 sats).
-const _kRealAmountBtc = 0.00001;
-
 /// Nó público testnet3. Suporta createrawtransaction / sendrawtransaction
 /// sem autenticação de carteira.
 const _kTestnetRpcUrl = 'https://bitcoin-testnet-rpc.publicnode.com';
+
+/// API REST estilo Esplora (mempool.space) usada para descobrir UTXOs sem
+/// depender de uma wallet carregada no nó (que os provedores públicos não
+/// expõem – `listunspent`/`scantxoutset` são rejeitados por eles).
+const _kEsploraTestnetUrl = 'https://mempool.space/testnet/api';
 
 // ─── Helpers de criptografia ──────────────────────────────────────────────────
 
@@ -93,34 +97,6 @@ String _base58Encode(Uint8List data) {
     }
   }
   return result;
-}
-
-/// Chamada RPC HTTP direta (usada nos testes de integração para buscar UTXOs
-/// sem depender de wallet no nó público).
-Future<dynamic> _rawRpc(
-  String nodeUrl,
-  String method, [
-  List<dynamic>? params,
-]) async {
-  final body = jsonEncode({
-    'jsonrpc': '1.0',
-    'id': 'flutter_test',
-    'method': method,
-    'params': params ?? [],
-  });
-  final resp = await http.post(
-    Uri.parse(nodeUrl),
-    headers: {'Content-Type': 'application/json'},
-    body: body,
-  );
-  if (resp.statusCode != 200) {
-    throw StateError('RPC HTTP ${resp.statusCode}: ${resp.body}');
-  }
-  final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
-  if (decoded['error'] != null) {
-    throw Exception('RPC error: ${decoded['error']}');
-  }
-  return decoded['result'];
 }
 
 // ─── Fábrica de RPC falso (mocked) ───────────────────────────────────────────
@@ -235,6 +211,14 @@ void main() {
 
     test('1... → p2pkh (legacy mainnet)', () {
       expect(c.inferInputScriptFromAddress('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2'), 'p2pkh');
+    });
+
+    test('m... → p2pkh (legacy testnet, prefixo desta wallet)', () {
+      expect(c.inferInputScriptFromAddress('mfjKbRTeJMMsn9EY1Do9B4yj8qAYnA7P6p'), 'p2pkh');
+    });
+
+    test('n... → p2pkh (legacy testnet)', () {
+      expect(c.inferInputScriptFromAddress('n3GNqMveyvaPvUbH469vDRadqpJMPc84JA'), 'p2pkh');
     });
 
     test('null → defaultScript', () {
@@ -362,6 +346,36 @@ void main() {
     test('lança ArgumentError quando numInputs <= 0', () {
       final c = _client();
       expect(() => c.estimateFee(numInputs: 0), throwsArgumentError);
+    });
+
+    test('usa Esplora /fee-estimates quando RPC falha, antes do fallback fixo', () async {
+      final c = _client(
+        rpcOverride: (m, [p]) async {
+          if (m == 'estimatesmartfee') throw Exception('RPC indisponível');
+          throw UnimplementedError(m);
+        },
+      );
+      // Fallback absurdamente alto — se o resultado não for próximo dele,
+      // é porque a chamada real ao Esplora (rede) forneceu a taxa em vez do
+      // fallback fixo.
+      const absurdFallbackSatsPerVbyte = 999999.0;
+      double fee;
+      try {
+        fee = await c.estimateFee(
+          numInputs: 1,
+          fallbackRateSatsPerVbyte: absurdFallbackSatsPerVbyte,
+          esploraBaseUrl: _kEsploraTestnetUrl,
+        );
+      } catch (e) {
+        markTestSkipped('Não foi possível conectar ao Esplora: $e');
+        return;
+      }
+      final feeUsingAbsurdFallback = await c.estimateFee(
+        numInputs: 1,
+        fallbackRateSatsPerVbyte: absurdFallbackSatsPerVbyte,
+      );
+      expect(fee, lessThan(feeUsingAbsurdFallback),
+          reason: 'Esplora deveria ter fornecido uma taxa real bem menor que o fallback absurdo');
     });
 
     test('P2PKH produz fee maior que P2WPKH (mais bytes por input)', () async {
@@ -697,7 +711,21 @@ void main() {
               ['createrawtransaction', 'signrawtransactionwithwallet', 'sendrawtransaction']));
     });
 
-    test('chama getrawchangeaddress quando changeAddress não fornecido', () async {
+    test('changeAddress é obrigatório e não pode ser vazio', () {
+      final c = _client();
+      expect(
+        () => c.sendTransferUsingUtxos(
+          _kAddrTestnet,
+          0.0001,
+          [_utxo(amount: 0.001)],
+          fee: 0.00001,
+          changeAddress: '',
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('não chama getrawchangeaddress (troco é sempre fornecido pelo chamador)', () async {
       final calls = <String>[];
       final c = _client(
         rpcOverride: (m, [p]) async {
@@ -710,15 +738,15 @@ void main() {
         0.0001,
         [_utxo(amount: 0.001)],
         fee: 0.00001,
-        // sem changeAddress → deve chamar getrawchangeaddress
+        changeAddress: _kAddrTestnet,
       );
-      expect(calls, contains('getrawchangeaddress'));
+      expect(calls, isNot(contains('getrawchangeaddress')));
     });
 
     test('lança ArgumentError com lista de UTXOs vazia', () {
       final c = _client();
       expect(
-        () => c.sendTransferUsingUtxos(_kAddrTestnet, 0.0001, []),
+        () => c.sendTransferUsingUtxos(_kAddrTestnet, 0.0001, [], changeAddress: _kAddrTestnet),
         throwsArgumentError,
       );
     });
@@ -776,12 +804,14 @@ void main() {
         },
       );
       // UTXO=0.01, amount=0.001, fee=0.00001 → troco=0.00899 BTC (muito acima do dust)
+      // changeAddress precisa ser diferente do destino, senão os dois outputs
+      // colapsam na mesma chave do Map e o teste não consegue distinguir 1 de 2 outputs.
       await c.sendTransferUsingUtxos(
         _kAddrTestnet,
         0.001,
         [_utxo(amount: 0.01)],
         fee: 0.00001,
-        changeAddress: _kAddrTestnet,
+        changeAddress: _kChangeAddrTestnet,
       );
       expect(capturedOutputs.first.length, 2); // destinação + troco
     });
@@ -837,7 +867,7 @@ void main() {
       );
       await c.sendTransferUsingUtxos(
         _kAddrTestnet,
-        0.001,
+        0.00098, // deixa espaço para a fee dentro do total dos dois UTXOs (0.001)
         [
           _utxo(txid: 'aa' * 32, amount: 0.0005),
           _utxo(txid: 'bb' * 32, vout: 1, amount: 0.0005),
@@ -846,25 +876,6 @@ void main() {
         changeAddress: _kAddrTestnet,
       );
       expect(capturedInputs.first.length, 2);
-    });
-
-    test('lança Exception quando getrawchangeaddress retorna vazio', () {
-      final c = _client(
-        rpcOverride: (m, [p]) async {
-          if (m == 'getrawchangeaddress') return '';
-          return await _mockRpc()(m, p);
-        },
-      );
-      expect(
-        () => c.sendTransferUsingUtxos(
-          _kAddrTestnet,
-          0.0001,
-          [_utxo(amount: 0.001)],
-          fee: 0.00001,
-          // sem changeAddress
-        ),
-        throwsException,
-      );
     });
 
     test('passa privKeysWif → tenta assinatura offline antes do RPC', () async {
@@ -1007,113 +1018,63 @@ void main() {
   });
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // 12. INTEGRAÇÃO – Transação real na testnet3 (0.00001 BTC)
+  // 11. fetchUtxosFromEsplora / fetchBalanceFromEsplora
   // ══════════════════════════════════════════════════════════════════════════════
   //
-  // NOTA SOBRE O ENDEREÇO FORNECIDO:
-  //   O usuário forneceu: bc1qdse2pw0avfh200at0phyhqm8fq3hespa8ehf5y
-  //   Esse é um endereço MAINNET (prefixo bc1q). Nós testnet3 rejeitam
-  //   endereços mainnet ao validar createrawtransaction.
-  //   Portanto, o endereço de destino da transação de integração é o
-  //   endereço testnet3 derivado da própria chave (auto-transferência para
-  //   teste). Substitua _kIntegrationDestination por um endereço tb1q real
-  //   se quiser enviar para outro endereço testnet3.
-  //
-  // PRÉ-REQUISITO:
-  //   O endereço de origem (derivado da PRIVATE_KEY do .env) precisa ter
-  //   saldo testnet3. Use um faucet: https://coinfaucet.eu/en/btc-testnet/
-  //   O endereço P2PKH testnet3 da chave está em _sourceAddr abaixo.
-  //
-  // EXECUÇÃO:
-  //   flutter test test/bitcoin_transfer_test.dart --tags integration
-  // ─────────────────────────────────────────────────────────────────────────────
-  group('Integração – transferência real testnet3', () {
-    // Endereço de destino para a transferência de integração.
-    // Usando endereço testnet3 válido (tb1q). O endereço mainnet fornecido
-    // pelo usuário não pode ser usado em testnet3.
-    const _kIntegrationDestination = _kAddrTestnet;
+  // Substitui a antiga integração com Blockbook (BLOCK_BOOK_URL, nunca
+  // configurada) por uma API REST estilo Esplora (mempool.space /
+  // blockstream.info), que não exige uma wallet carregada no nó e já
+  // devolve o UTXO set filtrado (sem reconstrução manual de vouts).
+  group('fetchUtxosFromEsplora / fetchBalanceFromEsplora', () {
+    // Endereço testnet3 com UTXO confirmado conhecido (usado apenas para
+    // smoke-test de integração; o teste é pulado se não houver rede).
+    const _kFundedTestnetAddr = 'mfjKbRTeJMMsn9EY1Do9B4yj8qAYnA7P6p';
 
-    test('transfere 0.00001 BTC na testnet3 usando assinatura offline', () async {
-      // ── Derivar endereço e WIF da PRIVATE_KEY ────────────────────────────
-      final wif = _hexToWif(_kPrivKeyHex, testnet: true, compressed: true);
-      // Endereço P2PKH testnet3 (m... ou n...) – usado para buscar UTXOs via scantxoutset
-      final sourceAddr = BitcoinWallet.generateCompressedAddress(_kPrivKeyHex, 0x6F);
+    test('lança ArgumentError quando BITCOIN_ESPLORA_URL não configurado', () {
+      final c = BitcoinNodeClient(rpcUrl: _kTestnetRpcUrl);
+      expect(() => c.fetchUtxosFromEsplora(_kFundedTestnetAddr), throwsArgumentError);
+      expect(() => c.fetchBalanceFromEsplora(_kFundedTestnetAddr), throwsArgumentError);
+    });
 
-      // ignore: avoid_print
-      print('WIF (testnet): $wif');
-      // ignore: avoid_print
-      print('Endereço de origem P2PKH testnet3: $sourceAddr');
-      // ignore: avoid_print
-      print('Faucet: https://coinfaucet.eu/en/btc-testnet/');
-
-      // ── Buscar UTXOs via scantxoutset (sem wallet) ────────────────────────
-      dynamic scanResult;
-      try {
-        scanResult = await _rawRpc(_kTestnetRpcUrl, 'scantxoutset', [
-          'start',
-          ['addr($sourceAddr)']
-        ]);
-      } catch (e) {
-        markTestSkipped('Não foi possível conectar ao nó testnet3: $e');
-        return;
-      }
-
-      final unspents = (scanResult is Map ? scanResult['unspents'] as List? : null) ?? [];
-
-      if (unspents.isEmpty) {
-        markTestSkipped(
-          'Nenhum UTXO encontrado para $sourceAddr.\n'
-          'Abasteça o endereço em: https://coinfaucet.eu/en/btc-testnet/',
-        );
-        return;
-      }
-
-      final utxos = unspents.cast<Map<String, dynamic>>().map((u) {
-        return Utxo(
-          txid: u['txid'] as String,
-          vout: u['vout'] as int,
-          amount: (u['amount'] as num).toDouble(),
-          scriptPubKey: u['scriptPubKey'] as String?,
-          address: sourceAddr,
-          spendable: true,
-        );
-      }).toList();
-
-      final totalBtc = utxos.fold<double>(0, (s, u) => s + u.amount);
-      final feeBtc = 0.00001; // 1000 sats – suficiente para testnet3
-      final minRequired = _kRealAmountBtc + feeBtc;
-
-      // ignore: avoid_print
-      print('Total disponível: $totalBtc BTC');
-
+    test('lança ArgumentError quando address é vazio', () {
+      final c = BitcoinNodeClient(rpcUrl: _kTestnetRpcUrl);
       expect(
-        totalBtc,
-        greaterThanOrEqualTo(minRequired),
-        reason: 'Saldo insuficiente: $totalBtc BTC (necessário: $minRequired BTC)',
-      );
+          () => c.fetchUtxosFromEsplora('', baseUrl: _kEsploraTestnetUrl), throwsArgumentError);
+      expect(
+          () => c.fetchBalanceFromEsplora('', baseUrl: _kEsploraTestnetUrl), throwsArgumentError);
+    });
 
-      // ── Enviar transação real com assinatura offline ───────────────────────
-      final client = BitcoinNodeClient(
-        rpcUrl: _kTestnetRpcUrl,
-        rpcUser: '',
-        rpcPassword: '',
-      );
+    test('busca UTXOs reais via Esplora (mempool.space testnet)', () async {
+      final c = BitcoinNodeClient(rpcUrl: _kTestnetRpcUrl);
+      List<Utxo> utxos;
+      try {
+        utxos = await c.fetchUtxosFromEsplora(_kFundedTestnetAddr, baseUrl: _kEsploraTestnetUrl);
+      } catch (e) {
+        markTestSkipped('Não foi possível conectar ao Esplora: $e');
+        return;
+      }
+      expect(utxos, isNotEmpty);
+      expect(utxos.every((u) => u.address == _kFundedTestnetAddr), isTrue);
+      expect(utxos.every((u) => u.amount > 0), isTrue);
+      expect(utxos.every((u) => u.spendable == true), isTrue);
+    });
 
-      final txid = await client.sendTransferUsingUtxos(
-        _kIntegrationDestination,
-        _kRealAmountBtc,
-        utxos,
-        fee: feeBtc,
-        changeAddress: sourceAddr, // troco volta para o endereço de origem
-        privKeysWif: [wif],
-      );
-
-      expect(txid, isNotEmpty, reason: 'A transação deve retornar um txid válido');
-
-      // ignore: avoid_print
-      print('✅ Transação enviada! txid: $txid');
-      // ignore: avoid_print
-      print('🔍 Explorer: https://mempool.space/testnet/tx/$txid');
+    test('busca saldo real via Esplora (mempool.space testnet)', () async {
+      final c = BitcoinNodeClient(rpcUrl: _kTestnetRpcUrl);
+      double balance;
+      try {
+        balance = await c.fetchBalanceFromEsplora(_kFundedTestnetAddr, baseUrl: _kEsploraTestnetUrl);
+      } catch (e) {
+        markTestSkipped('Não foi possível conectar ao Esplora: $e');
+        return;
+      }
+      expect(balance, greaterThan(0));
     });
   });
+
+  // The real-testnet3-transfer integration test now lives in
+  // test/integration/bitcoin_transfer_integration_test.dart, tagged
+  // 'integration' and excluded from the default `flutter test` run (see
+  // dart_test.yaml) — it used to run unconditionally and spend testnet funds
+  // on every `flutter test`, despite a comment claiming --tags gated it.
 }

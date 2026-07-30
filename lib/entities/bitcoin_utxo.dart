@@ -9,6 +9,7 @@ class Utxo {
   final String? address;
   final int? confirmations;
   final bool? spendable;
+  final DateTime? confirmedAt;
   bool selected = false;
 
   Utxo({
@@ -19,6 +20,7 @@ class Utxo {
     this.address,
     this.confirmations,
     this.spendable,
+    this.confirmedAt,
   });
 
   /// Create from a JSON/RPC map. Accepts `amount` as num or String.
@@ -41,6 +43,9 @@ class Utxo {
           ? m['confirmations'] as int
           : (m['confirmations'] != null ? int.tryParse('${m['confirmations']}') : null),
       spendable: m['spendable'] is bool ? m['spendable'] as bool : null,
+      confirmedAt: m['confirmedAt'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(m['confirmedAt'] as int)
+          : null,
     );
   }
 
@@ -54,6 +59,7 @@ class Utxo {
       if (address != null) 'address': address,
       if (confirmations != null) 'confirmations': confirmations,
       if (spendable != null) 'spendable': spendable,
+      if (confirmedAt != null) 'confirmedAt': confirmedAt!.millisecondsSinceEpoch,
     };
   }
 
@@ -68,6 +74,7 @@ class Utxo {
     String? address,
     int? confirmations,
     bool? spendable,
+    DateTime? confirmedAt,
   }) {
     return Utxo(
       txid: txid ?? this.txid,
@@ -77,6 +84,7 @@ class Utxo {
       address: address ?? this.address,
       confirmations: confirmations ?? this.confirmations,
       spendable: spendable ?? this.spendable,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../entities/user_helper.dart';
+import '../../../util/util.dart';
 import '../../details/detail_list.dart';
 import 'import_wallet_pk_detail.dart';
 import 'import_wallet_seed_detail.dart';
@@ -37,11 +38,11 @@ class ImportSeedPkApp extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(left: 20, top: 30, bottom: 5),
                       child: GestureDetector(
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(
                                 Icons.add_circle,
-                                color: Color.fromRGBO(7, 255, 208, 1),
+                                color: lightBlue(),
                                 size: 48,
                               ),
                               Text(
@@ -49,7 +50,7 @@ class ImportSeedPkApp extends StatelessWidget {
                                 textAlign: TextAlign.start,
                                 style: TextStyle(
                                     color: Colors.black,
-                                    backgroundColor: Color.fromRGBO(7, 255, 208, 1),
+                                    backgroundColor: lightBlue(),
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold),
                               ),
@@ -77,11 +78,11 @@ class ImportSeedPkApp extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(left: 20, bottom: 20),
                       child: GestureDetector(
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(
                                 Icons.add_circle,
-                                color: Color.fromRGBO(7, 255, 208, 1),
+                                color: lightBlue(),
                                 size: 48,
                               ),
                               Text(
@@ -89,7 +90,7 @@ class ImportSeedPkApp extends StatelessWidget {
                                 textAlign: TextAlign.start,
                                 style: TextStyle(
                                     color: Colors.black,
-                                    backgroundColor: Color.fromRGBO(7, 255, 208, 1),
+                                    backgroundColor: lightBlue(),
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold),
                               ),

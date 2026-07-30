@@ -7,6 +7,7 @@ import '../entities/wallet_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../services/create_user_service.dart';
 import '../services/wallet_service.dart';
+import '../util/secure_screen.dart';
 import '../util/util.dart';
 
 class LoginPage extends StatelessWidget {
@@ -33,6 +34,13 @@ class _BodyState extends State<Body> {
   @override
   void initState() {
     super.initState();
+    SecureScreen.activate();
+  }
+
+  @override
+  void dispose() {
+    SecureScreen.deactivate();
+    super.dispose();
   }
 
   TextEditingController passwordController = TextEditingController();
@@ -322,6 +330,7 @@ class _BodyState extends State<Body> {
   void showMessage(String message) {
     final snackBar = SnackBar(
       content: Text(message),
+      duration: const Duration(seconds: 3),
       action: SnackBarAction(
         label: 'Ok',
         onPressed: () {

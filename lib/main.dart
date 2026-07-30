@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hux/hux.dart';
+import 'package:logging/logging.dart';
 import 'package:maniva_wallet/pages/splash.dart';
 import 'package:maniva_wallet/services/create_user_service.dart';
 import 'package:maniva_wallet/services/wallet_service.dart';
@@ -10,15 +13,22 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:stac/stac.dart';
 
 import 'l10n/app_localizations.dart';
+import 'util/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Logger.root.level = kDebugMode ? Level.ALL : Level.WARNING;
+  Logger.root.onRecord.listen((record) {
+    debugPrint('[${record.level.name}] ${record.loggerName}: ${record.message}');
+  });
   await Stac.initialize();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarBrightness: Brightness.light,
-      statusBarColor: Colors.white,
-      systemNavigationBarColor: Colors.white,
+      statusBarBrightness: Brightness.dark,
+      statusBarIconBrightness: Brightness.light,
+      statusBarColor: rootstockBlack,
+      systemNavigationBarColor: rootstockBlack,
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
   await dotenv.load(fileName: ".env");
@@ -28,9 +38,10 @@ void main() async {
       if (sentryDsn != null && sentryDsn.isNotEmpty) {
         options.dsn = sentryDsn;
       }
-      // Adds request headers and IP for users, for more info visit:
+      // Disabled: this is a wallet app — request headers and user IP aren't
+      // needed for crash diagnostics and shouldn't leave the device. See
       // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
-      options.sendDefaultPii = true;
+      options.sendDefaultPii = false;
       options.enableLogs = true;
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
       // We recommend adjusting this value in production.
@@ -62,6 +73,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final walletService = context.watch<WalletServiceImpl>();
+    walletService.loadLocale();
+    walletService.loadCustomNodeUrls();
+
     Future<bool> myFuture() async {
       // await Firebase.initializeApp(
       //   options: DefaultFirebaseOptions.currentPlatform,
@@ -81,12 +96,15 @@ class MyApp extends StatelessWidget {
     return FutureBuilder(
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            return const MaterialApp(
+            return MaterialApp(
               debugShowCheckedModeBanner: false,
               title: 'Maniva Wallet',
+              theme: rootstockTheme,
+              scrollBehavior: AppScrollBehavior(),
+              locale: walletService.selectedLocale,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Splash(),
+              home: const Splash(),
             );
           }
           return const Center(
@@ -96,4 +114,16 @@ class MyApp extends StatelessWidget {
         },
         future: myFuture());
   }
+}
+
+/// Flutter's default ScrollBehavior excludes the mouse from drag-to-scroll
+/// devices on desktop platforms (only touch/stylus/trackpad scroll by
+/// default), so scrollable content is unreachable with a plain mouse on
+/// macOS/Linux/Windows. This adds mouse support app-wide.
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        ...super.dragDevices,
+        PointerDeviceKind.mouse,
+      };
 }
