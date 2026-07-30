@@ -54,7 +54,11 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
 
-        def flutterVersionMin = 23
+        // 24 (Android 7.0) is the floor: url_launcher_android's manifest
+        // declares minSdk 24, and Gradle's manifest merger fails the build
+        // if this project's minSdk is lower - CI (no local.properties
+        // override) was hitting exactly that with the old default of 23.
+        def flutterVersionMin = 24
         if (localProperties.getProperty('flutter.minSdkVersion') != null) {
             flutterVersionMin = localProperties.getProperty('flutter.minSdkVersion').toInteger();
         }
