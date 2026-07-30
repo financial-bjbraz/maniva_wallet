@@ -6,7 +6,11 @@ repository: https://github.com/adaptant-labs/flutter_windowmanager
 issue_tracker: https://github.com/adaptant-labs/flutter_windowmanager/issues
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  # Stale upper bound (<3.0.0) inherited from the original, abandoned
+  # pub.dev package - never updated since this is only ever consumed as a
+  # local path override by this app, whose own SDK constraint is the one
+  # that actually matters (see root pubspec.yaml). Widened to match it.
+  sdk: ">=2.12.0 <4.0.0"
   # Flutter versions prior to 1.10 did not support
   # the flutter.plugin.platforms map.
   flutter: ">=1.10.0"
