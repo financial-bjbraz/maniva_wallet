@@ -87,6 +87,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copiar => 'Copy to clipboard';
 
   @override
+  String get continuar => 'Continue';
+
+  @override
   String get mensagem_invalid_email => 'Invalid email';
 
   @override

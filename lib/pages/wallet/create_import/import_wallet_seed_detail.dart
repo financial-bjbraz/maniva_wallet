@@ -134,7 +134,7 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
                                                 ownerEmail: widget.user.email,
                                                 btcWif: btcWif);
                                             try {
-                                              walletService.persistNewWallet(wallet);
+                                              await walletService.persistNewWallet(wallet);
                                               showMessage("Account Created", context);
                                               final List<WalletEntity> wallets =
                                                   await walletService.getWallets(widget.user.email);

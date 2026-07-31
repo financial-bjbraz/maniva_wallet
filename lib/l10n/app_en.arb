@@ -28,6 +28,7 @@
   "saldoUltimoMes": "Last Month Balance",
   "ultimaTransacao": "Click here to see last transactions details",
   "copiar": "Copy to clipboard",
+  "continuar": "Continue",
   "mensagem_invalid_email": "Invalid email",
   "mensagem_invalid_password": "Invalid Password. Password must not be least than 8 chars",
   "mensagem_user_exists": "User already exist",

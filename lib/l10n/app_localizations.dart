@@ -250,6 +250,12 @@ abstract class AppLocalizations {
   /// **'Copy to clipboard'**
   String get copiar;
 
+  /// No description provided for @continuar.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continuar;
+
   /// No description provided for @mensagem_invalid_email.
   ///
   /// In en, this message translates to:

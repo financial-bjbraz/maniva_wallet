@@ -115,7 +115,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   }
 
   /// Inserts [wallet] into the local database. Throws if the insert fails.
-  void persistNewWallet(WalletEntity wallet) async {
+  Future<void> persistNewWallet(WalletEntity wallet) async {
     WalletHelper helper = WalletHelper();
     var inserted = await helper.insertItem(wallet);
 

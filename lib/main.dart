@@ -58,14 +58,18 @@ void main() async {
         ChangeNotifierProvider<WalletServiceImpl>(create: (context) => WalletServiceImpl()),
         ChangeNotifierProvider(create: (context) => CreateUserServiceImpl())
       ],
-      child: MaterialApp(
-        theme: HuxTheme.lightTheme,
-        darkTheme: HuxTheme.darkTheme,
-        home: const MyApp(),
-      )))),
+      child: const MyApp(),
+    ))),
   );
 }
 
+// A single MaterialApp (and thus a single Navigator/Localizations subtree)
+// for the whole app. This used to be two nested MaterialApps — an outer one
+// hosting this widget as its `home`, and this widget building a second,
+// properly localized one below it. That split let some routes resolve
+// `Navigator.of(context)` to the outer (unlocalized) MaterialApp instead of
+// the inner one, crashing on `AppLocalizations.of(context)!` deep in the
+// wallet-creation flow. Collapsing to one MaterialApp removes the ambiguity.
 class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
@@ -77,42 +81,17 @@ class MyApp extends StatelessWidget {
     walletService.loadLocale();
     walletService.loadCustomNodeUrls();
 
-    Future<bool> myFuture() async {
-      // await Firebase.initializeApp(
-      //   options: DefaultFirebaseOptions.currentPlatform,
-      // );
-      //
-      // await FirebaseMessaging.instance.setAutoInitEnabled(true);
-      // final fcmToken = await FirebaseMessaging.instance.getToken();
-      // if (kDebugMode) {
-      //   print("=================================");
-      //   print(fcmToken);
-      //   print("=================================");
-      // }
-
-      return true;
-    }
-
-    return FutureBuilder(
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              title: 'Maniva Wallet',
-              theme: rootstockTheme,
-              scrollBehavior: AppScrollBehavior(),
-              locale: walletService.selectedLocale,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: const Splash(),
-            );
-          }
-          return const Center(
-              child: Center(
-            child: CircularProgressIndicator(),
-          ));
-        },
-        future: myFuture());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Maniva Wallet',
+      theme: rootstockTheme,
+      darkTheme: HuxTheme.darkTheme,
+      scrollBehavior: AppScrollBehavior(),
+      locale: walletService.selectedLocale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const Splash(),
+    );
   }
 }
 

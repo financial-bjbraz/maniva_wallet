@@ -28,6 +28,7 @@
   "saldoUltimoMes": "Saldo Ultimo Mes",
   "ultimaTransacao": "Clique aqui para ver os detalhes das ultimas transacoes",
   "copiar": "Copiar palavras",
+  "continuar": "Continuar",
   "mensagem_invalid_email": "E-mail inválido",
   "mensagem_invalid_password": "Senha inválida. A senha deve ter no mínimo 8 caracteres",
   "mensagem_user_exists": "Usuário já existe",

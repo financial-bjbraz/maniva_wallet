@@ -87,6 +87,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get copiar => 'Copiar palavras';
 
   @override
+  String get continuar => 'Continuar';
+
+  @override
   String get mensagem_invalid_email => 'E-mail inválido';
 
   @override

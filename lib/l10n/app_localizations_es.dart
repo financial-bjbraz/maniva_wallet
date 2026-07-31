@@ -87,6 +87,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get copiar => 'Copiar al portapapeles';
 
   @override
+  String get continuar => 'Continuar';
+
+  @override
   String get mensagem_invalid_email => 'Correo inválido';
 
   @override
