@@ -133,7 +133,7 @@ class _ImportNewWalletByPKDetail extends State<ImportNewWalletByPrivateKeyDetail
                                               btcWif: btcWif,
                                             );
 
-                                            walletService.persistNewWallet(wallet);
+                                            await walletService.persistNewWallet(wallet);
                                             showMessage(
                                                 "Account ${wallet.walletName} Created", context);
                                             final user = SimpleUser(

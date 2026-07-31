@@ -29,6 +29,7 @@
   "ultimaTransacao": "Haga clic aquí para ver los detalles de las últimas transacciones",
   "coin": "Última transacción",
   "copiar": "Copiar al portapapeles",
+  "continuar": "Continuar",
   "mensagem_invalid_email": "Correo inválido",
   "mensagem_invalid_password": "Contraseña inválida. Debe tener al menos 8 caracteres",
   "mensagem_user_exists": "El usuario ya existe",

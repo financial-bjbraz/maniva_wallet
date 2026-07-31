@@ -27,7 +27,6 @@ class CreateNewWalletDetail extends StatefulWidget {
 class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
   static final _log = Logger('create_wallet_detail');
 
-  bool processing = false;
   bool _created = false;
   bool _creationFailed = false;
   late WalletServiceImpl walletService;
@@ -91,7 +90,6 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
     }
 
     sentToDetail() {
-      processing = false;
       Navigator.of(context).push(PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => DetailList(
             child: ImportNewWalletBySeedDetail(
@@ -259,54 +257,63 @@ class _CreateNewWalletDetail extends State<CreateNewWalletDetail> {
                                             ),
                                           ],
                                         )
-                                      : !processing
-                                      ? Center(
-                                          child: SizedBox(
-                                            width: 240,
-                                            child: ElevatedButton(
-                                              onPressed: () async {
-                                                copyWithTimeout(
-                                                    splittedMnemonic
-                                                        .toString()
-                                                        .replaceAll("[", "")
-                                                        .replaceAll("]", ""),
-                                                    timeout: const Duration(seconds: 30));
-                                                showMessage(
-                                                    AppLocalizations.of(context)!.copiedMessage,
-                                                    context);
-
-                                                setState(() {
-                                                  processing = true;
-                                                  delay(context, 5).whenComplete(() {
-                                                    processing = false;
-                                                    sentToDetail();
-                                                  });
-                                                });
-                                              },
-                                              style: greenButton,
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: <Widget>[
-                                                  const Icon(Icons.copy, color: Colors.white),
-                                                  const SizedBox(
-                                                    width: 10,
+                                      : Center(
+                                          child: Column(
+                                            children: [
+                                              SizedBox(
+                                                width: 240,
+                                                child: ElevatedButton(
+                                                  onPressed: () async {
+                                                    copyWithTimeout(
+                                                        splittedMnemonic
+                                                            .toString()
+                                                            .replaceAll("[", "")
+                                                            .replaceAll("]", ""),
+                                                        timeout: const Duration(seconds: 30));
+                                                    showMessage(
+                                                        AppLocalizations.of(context)
+                                                                ?.copiedMessage ??
+                                                            'Copied to the clipboard',
+                                                        context);
+                                                  },
+                                                  style: greenButton,
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: <Widget>[
+                                                      const Icon(Icons.copy, color: Colors.white),
+                                                      const SizedBox(
+                                                        width: 10,
+                                                      ),
+                                                      Text(
+                                                        copy,
+                                                        style: const TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Colors.white),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  Text(
-                                                    copy,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 10),
+                                              SizedBox(
+                                                width: 240,
+                                                child: ElevatedButton(
+                                                  onPressed: _created ? sentToDetail : null,
+                                                  style: greenButton,
+                                                  child: Text(
+                                                    AppLocalizations.of(context)?.continuar ??
+                                                        'Continuar',
                                                     style: const TextStyle(
                                                         fontSize: 16,
                                                         fontWeight: FontWeight.bold,
                                                         color: Colors.white),
                                                   ),
-                                                ],
+                                                ),
                                               ),
-                                            ),
+                                            ],
                                           ),
-                                        )
-                                      : const Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [CircularProgressIndicator()]),
+                                        ),
                                 ),
                               ],
                             ),
