@@ -68,106 +68,110 @@ class _ImportNewWalletBySeedDetail extends State<ImportNewWalletBySeedDetail> {
                             padding: const EdgeInsets.only(left: 20, top: 20, bottom: 20),
                             child: SizedBox(
                               width: double.infinity,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  const Text.rich(
-                                    TextSpan(
-                                        text: "Insert your seed",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        )),
-                                    textAlign: TextAlign.start,
-                                    style: TextStyle(
-                                      color: Colors.teal,
-                                      fontSize: 28,
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    const Text.rich(
+                                      TextSpan(
+                                          text: "Insert your seed",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          )),
+                                      textAlign: TextAlign.start,
+                                      style: TextStyle(
+                                        color: Colors.teal,
+                                        fontSize: 28,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-                                  TextField(
-                                    controller: mailController,
-                                    enabled: inputSeedEnabled,
-                                    decoration: InputDecoration(
-                                        labelText: "Type or Paste your Seed",
-                                        border: const OutlineInputBorder(
-                                            borderSide: BorderSide(width: 5, color: Colors.white)),
-                                        suffixIcon: IconButton(
-                                          icon: const Icon(Icons.done),
-                                          splashColor: Colors.white,
-                                          onPressed: () {
-                                            FocusScope.of(context).requestFocus(FocusNode());
-                                          },
-                                        )),
-                                  ),
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-                                  Center(
-                                    child: SizedBox(
-                                      width: 260,
-                                      child: ElevatedButton(
-                                        onPressed: () async {
-                                          var seed = mailController.text;
+                                    const SizedBox(
+                                      height: 20,
+                                    ),
+                                    TextField(
+                                      controller: mailController,
+                                      enabled: inputSeedEnabled,
+                                      decoration: InputDecoration(
+                                          labelText: "Type or Paste your Seed",
+                                          border: const OutlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(width: 5, color: Colors.white)),
+                                          suffixIcon: IconButton(
+                                            icon: const Icon(Icons.done),
+                                            splashColor: Colors.white,
+                                            onPressed: () {
+                                              FocusScope.of(context).requestFocus(FocusNode());
+                                            },
+                                          )),
+                                    ),
+                                    const SizedBox(
+                                      height: 20,
+                                    ),
+                                    Center(
+                                      child: SizedBox(
+                                        width: 260,
+                                        child: ElevatedButton(
+                                          onPressed: () async {
+                                            var seed = mailController.text;
 
-                                          if (seed.isEmpty) {
-                                            showMessage("Invalid Seed", context);
-                                          } else {
-                                            var privateKey =
-                                                await walletService.getPrivateKey(seed);
-                                            var publicKey =
-                                                await walletService.getPublicKeyString(privateKey);
-                                            var btcAddress = walletService
-                                                .getBtcAddressFromPrivateKey(privateKey);
-                                            String btcWif =
-                                                walletService.getBtcWifFromPrivateKey(privateKey);
-                                            var walletId = await getIndex();
-                                            WalletEntity wallet = WalletEntity(
-                                                amount: BigInt.zero.toDouble(),
-                                                btcAmount: BigInt.zero.toDouble(),
-                                                privateKey: privateKey,
-                                                publicKey: publicKey,
-                                                btcAddress: btcAddress,
-                                                walletId: walletId,
-                                                walletName: "Wallet #",
-                                                ownerEmail: widget.user.email,
-                                                btcWif: btcWif);
-                                            try {
-                                              await walletService.persistNewWallet(wallet);
-                                              showMessage("Account Created", context);
-                                              final List<WalletEntity> wallets =
-                                                  await walletService.getWallets(widget.user.email);
-                                              Navigator.of(context).pushReplacement(
-                                                  MaterialPageRoute(
-                                                      builder: (context) => HomePage(
-                                                          user: widget.user, wallets: wallets)));
-                                            } catch (error) {
-                                              showMessage("Failed to create account", context);
+                                            if (seed.isEmpty) {
+                                              showMessage("Invalid Seed", context);
+                                            } else {
+                                              var privateKey =
+                                                  await walletService.getPrivateKey(seed);
+                                              var publicKey = await walletService
+                                                  .getPublicKeyString(privateKey);
+                                              var btcAddress = walletService
+                                                  .getBtcAddressFromPrivateKey(privateKey);
+                                              String btcWif =
+                                                  walletService.getBtcWifFromPrivateKey(privateKey);
+                                              var walletId = await getIndex();
+                                              WalletEntity wallet = WalletEntity(
+                                                  amount: BigInt.zero.toDouble(),
+                                                  btcAmount: BigInt.zero.toDouble(),
+                                                  privateKey: privateKey,
+                                                  publicKey: publicKey,
+                                                  btcAddress: btcAddress,
+                                                  walletId: walletId,
+                                                  walletName: "Wallet #",
+                                                  ownerEmail: widget.user.email,
+                                                  btcWif: btcWif);
+                                              try {
+                                                await walletService.persistNewWallet(wallet);
+                                                showMessage("Account Created", context);
+                                                final List<WalletEntity> wallets =
+                                                    await walletService
+                                                        .getWallets(widget.user.email);
+                                                Navigator.of(context).pushReplacement(
+                                                    MaterialPageRoute(
+                                                        builder: (context) => HomePage(
+                                                            user: widget.user, wallets: wallets)));
+                                              } catch (error) {
+                                                showMessage("Failed to create account", context);
+                                              }
                                             }
-                                          }
-                                        },
-                                        style: greenButton,
-                                        child: const Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: <Widget>[
-                                            Icon(Icons.key, color: Colors.white),
-                                            SizedBox(
-                                              width: 10,
-                                            ),
-                                            Text(
-                                              "Validate and Import",
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white),
-                                            ),
-                                          ],
+                                          },
+                                          style: greenButton,
+                                          child: const Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: <Widget>[
+                                              Icon(Icons.key, color: Colors.white),
+                                              SizedBox(
+                                                width: 10,
+                                              ),
+                                              Text(
+                                                "Validate and Import",
+                                                style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
