@@ -267,6 +267,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidUrlMessage => 'Enter a valid http(s) URL';
 
   @override
+  String get saveNodeUrlsButton => 'Save node settings';
+
+  @override
+  String get nodeUrlsSavedMessage => 'Node settings saved';
+
+  @override
   String get noTransactionsYet => 'No transactions yet';
 
   @override

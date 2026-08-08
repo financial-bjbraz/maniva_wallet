@@ -95,6 +95,8 @@
   "nodeUrlSavedMessage": "Node URL saved",
   "nodeUrlResetMessage": "Reverted to default node URL",
   "invalidUrlMessage": "Enter a valid http(s) URL",
+  "saveNodeUrlsButton": "Save node settings",
+  "nodeUrlsSavedMessage": "Node settings saved",
 
   "noTransactionsYet": "No transactions yet",
   "receivedLabel": "Received",

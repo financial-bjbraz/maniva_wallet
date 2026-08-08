@@ -598,6 +598,18 @@ abstract class AppLocalizations {
   /// **'Enter a valid http(s) URL'**
   String get invalidUrlMessage;
 
+  /// No description provided for @saveNodeUrlsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save node settings'**
+  String get saveNodeUrlsButton;
+
+  /// No description provided for @nodeUrlsSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Node settings saved'**
+  String get nodeUrlsSavedMessage;
+
   /// No description provided for @noTransactionsYet.
   ///
   /// In en, this message translates to:

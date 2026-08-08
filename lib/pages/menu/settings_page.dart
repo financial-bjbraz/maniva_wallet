@@ -100,6 +100,34 @@ class _SettingsPageState extends State<SettingsPage> {
         context);
   }
 
+  /// Saves the Bitcoin node, Bitcoin Esplora and Rootstock node fields
+  /// together, so the user doesn't have to tap each field's individual
+  /// checkmark separately after filling in all three.
+  Future<void> _saveAllNodeUrls(WalletServiceImpl walletService) async {
+    final fields = <String, TextEditingController>{
+      walletService.isMainnet ? customBitcoinNodeUrlMainnetKey : customBitcoinNodeUrlTestnetKey:
+          _bitcoinNodeController,
+      walletService.isMainnet
+          ? customBitcoinEsploraUrlMainnetKey
+          : customBitcoinEsploraUrlTestnetKey: _bitcoinEsploraController,
+      walletService.isMainnet ? customRootstockNodeUrlMainnetKey : customRootstockNodeUrlTestnetKey:
+          _rootstockNodeController,
+    };
+
+    for (final controller in fields.values) {
+      if (!_isValidUrlOrEmpty(controller.text)) {
+        showMessage(AppLocalizations.of(context)!.invalidUrlMessage, context);
+        return;
+      }
+    }
+
+    for (final entry in fields.entries) {
+      await walletService.setCustomNodeUrl(entry.key, entry.value.text);
+    }
+    if (!mounted) return;
+    showMessage(AppLocalizations.of(context)!.nodeUrlsSavedMessage, context);
+  }
+
   Future<void> _onMainnetToggled(bool mainnet, WalletServiceImpl walletService) async {
     if (!mainnet) {
       await walletService.setNetworkMode(false);
@@ -267,6 +295,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   ? customRootstockNodeUrlMainnetKey
                   : customRootstockNodeUrlTestnetKey,
               walletService,
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: greenButton,
+                icon: const Icon(Icons.save, color: Colors.white),
+                label: Text(t.saveNodeUrlsButton, style: smallWhiteBoldText),
+                onPressed: () => _saveAllNodeUrls(walletService),
+              ),
             ),
             const SizedBox(height: 16),
             Text(t.languageLabel,

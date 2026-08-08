@@ -266,6 +266,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get invalidUrlMessage => 'Informe uma URL http(s) válida';
 
   @override
+  String get saveNodeUrlsButton => 'Salvar configurações de nó';
+
+  @override
+  String get nodeUrlsSavedMessage => 'Configurações de nó salvas';
+
+  @override
   String get noTransactionsYet => 'Nenhuma transação ainda';
 
   @override

@@ -95,6 +95,8 @@
   "nodeUrlSavedMessage": "URL do nó salva",
   "nodeUrlResetMessage": "Revertido para a URL de nó padrão",
   "invalidUrlMessage": "Informe uma URL http(s) válida",
+  "saveNodeUrlsButton": "Salvar configurações de nó",
+  "nodeUrlsSavedMessage": "Configurações de nó salvas",
 
   "noTransactionsYet": "Nenhuma transação ainda",
   "receivedLabel": "Recebido",

@@ -96,6 +96,8 @@
   "nodeUrlSavedMessage": "URL del nodo guardada",
   "nodeUrlResetMessage": "Se restableció la URL de nodo predeterminada",
   "invalidUrlMessage": "Ingresa una URL http(s) válida",
+  "saveNodeUrlsButton": "Guardar configuración de nodo",
+  "nodeUrlsSavedMessage": "Configuración de nodo guardada",
 
   "noTransactionsYet": "Aún no hay transacciones",
   "receivedLabel": "Recibido",
