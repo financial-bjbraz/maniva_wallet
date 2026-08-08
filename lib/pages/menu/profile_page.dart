@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../util/app_theme.dart';
 import '../../util/clipboard_guard.dart';
 import '../../util/util.dart';
+import '../wallet/wallet_security_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key, required this.user, required this.wallets});
@@ -16,6 +17,14 @@ class ProfilePage extends StatelessWidget {
   void _copy(BuildContext context, String value) {
     copyWithTimeout(value);
     showMessage(AppLocalizations.of(context)!.copiedMessage, context);
+  }
+
+  void _openWalletSecurity(BuildContext context, WalletEntity wallet) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => WalletSecurityPage(wallet: wallet, user: user),
+      ),
+    );
   }
 
   Widget _addressRow(BuildContext context, String label, String address) {
@@ -79,9 +88,19 @@ class ProfilePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    wallet.walletName,
-                    style: const TextStyle(color: rootstockCream, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        wallet.walletName,
+                        style: const TextStyle(color: rootstockCream, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        tooltip: t.walletSecurityTitle,
+                        icon: const Icon(Icons.key, color: rootstockCream, size: 18),
+                        onPressed: () => _openWalletSecurity(context, wallet),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   _addressRow(context, t.bitcoinLabel, wallet.btcAddress),
