@@ -363,4 +363,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get walletDeletedMessage => 'Wallet excluída';
+
+  @override
+  String get walletDeleteFailedMessage => 'Falha ao excluir a wallet. Tente novamente.';
 }

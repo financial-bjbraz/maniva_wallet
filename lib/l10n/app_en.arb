@@ -132,5 +132,6 @@
   "deleteWalletConfirmTitle": "Delete this wallet?",
   "deleteWalletConfirmBody": "This permanently removes the wallet from this device. This cannot be undone — make sure you've saved your private key, since it's the only way to access these funds again.",
   "deleteWalletConfirmButton": "Delete",
-  "walletDeletedMessage": "Wallet deleted"
+  "walletDeletedMessage": "Wallet deleted",
+  "walletDeleteFailedMessage": "Failed to delete wallet. Please try again."
 }

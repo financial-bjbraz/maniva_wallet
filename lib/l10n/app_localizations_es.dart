@@ -364,4 +364,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get walletDeletedMessage => 'Billetera eliminada';
+
+  @override
+  String get walletDeleteFailedMessage => 'No se pudo eliminar la billetera. Inténtalo de nuevo.';
 }

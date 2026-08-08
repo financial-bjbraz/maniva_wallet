@@ -132,5 +132,6 @@
   "deleteWalletConfirmTitle": "Excluir esta wallet?",
   "deleteWalletConfirmBody": "Isso remove permanentemente a wallet deste dispositivo. Essa ação não pode ser desfeita — certifique-se de ter salvo sua chave privada, pois é a única forma de acessar esses fundos novamente.",
   "deleteWalletConfirmButton": "Excluir",
-  "walletDeletedMessage": "Wallet excluída"
+  "walletDeletedMessage": "Wallet excluída",
+  "walletDeleteFailedMessage": "Falha ao excluir a wallet. Tente novamente."
 }

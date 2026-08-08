@@ -129,8 +129,8 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
 
   /// Deletes [wallet] from the local database, matched by private key.
   Future<void> delete(WalletEntity wallet) async {
-    final db = await openDataBase();
-    await db.delete("wallets", where: 'privateKey = ?', whereArgs: [wallet.privateKey]);
+    WalletHelper helper = WalletHelper();
+    await helper.deleteItem(wallet);
   }
 
   /// Returns the live RBTC balance for [dto] as a trimmed decimal string.

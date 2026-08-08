@@ -65,6 +65,15 @@ class WalletHelper extends EntityHelper {
     return updateCount;
   }
 
+  Future<int> deleteItem(WalletEntity wallet) async {
+    final db = await database;
+    return db.delete(
+      table,
+      where: '$privateKey = ?',
+      whereArgs: [wallet.privateKey],
+    );
+  }
+
   Future<WalletEntity> getWalletByPrivateKey(final String privateKey) async {
     final db = await database;
 

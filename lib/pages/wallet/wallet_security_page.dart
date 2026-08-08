@@ -123,18 +123,28 @@ class _WalletSecurityPageState extends State<WalletSecurityPage> {
     setState(() {
       _deleting = true;
     });
-    await walletService.delete(widget.wallet);
-    final wallets = await walletService.getWallets(widget.user.email);
-    if (!mounted) {
-      return;
+    try {
+      await walletService.delete(widget.wallet);
+      final wallets = await walletService.getWallets(widget.user.email);
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => HomePage(user: widget.user, wallets: wallets),
+        ),
+        (route) => false,
+      );
+      showMessage(t.walletDeletedMessage, context);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _deleting = false;
+      });
+      showMessage(t.walletDeleteFailedMessage, context);
     }
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => HomePage(user: widget.user, wallets: wallets),
-      ),
-      (route) => false,
-    );
-    showMessage(t.walletDeletedMessage, context);
   }
 
   @override

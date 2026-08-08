@@ -364,4 +364,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get walletDeletedMessage => 'Wallet deleted';
+
+  @override
+  String get walletDeleteFailedMessage => 'Failed to delete wallet. Please try again.';
 }

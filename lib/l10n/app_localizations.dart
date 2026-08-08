@@ -777,6 +777,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wallet deleted'**
   String get walletDeletedMessage;
+
+  /// No description provided for @walletDeleteFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete wallet. Please try again.'**
+  String get walletDeleteFailedMessage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

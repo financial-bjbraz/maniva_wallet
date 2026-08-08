@@ -84,8 +84,8 @@ class _ViewWalletDetailPageState extends State<ViewWalletDetailPage>
   @override
   void initState() {
     super.initState();
-    walletService.loadNetworkMode().then((_) => _onNetworkModeChanged());
-    walletService.addListener(_onNetworkModeChanged);
+    walletService.loadNetworkMode().then((_) => _onWalletServiceChanged());
+    walletService.addListener(_onWalletServiceChanged);
     _refreshAddresses();
     _loadBtc();
     _loadRsk();
@@ -135,12 +135,30 @@ class _ViewWalletDetailPageState extends State<ViewWalletDetailPage>
   }
 
   bool _wasMainnet = false;
+  late String _lastBitcoinNodeUrl = walletService.bitcoinNodeUrl;
+  late String _lastBitcoinEsploraUrl = walletService.bitcoinEsploraUrl;
+  late String _lastRootstockNodeUrl = walletService.rootstockNodeUrl;
 
-  void _onNetworkModeChanged() {
-    if (!mounted || walletService.isMainnet == _wasMainnet) {
+  /// Reacts to any change walletService broadcasts that could affect what
+  /// this page shows: the mainnet/testnet toggle, or a custom node/Esplora
+  /// URL saved in Settings. Without tracking the node URLs too, saving a
+  /// custom node in Settings silently had no effect here until the next
+  /// unrelated rebuild, since only the network-mode flip was checked.
+  void _onWalletServiceChanged() {
+    if (!mounted) {
+      return;
+    }
+    final mainnetChanged = walletService.isMainnet != _wasMainnet;
+    final nodeUrlsChanged = walletService.bitcoinNodeUrl != _lastBitcoinNodeUrl ||
+        walletService.bitcoinEsploraUrl != _lastBitcoinEsploraUrl ||
+        walletService.rootstockNodeUrl != _lastRootstockNodeUrl;
+    if (!mainnetChanged && !nodeUrlsChanged) {
       return;
     }
     _wasMainnet = walletService.isMainnet;
+    _lastBitcoinNodeUrl = walletService.bitcoinNodeUrl;
+    _lastBitcoinEsploraUrl = walletService.bitcoinEsploraUrl;
+    _lastRootstockNodeUrl = walletService.rootstockNodeUrl;
     setState(() {
       _refreshAddresses();
       _btcLoading = true;
@@ -165,7 +183,7 @@ class _ViewWalletDetailPageState extends State<ViewWalletDetailPage>
 
   @override
   void dispose() {
-    walletService.removeListener(_onNetworkModeChanged);
+    walletService.removeListener(_onWalletServiceChanged);
     _scrollController.removeListener(_updateScrollHint);
     _scrollController.dispose();
     _bounceController.dispose();
@@ -537,7 +555,11 @@ class _ViewWalletDetailPageState extends State<ViewWalletDetailPage>
                     // rest (DOC, RIFPRO, tBRZ, ...) are shown in native units only
                     // since there's no reliable USD quote for those testnet assets.
                     TokensFromNetwork(
-                      key: ValueKey(walletService.isMainnet),
+                      // Includes the node URL (not just isMainnet) so a
+                      // custom Rootstock node saved in Settings forces this
+                      // widget to remount and refetch, instead of silently
+                      // keeping the balances it fetched with the old node.
+                      key: ValueKey('${walletService.isMainnet}-${walletService.rootstockNodeUrl}'),
                       wallet: widget.wallet,
                       user: widget.user,
                       selectedNetwork: walletService.currentRootstockNetwork,
