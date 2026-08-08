@@ -320,4 +320,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get faq5A =>
       'Alongside RBTC, this wallet shows your balances of RIF, USDRIF, DOC, RIFPRO and tBRZ tokens.';
+
+  @override
+  String get walletSecurityTitle => 'Wallet Security';
+
+  @override
+  String get walletSecurityWarning =>
+      'This screen controls the funds in this wallet. Never share your private key or WIF with anyone, and make sure no one is watching your screen.';
+
+  @override
+  String get privateKeyLabel => 'Private Key';
+
+  @override
+  String get bitcoinWifLabel => 'Bitcoin Private Key (WIF)';
+
+  @override
+  String get revealLabel => 'Reveal';
+
+  @override
+  String get hideLabel => 'Hide';
+
+  @override
+  String get confirmSavedKeyLabel => 'I have securely saved my private key';
+
+  @override
+  String get deleteWalletButton => 'Delete Wallet';
+
+  @override
+  String get deleteWalletConfirmTitle => 'Delete this wallet?';
+
+  @override
+  String get deleteWalletConfirmBody =>
+      'This permanently removes the wallet from this device. This cannot be undone — make sure you\'ve saved your private key, since it\'s the only way to access these funds again.';
+
+  @override
+  String get deleteWalletConfirmButton => 'Delete';
+
+  @override
+  String get walletDeletedMessage => 'Wallet deleted';
 }

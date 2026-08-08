@@ -128,7 +128,7 @@ class WalletServiceImpl extends ChangeNotifier implements WalletAddressService {
   }
 
   /// Deletes [wallet] from the local database, matched by private key.
-  void delete(WalletEntity wallet) async {
+  Future<void> delete(WalletEntity wallet) async {
     final db = await openDataBase();
     await db.delete("wallets", where: 'privateKey = ?', whereArgs: [wallet.privateKey]);
   }

@@ -117,5 +117,18 @@
   "faq4Q": "Where are my keys stored?",
   "faq4A": "Your private key and seed phrase are stored only on this device. Nobody else, including the app's developers, has access to them — write your seed phrase down and keep it safe, since it cannot be recovered if lost.",
   "faq5Q": "What tokens are supported on Rootstock?",
-  "faq5A": "Alongside RBTC, this wallet shows your balances of RIF, USDRIF, DOC, RIFPRO and tBRZ tokens."
+  "faq5A": "Alongside RBTC, this wallet shows your balances of RIF, USDRIF, DOC, RIFPRO and tBRZ tokens.",
+
+  "walletSecurityTitle": "Wallet Security",
+  "walletSecurityWarning": "This screen controls the funds in this wallet. Never share your private key or WIF with anyone, and make sure no one is watching your screen.",
+  "privateKeyLabel": "Private Key",
+  "bitcoinWifLabel": "Bitcoin Private Key (WIF)",
+  "revealLabel": "Reveal",
+  "hideLabel": "Hide",
+  "confirmSavedKeyLabel": "I have securely saved my private key",
+  "deleteWalletButton": "Delete Wallet",
+  "deleteWalletConfirmTitle": "Delete this wallet?",
+  "deleteWalletConfirmBody": "This permanently removes the wallet from this device. This cannot be undone — make sure you've saved your private key, since it's the only way to access these funds again.",
+  "deleteWalletConfirmButton": "Delete",
+  "walletDeletedMessage": "Wallet deleted"
 }

@@ -23,6 +23,7 @@ import 'transactions/account_receive.dart';
 import 'transactions/account_send.dart' as rsk_send;
 import 'transactions/bitcoin_account_send.dart';
 import 'transactions/transactions_history_page.dart';
+import 'wallet_security_page.dart';
 
 /// Single-page account overview: shows the Bitcoin address/balance, the
 /// Rootstock address/balance and its tokens, and a grand total — replacing
@@ -453,6 +454,14 @@ class _ViewWalletDetailPageState extends State<ViewWalletDetailPage>
     );
   }
 
+  void _openWalletSecurity() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => WalletSecurityPage(wallet: widget.wallet, user: widget.user),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
@@ -478,6 +487,16 @@ class _ViewWalletDetailPageState extends State<ViewWalletDetailPage>
             child: Text(AppLocalizations.of(context)!.accountOverviewTitle,
                 style: const TextStyle(color: rootstockCream, fontSize: 14)),
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(top: 4, right: 4),
+              child: IconButton(
+                tooltip: t.walletSecurityTitle,
+                icon: const Icon(Icons.key, color: rootstockCream),
+                onPressed: _openWalletSecurity,
+              ),
+            ),
+          ],
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),

@@ -693,6 +693,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Alongside RBTC, this wallet shows your balances of RIF, USDRIF, DOC, RIFPRO and tBRZ tokens.'**
   String get faq5A;
+
+  /// No description provided for @walletSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet Security'**
+  String get walletSecurityTitle;
+
+  /// No description provided for @walletSecurityWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen controls the funds in this wallet. Never share your private key or WIF with anyone, and make sure no one is watching your screen.'**
+  String get walletSecurityWarning;
+
+  /// No description provided for @privateKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Key'**
+  String get privateKeyLabel;
+
+  /// No description provided for @bitcoinWifLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin Private Key (WIF)'**
+  String get bitcoinWifLabel;
+
+  /// No description provided for @revealLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal'**
+  String get revealLabel;
+
+  /// No description provided for @hideLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get hideLabel;
+
+  /// No description provided for @confirmSavedKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'I have securely saved my private key'**
+  String get confirmSavedKeyLabel;
+
+  /// No description provided for @deleteWalletButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Wallet'**
+  String get deleteWalletButton;
+
+  /// No description provided for @deleteWalletConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this wallet?'**
+  String get deleteWalletConfirmTitle;
+
+  /// No description provided for @deleteWalletConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently removes the wallet from this device. This cannot be undone — make sure you\'ve saved your private key, since it\'s the only way to access these funds again.'**
+  String get deleteWalletConfirmBody;
+
+  /// No description provided for @deleteWalletConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteWalletConfirmButton;
+
+  /// No description provided for @walletDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet deleted'**
+  String get walletDeletedMessage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

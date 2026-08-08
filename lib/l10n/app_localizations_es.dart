@@ -320,4 +320,42 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get faq5A =>
       'Además del RBTC, esta billetera muestra sus saldos de los tokens RIF, USDRIF, DOC, RIFPRO y tBRZ.';
+
+  @override
+  String get walletSecurityTitle => 'Seguridad de la Billetera';
+
+  @override
+  String get walletSecurityWarning =>
+      'Esta pantalla controla los fondos de esta billetera. Nunca comparta su clave privada o WIF con nadie, y asegúrese de que nadie esté mirando su pantalla.';
+
+  @override
+  String get privateKeyLabel => 'Clave Privada';
+
+  @override
+  String get bitcoinWifLabel => 'Clave Privada de Bitcoin (WIF)';
+
+  @override
+  String get revealLabel => 'Revelar';
+
+  @override
+  String get hideLabel => 'Ocultar';
+
+  @override
+  String get confirmSavedKeyLabel => 'He guardado mi clave privada de forma segura';
+
+  @override
+  String get deleteWalletButton => 'Eliminar Billetera';
+
+  @override
+  String get deleteWalletConfirmTitle => '¿Eliminar esta billetera?';
+
+  @override
+  String get deleteWalletConfirmBody =>
+      'Esto elimina permanentemente la billetera de este dispositivo. Esta acción no se puede deshacer — asegúrese de haber guardado su clave privada, ya que es la única forma de acceder a estos fondos nuevamente.';
+
+  @override
+  String get deleteWalletConfirmButton => 'Eliminar';
+
+  @override
+  String get walletDeletedMessage => 'Billetera eliminada';
 }

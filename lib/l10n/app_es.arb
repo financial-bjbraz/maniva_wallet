@@ -118,5 +118,18 @@
   "faq4Q": "¿Dónde se guardan mis claves?",
   "faq4A": "Su clave privada y frase de recuperación se guardan únicamente en este dispositivo. Nadie más, ni siquiera los desarrolladores de la app, tiene acceso a ellas — anote su frase de recuperación y guárdela con cuidado, ya que no se puede recuperar si se pierde.",
   "faq5Q": "¿Qué tokens son compatibles en Rootstock?",
-  "faq5A": "Además del RBTC, esta billetera muestra sus saldos de los tokens RIF, USDRIF, DOC, RIFPRO y tBRZ."
+  "faq5A": "Además del RBTC, esta billetera muestra sus saldos de los tokens RIF, USDRIF, DOC, RIFPRO y tBRZ.",
+
+  "walletSecurityTitle": "Seguridad de la Billetera",
+  "walletSecurityWarning": "Esta pantalla controla los fondos de esta billetera. Nunca comparta su clave privada o WIF con nadie, y asegúrese de que nadie esté mirando su pantalla.",
+  "privateKeyLabel": "Clave Privada",
+  "bitcoinWifLabel": "Clave Privada de Bitcoin (WIF)",
+  "revealLabel": "Revelar",
+  "hideLabel": "Ocultar",
+  "confirmSavedKeyLabel": "He guardado mi clave privada de forma segura",
+  "deleteWalletButton": "Eliminar Billetera",
+  "deleteWalletConfirmTitle": "¿Eliminar esta billetera?",
+  "deleteWalletConfirmBody": "Esto elimina permanentemente la billetera de este dispositivo. Esta acción no se puede deshacer — asegúrese de haber guardado su clave privada, ya que es la única forma de acceder a estos fondos nuevamente.",
+  "deleteWalletConfirmButton": "Eliminar",
+  "walletDeletedMessage": "Billetera eliminada"
 }
