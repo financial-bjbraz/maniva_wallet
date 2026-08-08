@@ -7,6 +7,7 @@ import '../entities/wallet_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../services/create_user_service.dart';
 import '../services/wallet_service.dart';
+import '../util/blockchain_animation.dart';
 import '../util/secure_screen.dart';
 import '../util/util.dart';
 
@@ -252,8 +253,14 @@ class _BodyState extends State<Body> {
     goToHome(anonimousUser);
   }
 
+  bool _loadingHome = false;
+
   void goToHome(SimpleUser user) async {
+    setState(() {
+      _loadingHome = true;
+    });
     final List<WalletEntity> wallets = await walletService.getWallets(user.email);
+    if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
@@ -268,6 +275,9 @@ class _BodyState extends State<Body> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingHome) {
+      return const Center(child: BlockchainAnimation());
+    }
     return Align(
       alignment: Alignment.center,
       child: loginButton(),

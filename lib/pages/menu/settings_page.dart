@@ -6,6 +6,7 @@ import '../../entities/user_helper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/wallet_service.dart';
 import '../../util/app_theme.dart';
+import '../../util/blockchain_animation.dart';
 import '../../util/util.dart';
 import '../login.dart';
 
@@ -93,6 +94,8 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     await walletService.setCustomNodeUrl(key, value);
     if (!mounted) return;
+    await showBlockchainAnimationOverlay(context);
+    if (!mounted) return;
     showMessage(
         value.trim().isEmpty
             ? AppLocalizations.of(context)!.nodeUrlResetMessage
@@ -124,6 +127,8 @@ class _SettingsPageState extends State<SettingsPage> {
     for (final entry in fields.entries) {
       await walletService.setCustomNodeUrl(entry.key, entry.value.text);
     }
+    if (!mounted) return;
+    await showBlockchainAnimationOverlay(context);
     if (!mounted) return;
     showMessage(AppLocalizations.of(context)!.nodeUrlsSavedMessage, context);
   }
